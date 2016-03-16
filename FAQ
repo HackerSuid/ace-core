@@ -1,0 +1,24 @@
+1. What does the topology of sensory input look like so I can create a new Codec?
+
+The topology of sensory patterns is assumed by libhtm to be a two-dimensional
+array. The size of each dimension must be equal (a square), and there are
+limitations on what the size can be. Due to how the columns compute their
+natural center in the pattern, the size of the sensory input dimension must
+be an odd multiple of the size of the columnar dimension. The following
+table illustrates the sensory-column dimension relationship:
+
+Columns | Valid input dimensions
+----------------------------------------
+ 20x20  | 20x20
+        | 60x60
+        | 100x100
+        | 140x140
+        | etc.
+100x100 | 100x100
+        | 300x300
+        | 500x500
+        | 700x700
+        | etc.
+  NxN   | a*Nxa*N where (a>=1)&&(a%2==1)
+----------------------------------------
+

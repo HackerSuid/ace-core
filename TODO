@@ -1,0 +1,21 @@
+1. Reorganize core CLA algorithms into cortical layers instead of regions to
+   represent laminar structure of the cortex.
+
+2. Allow tracing back predicted cell activity to recreate/recover a rough
+   representation of the input pattern(s).
+
+3. Differentiate receptive fields of ipsicolumnar cells with a partial
+   overlap of the input instead of identical feed-forward activation
+   patterns.
+    a. partial overlap allows for better input reconstruction.
+    b. how many temporal contexts can the current logic reliably support?
+
+4. Localize lateral projection zone for distal dendrite segments. The local
+   distance could be 1-2 receptive fields away. This is more biologically
+   realistic.
+
+5. Application: anomaly detection of real-time program execution.
+    a. probably won't be as general as originally intended. the performance
+       hit will be substantial for an arbitrary executable.
+    b. best use case is for a specific executable designed for this application.
+
