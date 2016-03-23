@@ -11,7 +11,7 @@
 #include "htmregion.h"
 #include "sensoryregion.h"
 #include "sensoryinput.h"
-#include "codec.h"
+#include "codec_base.h"
 #include "util.h"
 
 Htm::Htm()
@@ -62,7 +62,7 @@ bool Htm::LoadXmlConfig(const char *pathname)
     // Load the HTM and pass parameters to the constructor.
     rapidxml::xml_node<> *HtmNode = doc.first_node("Htm");
     if (!(target_path = HtmNode->first_attribute("target")->value())) {
-        fprintf(stderr, "Librarian target missing from configuration file.\n");
+        fprintf(stderr, "target missing from configuration file.\n");
         return false;
     }
     window_w = atoi(HtmNode->first_attribute("WinWidth")->value());

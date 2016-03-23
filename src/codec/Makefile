@@ -1,6 +1,6 @@
-# Build for Bitmap codec
+# Build for codec
 
-NAME    = bitmap
+NAME    = codec
 
 # Verify the make parameter arguments.
 ifeq (install, $(firstword $(MAKECMDGOALS)))
@@ -22,7 +22,7 @@ endif
 CC       = g++
 CFLAGS   = -g -Wall -O2 -I$(HTMHEADERS)
 
-LIBS = 
+LIBS = -lelf
 
 SRC  = src/$(NAME).cpp
 
@@ -31,15 +31,15 @@ OBJ  = obj/$(NAME).o
 #---------------------------------
 
 $(NAME): $(OBJ)
-	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ)
+	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ) $(LIBS)
 
 #src/%.cpp:	
 
-#obj/%.o:	%.cpp
-#	$(CC) $(CFLAGS) -c $< -o $@
-
-obj/bitmap.o: src/bitmap.cpp
+obj/%.o:	src/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
+
+#obj/bitmap.o: src/bitmap.cpp
+#	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: install
 install:

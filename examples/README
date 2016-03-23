@@ -1,0 +1,9 @@
+The reptile can rotate north, south, east, or west up to 270 degrees
+at a time. A specific sensory pattern is designated for each direction.
+The reptile's goal is to find the one pattern that, but it has no
+memory of where it has previously searched. The reptile will starve
+after a certain number of moves.
+
+A more interesting example would be a more complex world with more than
+the four directions the reptile could face patterns and actual
+locomotive movement forward and backward.

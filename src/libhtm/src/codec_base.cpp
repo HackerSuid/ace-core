@@ -1,4 +1,4 @@
-#include "codec.h"
+#include "codec_base.h"
 #include "htmregion.h"
 #include "sensoryregion.h"
 #include "sensoryinput.h"

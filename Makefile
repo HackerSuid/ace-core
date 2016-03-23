@@ -23,7 +23,7 @@ RELEASE_LDFLAGS  = -L$(HTMDIR)/bin
 DEBUG_LDFLAGS    = $(RELEASE_LDFLAGS) -L$(UIDIR)/bin -L/opt/qt4/lib
 
 RELEASE_LIBS     = $(HTMDIR)/bin/libhtm.a
-DEBUG_LIBS       = $(RELEASE_LIBS) $(UIDIR)/bin/libqthtm.a -lQtGui -lQtCore
+DEBUG_LIBS       = $(RELEASE_LIBS) $(UIDIR)/bin/libqthtm.a -lQtGui -lQtCore -lelf
 
 ACE_SRCS         = main.cpp
 ACE_OBJS         = obj/main.o

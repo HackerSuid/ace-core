@@ -16,7 +16,7 @@ HFILES  = src/cell.h \
           src/htm.h \
           src/sensoryinput.h \
           src/synapse.h \
-          src/codec.h \
+          src/codec_base.h \
           src/genericinput.h \
           src/htmregion.h \
           src/sensoryregion.h \
@@ -29,7 +29,7 @@ OBJS    = obj/cell.o \
           obj/htm.o \
           obj/sensoryinput.o \
           obj/synapse.o \
-          obj/codec.o \
+          obj/codec_base.o \
           obj/genericinput.o \
           obj/htmregion.o \
           obj/sensoryregion.o \
@@ -73,7 +73,7 @@ obj/sensoryinput.o:   src/sensoryinput.cpp
 obj/synapse.o:   src/synapse.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-obj/codec.o:   src/codec.cpp
+obj/codec_base.o:   src/codec_base.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 obj/genericinput.o:   src/genericinput.cpp

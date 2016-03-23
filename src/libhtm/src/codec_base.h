@@ -1,5 +1,5 @@
-#ifndef CODEC_H_
-#define CODEC_H_
+#ifndef CODEC_BASE_H_
+#define CODEC_BASE_H_
 
 #include <stdio.h>
 
