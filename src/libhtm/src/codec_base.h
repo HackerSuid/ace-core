@@ -10,7 +10,7 @@ class Codec
 {
 protected:
     char *codecName;
-    char *TargetPath;
+    char *targetPath;
     int pidx;
 public:
     Codec();
@@ -29,8 +29,8 @@ public:
 
     virtual bool Init(char *target_path) = 0;
     virtual SensoryRegion* GetPattern() = 0;
-    virtual bool FirstPattern(SensoryRegion *InputPattern) = 0;
-    virtual void Reset() = 0;
+    virtual bool FirstPattern() = 0;
+    virtual bool Reset() = 0;
     char* GetCodecName();
 private:
     static Codec *Instance;

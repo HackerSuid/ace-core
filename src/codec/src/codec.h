@@ -47,6 +47,9 @@ typedef struct
     unsigned char r, g, b;
 } Pixel;
 
+class BitmapCodec;
+class ElfCodec;
+
 class SensoryCodec : public Codec
 {
 public:
@@ -54,17 +57,45 @@ public:
     ~SensoryCodec();
 
     bool Init(char *target_path);
-
+    bool LoadTarget();
     SensoryRegion* GetPattern();
-    bool FirstPattern(SensoryRegion *InputPattern);
-    void Reset();
+    bool FirstPattern();
+    bool Reset();
 
 private:
+    BitmapCodec *bitmapCodec;
+    ElfCodec *elfCodec;
     static bool const registered;
     pid_t child_pid;
+    char *child_dir;
+    int wait_status;
+    unsigned int read_plt, open_plt, main_addr;
 
     char* ptype_str(size_t pt);
-    BITMAPHEADER* ReadBitmapHeader(const char *filename, FILE **fp);
+};
+
+class BitmapCodec
+{
+public:
+    BitmapCodec();
+    ~BitmapCodec();
+
+    bool Init(char *target_path);
+    SensoryRegion* GetPattern(int sense_fd);
+    bool FirstPattern();
+    bool Reset();
+
+    BITMAPHEADER* ReadBitmapHeader(int);
+private:
+    int pidx;
+    bool firstPattern;
+};
+
+class ElfCodec
+{
+public:
+    ElfCodec();
+    ~ElfCodec();
 };
 
 #endif

@@ -75,9 +75,9 @@ private:
 private slots:
     void ShowPretrainWidget();
     void ShowTrainingWidget();
-    void RunSingleCLA();
-    void RunVariableCLA();
-    int RunCLA();
+    void RunSingle();
+    void RunVariable();
+    int Run();
 protected:
     // override virtual methods from QWidget
     void paintEvent(QPaintEvent *e);

@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     char pattern[PATTERN_SZ];
 
     for (int i=0; i<4 && !search_complete; i++) {
-        if ((patt_fd = open(patterns[i], O_RDWR, 640)) < 0)
+        if ((patt_fd = open(patterns[i], O_RDONLY)) < 0)
             perror("could not open world pattern");
         read(patt_fd, pattern, PATTERN_SZ);
         if (pattern[PATTERN_SZ-1] == 1) {

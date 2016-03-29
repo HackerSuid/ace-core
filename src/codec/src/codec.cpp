@@ -31,12 +31,18 @@ SensoryCodec::SensoryCodec()
     : Codec()
 {
     pidx = 0;
+    main_addr = 0;
+    open_plt = 0;
+    read_plt = 0;
     codecName = strdup("Sensory");
+    child_dir = NULL;
+    bitmapCodec = new BitmapCodec();
+    //elfCodec = new ElfCodec();
 }
 
 SensoryCodec::~SensoryCodec()
 {
-    if (TargetPath) free(TargetPath);
+    if (targetPath) free(targetPath);
     if (codecName) free(codecName);
 }
 
@@ -52,15 +58,15 @@ bool SensoryCodec::Init(char *target_path)
     Elf_Data *symtab_data=NULL, *dynsym_data=NULL;
     Elf_Data *reloc_data=NULL, *plt_data=NULL;
     Elf_Data *gotplt_data=NULL;
-    int wait_status, elf_fd, elf_class;
+    int elf_fd, elf_class;
     char *ident, *name, *func_name;
     size_t shnum, phnum, shstrndx;
     size_t symtab_num, dynsym_num, reloc_num;
     size_t plt_num, gotplt_num;
 
-    unsigned char read_sym_ndx;
+    unsigned char read_sym_ndx, open_sym_ndx;
     unsigned int plt_addr;
-    unsigned int read_got_offset, read_plt;
+    unsigned int read_got_offset, open_got_offset;
 
     if (elf_version(EV_CURRENT) == EV_NONE)
         errx(
@@ -234,23 +240,22 @@ bool SensoryCodec::Init(char *target_path)
                     printf("st_other 0x%02x ", sym.st_other);
                     printf("st_shndx 0x%04x\n", sym.st_shndx);
                     */
-            
                     if (GELF_ST_TYPE(sym.st_info)==STT_FUNC) {
                         func_name = elf_strptr(e, shdr.sh_link, sym.st_name);
                         if (!strncmp("read", func_name, 4))
                             read_sym_ndx = (unsigned char)i;
+                        if (!strncmp("open", func_name, 4))
+                            open_sym_ndx = (unsigned char)i;
                     }
                 }
             }
             
-            /*
             if (shdr.sh_type == SHT_SYMTAB) {
                 // obtain the .symtab symbol table
                 symtab_data = elf_getdata(scn, symtab_data);
                 symtab_num = shdr.sh_size/shdr.sh_entsize;
                 for (int i=0; i<symtab_num; i++) {
                     gelf_getsym(symtab_data, i, &sym);
-            */
                     /*
                     printf("st_name 0x%08x ", sym.st_name);
                     printf("st_value 0x%016x ", sym.st_value);
@@ -259,13 +264,16 @@ bool SensoryCodec::Init(char *target_path)
                     printf("st_other 0x%02x ", sym.st_other);
                     printf("st_shndx 0x%04x\n", sym.st_shndx);
                     */
-            /*
-                    if (GELF_ST_TYPE(sym.st_info)==STT_FUNC)
-                        printf("\t%s\n",
-                            elf_strptr(e, shdr.sh_link, sym.st_name));
+                    if (GELF_ST_TYPE(sym.st_info)==STT_FUNC) {
+                        func_name = elf_strptr(
+                            e, shdr.sh_link,
+                            sym.st_name
+                        );
+                        if (!strncmp("main", func_name, 4))
+                            main_addr = sym.st_value;
+                    }
                 }
             }
-            */
             /*if (shdr.sh_type == SHT_STRTAB) {
                 dynsym_data = elf_getdata(scn, dynsym_data);
                 dynsym_num = shdr.sh_size/shdr.sh_entsize;
@@ -276,25 +284,27 @@ bool SensoryCodec::Init(char *target_path)
                 }
             }*/
         }
-        // find the relocation table entry for the read function symbol
-        // and save the relocation offset (virtual memory address)
+        // find the relocation table entry for the open and read
+        // function symbols and save the relocation offset (virtual
+        // memory address)
         for (int i=0; i<reloc_num; i++) {
             gelf_getrel(reloc_data, i, &reloc);
+            if ((unsigned char)(reloc.r_info>>32) == open_sym_ndx)
+                open_got_offset = reloc.r_offset;
             if ((unsigned char)(reloc.r_info>>32) == read_sym_ndx)
                 read_got_offset = reloc.r_offset;
         }
-        // find the read@plt entry in the plt by finding the above
-        // jmp offset
+        // find the read@plt and open@plt entries in the plt by
+        // finding the above jmp offsets.
         for (int i=0; i<plt_num; i++) {
             void *pltent = plt_data->d_buf;
             unsigned int jmp_offset = 0x2+0x10*i;
             unsigned int jmp_instr =
                 *(unsigned int *)((unsigned int)pltent+jmp_offset);
-            if (jmp_instr == read_got_offset) {
+            if (jmp_instr == open_got_offset)
+                open_plt = plt_addr+jmp_offset-0x2;
+            if (jmp_instr == read_got_offset)
                 read_plt = plt_addr+jmp_offset-0x2;
-                //printf("read@plt = 0x%08x\n", read_plt);
-                break;
-            }
         }
     } else {
         fprintf(stderr, "target %s not an ELF object.\n", target_path);
@@ -304,53 +314,9 @@ bool SensoryCodec::Init(char *target_path)
     elf_end(e);
     close(elf_fd);
 
-    if (!(child_pid=fork())) {
-        // replace child process image with new executable and
-        // allow ptracing.
-        if (ptrace(PTRACE_TRACEME, 0, 0, 0) < 0) {
-            perror("ptrace");
-            return false;
-        }
-        execl(target_path, target_path, 0);
-    } else if (child_pid > 0) {
-        // ACE will trace the child process until main().
-
-        // Wait for child to stop on its first instruction. It will
-        // be somewhere in glibc setup/init code.
-        wait(&wait_status);
-        printf("child process execl()ed\n");
-
-        while (WIFSTOPPED(wait_status)) {
-            struct user_regs_struct regs;
-            ptrace(PTRACE_GETREGS, child_pid, 0, &regs);
-            unsigned int xi =
-                ptrace(PTRACE_PEEKTEXT, child_pid, regs.eip, 0);
-            // catch any software interrupts to make system calls
-            //if ((xi & 0xFFFF) == SOFT_INT_OPCODE)
-            //    printf("0x%08x\n", xi);
-            if ((uint8_t)(xi & 0x000000FF) == CALL_OPCODE) {
-                void *rel_off_addr = (void *)(regs.eip+1);
-                int rel_off =
-                    ptrace(PTRACE_PEEKTEXT, child_pid, rel_off_addr, 0);
-                unsigned int call_addr =
-                    (unsigned int)(rel_off_addr)+sizeof(unsigned int)+rel_off;
-                //printf("call 0x%08x\n", call_addr);
-            }
-            // Make the child execute another instruction
-            if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
-                perror("ptrace");
-                return false;
-            }
-
-            // Wait for child to stop on its next instruction
-            wait(&wait_status);
-        }
-    } else {
-        perror("fork");
+    this->targetPath = strdup(target_path);
+    if (!LoadTarget())
         return false;
-    }
-
-    this->TargetPath = strdup(target_path);
 
     return true;
 }
@@ -373,75 +339,137 @@ char* SensoryCodec::ptype_str(size_t pt)
 #undef   C
 }
 
-// Take a bitmap file and convert to an SensoryRegion
+// fork() and execl() the target executable, then ptrace its execution
+// up to the call to main() from _libc_start_main() in glibc. pause
+// ptrace at that point (defer the next PTRACE_SINGLESTEP).
+bool SensoryCodec::LoadTarget()
+{
+    if (!(child_pid=fork())) {
+        // replace child process image with new executable and
+        // allow ptracing.
+        if (ptrace(PTRACE_TRACEME, 0, 0, 0) < 0) {
+            perror("ptrace");
+            return false;
+        }
+        execl(targetPath, targetPath, 0);
+    } else if (child_pid > 0) {
+        // ACE will trace the child process until main().
+        // Wait for child to stop on its first instruction. It will
+        // be somewhere in glibc setup/init code.
+        wait(&wait_status);
+        printf("child process stopped, step to main()\n");
+        while (WIFSTOPPED(wait_status)) {
+            struct user_regs_struct regs;
+            // get the current register values
+            ptrace(PTRACE_GETREGS, child_pid, 0, &regs);
+            // break on main().
+            if (regs.eip == main_addr)
+                break;
+            // Otherwise, continue; make the child execute another
+            // instruction.
+            if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
+                perror("ptrace");
+                return false;
+            }
+            // Wait for child to stop on its next instruction.
+            wait(&wait_status);
+        }
+    } else {
+        perror("fork");
+        return false;
+    }
+    return true;
+}
+
+bool SensoryCodec::Reset()
+{
+    // re-fork()/execl() the target executable.
+    if (!LoadTarget()) {
+        printf("Codec reset failed to reload target %s\n", targetPath);
+        return false;
+    }
+    return true;
+}
+
 SensoryRegion* SensoryCodec::GetPattern()
 {
-    BITMAPHEADER *bmh;
-    FILE *fp = NULL;
-    char filename[128];
-    Pixel rgb;
-    SensoryRegion *pattern=NULL;
-    SensoryInput ***input=NULL;
-
-    snprintf(filename, sizeof(filename), "%s/%d.bmp", TargetPath, pidx++);
-    if ((bmh = ReadBitmapHeader(filename, &fp)) == NULL)
+    long int fd = -1;
+    // single-step through executable's .text instructions until
+    // the next open@plt call.
+    if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
+        perror("ptrace");
         return NULL;
-
-    // read each pixel value and map to a bit vector
-    //   black => 0x00 (active)
-    //   white => 0xFF (inactive)
-    input = (SensoryInput ***)malloc(sizeof(SensoryInput **) * bmh->bmih.height);
-    for (int i=0; i<bmh->bmih.height; i++) {
-        // flip the image to display correctly on the unit grid.
-        input[(bmh->bmih.height-1)-i] = (SensoryInput **)malloc(sizeof(SensoryInput *) * bmh->bmih.width);
-        for (int j=0; j<bmh->bmih.width; j++) {
-            fread(&rgb, sizeof(rgb), 1, fp);
-            input[(bmh->bmih.height-1)-i][j] = new SensoryInput;
-            input[(bmh->bmih.height-1)-i][j]->SetActive(!(rgb.r|rgb.g|rgb.b));
-        }
     }
-    fclose(fp);
+    wait(&wait_status);
+    while (WIFSTOPPED(wait_status)) {
+        struct user_regs_struct regs;
+        // get the current register values
+        ptrace(PTRACE_GETREGS, child_pid, 0, &regs);
+        // get the current instruction being executed.
+        unsigned int xi = ptrace(PTRACE_PEEKTEXT, child_pid, regs.eip, 0);
+        if ((uint8_t)(xi & 0x000000FF) == CALL_OPCODE) {
+            // get the address to the relative offset of the
+            // address being called (located one byte after
+            // current eip).
+            void *rel_off_addr = (void *)(regs.eip+1);
+            // get the relative offset.
+            int rel_off =
+                ptrace(PTRACE_PEEKTEXT, child_pid, rel_off_addr, 0);
+            // compute the address being called using the relative
+            // offset.
+            unsigned int call_addr =
+                (unsigned int)(rel_off_addr)+sizeof(unsigned int)+rel_off;
+            if (call_addr == open_plt) {
+                unsigned int open_path =
+                    ptrace(PTRACE_PEEKTEXT, child_pid, regs.esp);
+                char path_str[128];
+                unsigned char c;
+                int j=0;
+                do {
+                    c = ptrace(PTRACE_PEEKTEXT, child_pid, open_path+j);
+                    path_str[j] = c;
+                    j++;
+                } while (c != 0x00);
+                path_str[j] = 0;
+                unsigned int mode =
+                    ptrace(PTRACE_PEEKTEXT, child_pid, regs.esp+0x4);
+                fd = open(path_str, mode);
+            }
+            if (call_addr == read_plt) {
+                if (fd < 0) {
+                    fprintf(stderr, "no open fd: read() before open()\n");
+                    return NULL;
+                }
+                // NOTE: not guaranteed to be the same fd.
+                break;
+            }
+        }
+        // Otherwise, continue; make the child execute another
+        // instruction.
+        if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
+            perror("ptrace");
+            return NULL;
+        }
+        // Wait for child to stop on its next instruction.
+        wait(&wait_status);
+    }
 
-    // input patterns will have zero cells.
-    pattern = new SensoryRegion(filename, input, bmh->bmih.width, bmh->bmih.height, 0);
+    if (WIFEXITED(wait_status)) {
+        printf("child exited successfully. status %d\n",
+            WEXITSTATUS(wait_status));
+        return NULL;
+    }
 
-    return pattern;
+    SensoryRegion *inputpattern = bitmapCodec->GetPattern(fd);
+    close(fd);
+
+    return inputpattern;
 }
 
 // whether or not the codec is processing the first pattern of a pre-determined
 // sequence.
-bool SensoryCodec::FirstPattern(SensoryRegion *InputPattern)
+bool SensoryCodec::FirstPattern()
 {
-    char *filename = InputPattern->GetFilename();
-
-    if (strchr(filename, '/'))
-        filename = strrchr(filename, '/')+1;
-
-    char *ext = strrchr(filename, '.');
-    ext = 0;
-
-    int patt_idx = atoi(filename);
-    
-    return patt_idx? false : true;
-}
-
-void SensoryCodec::Reset()
-{
-    pidx = 0;
-}
-
-BITMAPHEADER* SensoryCodec::ReadBitmapHeader(const char *filename, FILE **fp)
-{
-    BITMAPHEADER *bmh = (BITMAPHEADER *)malloc(sizeof(BITMAPHEADER));
-
-    if ((*fp = fopen(filename, "r")) == NULL) {
-        fprintf(stderr, "%s: %s\n", filename, strerror(errno));
-        return NULL;
-    }
-
-    fread((BITMAPFILEHEADER *)&(bmh->bmfh), sizeof(BITMAPFILEHEADER), 1, *fp);
-    fread((BITMAPINFOHEADER *)&(bmh->bmih), sizeof(BITMAPINFOHEADER), 1, *fp);
-
-    return bmh;
+    return bitmapCodec->FirstPattern();
 }
 

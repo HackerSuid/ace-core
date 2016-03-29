@@ -1,7 +1,5 @@
 # Build for codec
 
-NAME    = codec
-
 # Verify the make parameter arguments.
 ifeq (install, $(firstword $(MAKECMDGOALS)))
 ifndef INSTALL_DIR
@@ -24,14 +22,17 @@ CFLAGS   = -g -Wall -O2 -I$(HTMHEADERS)
 
 LIBS = -lelf
 
-SRC  = src/$(NAME).cpp
+CODEC_SRC = src/codec.cpp
+SRCS  = src/bitmap_codec.cpp \
+        src/elf_codec.cpp
 
-OBJ  = obj/$(NAME).o
+CODEC_OBJ = obj/codec.o
+OBJS  = obj/bitmap_codec.o
 
 #---------------------------------
 
-$(NAME): $(OBJ)
-	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ) $(LIBS)
+CODEC_OBJ: $(OBJS)
+	$(CC) $(CFLAGS) -c $(CODEC_SRC) -o $(CODEC_OBJ) $(LIBS)
 
 #src/%.cpp:	
 

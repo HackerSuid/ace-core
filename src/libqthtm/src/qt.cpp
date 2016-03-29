@@ -291,8 +291,8 @@ void QtFront::CreateActions()
             this, SLOT(ShowTrainingWidget()));
 
     // Window actions
-    connect(TrainNextButton, SIGNAL(clicked()), this, SLOT(RunSingleCLA()));
-    connect(TrainIterButton, SIGNAL(clicked()), this, SLOT(RunVariableCLA()));
+    connect(TrainNextButton, SIGNAL(clicked()), this, SLOT(RunSingle()));
+    connect(TrainIterButton, SIGNAL(clicked()), this, SLOT(RunVariable()));
 }
 
 void QtFront::CreateMenuBar()
@@ -325,9 +325,9 @@ QWidget* QtFront::ActiveWindow()
 
 // BEGIN QT SLOTS
 
-void QtFront::RunSingleCLA()
+void QtFront::RunSingle()
 {
-    if (!RunCLA())
+    if (!Run())
         return;
 
     // update the various Qt displays
@@ -337,17 +337,17 @@ void QtFront::RunSingleCLA()
 }
 
 // Iterate through all the patterns variable number of times.
-void QtFront::RunVariableCLA()
+void QtFront::RunVariable()
 {
     int n = IterEdit->text().toInt();
     for (int i=0; i<n; i++)
-        while (RunCLA())
+        while (Run())
             ;
     UpdateHtmDisplay();
     this->repaint();
 }
 
-int QtFront::RunCLA()
+int QtFront::Run()
 {
     SensoryRegion *pattern;
 

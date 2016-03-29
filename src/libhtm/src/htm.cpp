@@ -28,9 +28,11 @@ Htm::~Htm()
 
 void Htm::InitHtm()
 {
+    printf("loading config: %s.\n", LOCAL_XML_CONF_PATH);
     // initialization of Htm regions and columns.
     if (!LoadXmlConfig(LOCAL_XML_CONF_PATH))
         abort();
+    printf("Cleating and initializing codec\n");
     // instantiation of the codec.
     if (!(codec = Codec::Instantiate()))
         abort();
@@ -39,6 +41,7 @@ void Htm::InitHtm()
         abort();
     // initialization and linkage of the regions.
     this->ConnectHeirarchy();
+    printf("...complete.\n");
 }
 
 bool Htm::LoadXmlConfig(const char *pathname)
@@ -151,7 +154,7 @@ SensoryRegion* Htm::ConsumePattern()
 
 bool Htm::FirstPattern()
 {
-    return codec->FirstPattern(currentPattern);
+    return codec->FirstPattern();
 }
 
 void Htm::ResetCodec()

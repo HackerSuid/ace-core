@@ -5,13 +5,11 @@
 #include "sensoryinput.h"
 
 SensoryRegion::SensoryRegion(
-    char *filename,
     SensoryInput ***bits,
     unsigned int w,
     unsigned int h,
     unsigned int d)
 {
-    this->filename = strdup(filename);
     this->width = w;
     this->height = h;
     this->depth = d;
@@ -27,12 +25,6 @@ SensoryRegion::SensoryRegion(
 
 SensoryRegion::~SensoryRegion()
 {
-    delete this->filename;
-}
-
-char* SensoryRegion::GetFilename()
-{
-    return this->filename;
 }
 
 SensoryInput*** SensoryRegion::GetInput()
