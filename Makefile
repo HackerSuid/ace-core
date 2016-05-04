@@ -94,6 +94,7 @@ cleanall:
 	$(MAKE) -C $(HTMDIR) clean
 	$(MAKE) -C $(UIDIR) clean
 	$(MAKE) -C $(CODECDIR) clean
+	rm -f $(DESTDIR)/$(BIN)
 
 .PHONY: clean
 clean:
