@@ -2,6 +2,7 @@
 #define CODEC_H_
 
 #include <sys/ptrace.h>
+#include <vector>
 
 #include "codec_base.h"
 
@@ -58,7 +59,10 @@ public:
 
     bool Init(char *target_path);
     bool LoadTarget();
-    SensoryRegion* GetPattern();
+    long ExecuteToCall(std::vector<long>, struct user_regs_struct*);
+    SensoryRegion* GetPattern(bool Learning);
+    int HandlePureSensory(struct user_regs_struct *regs);
+    int GetRewardSignal();
     bool FirstPattern();
     bool Reset();
 
@@ -66,10 +70,15 @@ private:
     BitmapCodec *bitmapCodec;
     ElfCodec *elfCodec;
     static bool const registered;
+    bool firstPattern;
     pid_t child_pid;
     char *child_dir;
     int wait_status;
-    unsigned int read_plt, open_plt, main_addr;
+
+    long read_plt, open_plt, main_addr;
+    std::vector<long> pureSensoryFunctions;
+    std::vector<long> cpgFunctions;
+    std::vector<long> sensorimotorFunctions;
 
     char* ptype_str(size_t pt);
 };
@@ -81,14 +90,12 @@ public:
     ~BitmapCodec();
 
     bool Init(char *target_path);
-    SensoryRegion* GetPattern(int sense_fd);
-    bool FirstPattern();
-    bool Reset();
+    SensoryRegion* GetPattern(int sense_fd, bool Learning);
+    void Reset();
 
     BITMAPHEADER* ReadBitmapHeader(int);
 private:
     int pidx;
-    bool firstPattern;
 };
 
 class ElfCodec

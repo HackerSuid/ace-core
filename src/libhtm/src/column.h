@@ -7,7 +7,7 @@
 #define HIGH_TIER   0.90
 #define MAX_ACTIVE_PERCENT  0.25
 
-class GenericRegion;
+class GenericSublayer;
 class Cell;
 class DendriteSegment;
 
@@ -20,8 +20,6 @@ struct ActivityLogEntry
 class Column : public GenericInput
 {
 private:
-    // 2 dimensional position within the cortical region.
-    int x, y;
     // 2 dimensional position of columns natural center with the input space.
     int x_center, y_center;
     // parameters to implement columnar and synaptic boosting.
@@ -50,6 +48,7 @@ private:
     );
 public:
     Column(
+        int x, int y,
         unsigned int numCells,
         int rfsz,
         float localActivity,
@@ -59,11 +58,10 @@ public:
     );
     ~Column();
     void InitializeProximalDendrite(
-        int x, int y,
-        GenericRegion *lower, 
+        GenericSublayer *lower, 
         int x_ratio, int y_ratio
     );
-    void RefreshNewPattern(GenericRegion *NewPattern);
+    void RefreshNewPattern(GenericSublayer *NewPattern);
 
     // Spatial Pooler functions
     void ComputeOverlap();
@@ -84,8 +82,6 @@ public:
 
     // accessors
     bool IsHighTierColumn();
-    int GetX();
-    int GetY();
     int GetCenterX();
     int GetCenterY();
     int GetRecFieldSz();

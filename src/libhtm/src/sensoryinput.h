@@ -7,7 +7,7 @@ class SensoryInput : public GenericInput
 {
 private:
 public:
-    SensoryInput();
+    SensoryInput(int x, int y);
     ~SensoryInput();
 };
 

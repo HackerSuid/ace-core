@@ -2,7 +2,7 @@
 
 #include "qt.h"
 #include "htm.h"
-#include "htmregion.h"
+#include "htmsublayer.h"
 #include "sensoryregion.h"
 
 QtFront::QtFront(Htm *htm)
@@ -42,8 +42,8 @@ void QtFront::LoadQt()
     // Set the configured window size.
     setFixedSize(htm->GetWindowWidth(), htm->GetWindowHeight());
     // Initialize the Qt display objects.
-    HtmDisplay = new QtHtm(this, htm);
     CurrentInput = new QtSensoryRegion(this, htm->CurrentPattern());
+    HtmDisplay = new QtHtm(this, htm);
     // Initialize the widgets.
     CreatePretrainWidget();
     CreateTrainingWidget();
@@ -102,12 +102,12 @@ void QtFront::CreatePretrainWidget()
     PretrainLayout->addWidget(codecVal, 3, 2, 1, 1);
 
     QLabel *regLabel = new QLabel();
-    regLabel->setText("Regions: ");
+    regLabel->setText("Sublayers: ");
     regLabel->setAlignment(Qt::AlignRight);
     PretrainLayout->addWidget(regLabel, 4, 1, 1, 1);
 
     QLabel *regVal = new QLabel();
-    snprintf(regstr, sizeof(regstr), "%d", htm->GetNumRegions());
+    snprintf(regstr, sizeof(regstr), "%d", htm->GetNumSublayers());
     regVal->setText(regstr);
     regVal->setAlignment(Qt::AlignLeft);
     PretrainLayout->addWidget(regVal, 4, 2, 1, 1);
@@ -135,44 +135,66 @@ void QtFront::CreateTrainingWidget()
     QGridLayout *inputGrid = CurrentInput->UnitGrid();
     inputGroup->setLayout(inputGrid);
 
-    // trainings buttons
-    QWidget *buttons = new QWidget;
-    buttons->setStyleSheet("color: white;");
-    QGridLayout *buttonsLayout = new QGridLayout;
-    buttonsLayout->setSpacing(0);
-    QLabel *nextLab = new QLabel("next");
-    TrainNextButton = new QPushButton("go");
-    TrainNextButton->setStyleSheet("color: black;");
-    buttonsLayout->addWidget(nextLab, 0, 0);
-    buttonsLayout->addWidget(TrainNextButton, 0, 1);
+    // Interactive controls
+    QWidget *controls = new QWidget;
+    controls->setStyleSheet("color: white;");
+    QGridLayout *controlsLayout = new QGridLayout;
+    controlsLayout->setHorizontalSpacing(1);
+    controlsLayout->setVerticalSpacing(3);
 
-    QLabel *iterLab = new QLabel("iterations: ");
-    IterEdit = new QLineEdit();
-    IterEdit->setStyleSheet("color: black");
-    TrainIterButton = new QPushButton("go");
-    TrainIterButton->setStyleSheet("color: black;");
-    buttonsLayout->addWidget(iterLab, 1, 0);
-    buttonsLayout->addWidget(IterEdit, 1, 1);
-    buttonsLayout->addWidget(TrainIterButton, 2, 1);
+    QLabel *predWindowLab = new QLabel("Prediction Stability  ");
+    predWindowVal = new QLabel(
+        QString::number(
+            HtmDisplay->PredictionStabilityMetric(),
+            'e', 2
+        )
+    );
+    predWindowLab->setFont(QFont("Arial", 14, QFont::Bold));
+    predWindowVal->setFont(QFont("Arial", 14, QFont::Bold));
+    controlsLayout->addWidget(predWindowLab, 0, 0);
+    controlsLayout->addWidget(predWindowVal, 0, 1);
 
-    buttonsLayout->setRowStretch(3, 4);
-    buttons->setLayout(buttonsLayout);
+    controlsLayout->setRowStretch(1, 4);
+
+    QLabel *singPattLab = new QLabel("Single pattern");
+    TrainSingPattButton = new QPushButton("consume");
+    TrainSingPattButton->setStyleSheet("color: black;");
+    controlsLayout->addWidget(singPattLab, 2, 0);
+    controlsLayout->addWidget(TrainSingPattButton, 2, 1);
+
+    QLabel *singProgLab = new QLabel("Single program");
+    TrainSingProgButton = new QPushButton("execute");
+    TrainSingProgButton->setStyleSheet("color: black;");
+    controlsLayout->addWidget(singProgLab, 3, 0);
+    controlsLayout->addWidget(TrainSingProgButton, 3, 1);
+
+    QLabel *VarLab = new QLabel("Variable program: ");
+    VarEdit = new QLineEdit();
+    VarEdit->setStyleSheet("color: black");
+    TrainVarButton = new QPushButton("initiate");
+    TrainVarButton->setStyleSheet("color: black;");
+    controlsLayout->addWidget(VarLab, 4, 0);
+    controlsLayout->addWidget(VarEdit, 4, 1);
+    controlsLayout->addWidget(TrainVarButton, 5, 1);
+
+    controlsLayout->setRowStretch(6, 4);
+    controls->setLayout(controlsLayout);
 
     // groupbox for htm object details.
     objHtm = new QGroupBox("object details");
     objHtm->setStyleSheet("color: white;");
 
-    // groupbox for htm region.
-    htmGroup = new QGroupBox("region 0");
+    // groupbox for htm region sublayer.
+    htmGroup = new QGroupBox("sublayer 0");
     htmGroup->setObjectName("RegionId");
     QGridLayout *htmGrid = HtmDisplay->UnitGrid(objHtm);
     // connect first Htm region grid units to sensory input grid units.
-    HtmDisplay->SetQtSynapses(inputGrid);
+    //HtmDisplay->SetQtSynapses(inputGrid);
     htmGroup->setLayout(htmGrid);
 
     TrainingLayout->addWidget(inputGroup, 0, 0, 1, 1);
     TrainingLayout->addWidget(objHtm, 1, 0, 1, 1);
-    TrainingLayout->addWidget(buttons, 0, 1, 1, 1);
+    TrainingLayout->addWidget(controls, 0, 1, 1, 1);
     TrainingLayout->addWidget(htmGroup, 0, 2, 2, 1);
 
     TrainingWindow->setLayout(TrainingLayout);
@@ -221,6 +243,19 @@ void QtFront::ShowTrainingWidget()
         TrainingWindow->show();
 }
 
+void QtFront::UpdateQtDisplay()
+{
+    UpdateInputDisplay(CurrentInput->GetPattern());
+    UpdateHtmDisplay();
+    predWindowVal->setText(
+        QString::number(
+            HtmDisplay->PredictionStabilityMetric(),
+            'e', 2
+        )
+    );
+    this->repaint();
+}
+
 /*
  * Update the QtSensoryRegion grid display to reflect the current input
  * pattern by changing the brush color of the QtUnits.
@@ -247,15 +282,15 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
 }
 
 /*
- * Update the QtHtmRegion grid display after running the CLA.
+ * Update the QtHtmSublayer grid display after running the CLA.
  */
 void QtFront::UpdateHtmDisplay()
 {
     QGridLayout *currGrid = (QGridLayout *)htmGroup->layout();
     QGridLayout *newHtmGrid = HtmDisplay->UnitGrid(objHtm); 
-    HtmRegion **regions = htm->GetRegions();
-    int h = regions[0]->GetHeight();
-    int w = regions[0]->GetWidth();
+    HtmSublayer **sublayers = htm->GetSublayers();
+    int h = sublayers[0]->GetHeight();
+    int w = sublayers[0]->GetWidth();
     QtUnit *colUnit = NULL;
     //QGridLayout *cellGrid = NULL;
     QColor rgb;
@@ -291,8 +326,9 @@ void QtFront::CreateActions()
             this, SLOT(ShowTrainingWidget()));
 
     // Window actions
-    connect(TrainNextButton, SIGNAL(clicked()), this, SLOT(RunSingle()));
-    connect(TrainIterButton, SIGNAL(clicked()), this, SLOT(RunVariable()));
+    connect(TrainSingPattButton, SIGNAL(clicked()), this, SLOT(RunSinglePattern()));
+    connect(TrainSingProgButton, SIGNAL(clicked()), this, SLOT(RunSingleProgram()));
+    connect(TrainVarButton, SIGNAL(clicked()), this, SLOT(RunVariableProgram()));
 }
 
 void QtFront::CreateMenuBar()
@@ -325,26 +361,35 @@ QWidget* QtFront::ActiveWindow()
 
 // BEGIN QT SLOTS
 
-void QtFront::RunSingle()
+// Consume the next pattern of the program.
+void QtFront::RunSinglePattern()
 {
     if (!Run())
         return;
 
     // update the various Qt displays
-    UpdateInputDisplay(CurrentInput->GetPattern());
-    UpdateHtmDisplay();
-    this->repaint();
+    UpdateQtDisplay();
 }
 
-// Iterate through all the patterns variable number of times.
-void QtFront::RunVariable()
+// Execute the program once and consume all the patterns.
+void QtFront::RunSingleProgram()
 {
-    int n = IterEdit->text().toInt();
-    for (int i=0; i<n; i++)
+    while (Run())
+        ;
+
+    UpdateQtDisplay();
+}
+
+// Initiate a series of program executions.
+void QtFront::RunVariableProgram()
+{
+    int n = VarEdit->text().toInt();
+    for (int i=0; i<n; i++) {
         while (Run())
             ;
-    UpdateHtmDisplay();
-    this->repaint();
+    }
+
+    UpdateQtDisplay();
 }
 
 int QtFront::Run()

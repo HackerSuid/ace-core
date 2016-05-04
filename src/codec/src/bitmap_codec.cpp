@@ -15,7 +15,6 @@
 
 BitmapCodec::BitmapCodec()
 {
-    firstPattern = true;
 }
 
 BitmapCodec::~BitmapCodec()
@@ -28,7 +27,7 @@ bool BitmapCodec::Init(char *target_path)
 }
 
 // Take a bitmap file and convert to an SensoryRegion
-SensoryRegion* BitmapCodec::GetPattern(int sense_fd)
+SensoryRegion* BitmapCodec::GetPattern(int sense_fd, bool Learning)
 {
     BITMAPHEADER *bmh;
     Pixel rgb;
@@ -47,7 +46,7 @@ SensoryRegion* BitmapCodec::GetPattern(int sense_fd)
         input[(bmh->bmih.height-1)-i] = (SensoryInput **)malloc(sizeof(SensoryInput *) * bmh->bmih.width);
         for (int j=0; j<bmh->bmih.width; j++) {
             read(sense_fd, &rgb, sizeof(rgb));
-            input[(bmh->bmih.height-1)-i][j] = new SensoryInput;
+            input[(bmh->bmih.height-1)-i][j] = new SensoryInput(j, i);
             input[(bmh->bmih.height-1)-i][j]->SetActive(!(rgb.r|rgb.g|rgb.b));
         }
     }
@@ -55,9 +54,6 @@ SensoryRegion* BitmapCodec::GetPattern(int sense_fd)
 
     // input patterns will have zero cells.
     pattern = new SensoryRegion(input, bmh->bmih.width, bmh->bmih.height, 0);
-
-    if (firstPattern)
-        firstPattern = false;
 
     return pattern;
 }
@@ -77,13 +73,6 @@ BITMAPHEADER* BitmapCodec::ReadBitmapHeader(int fd)
     //fread((BITMAPINFOHEADER *)&(bmh->bmih), sizeof(BITMAPINFOHEADER), 1, *fp);
 
     return bmh;
-}
-
-// whether or not the codec is processing the first pattern of a pre-determined
-// sequence.
-bool BitmapCodec::FirstPattern()
-{
-    return firstPattern;
 }
 
 void BitmapCodec::Reset()

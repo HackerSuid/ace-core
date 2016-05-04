@@ -1,11 +1,11 @@
 #ifndef SENSORY_H_
 #define SENSORY_H_
 
-#include "genericregion.h"
+#include "genericsublayer.h"
 
 class SensoryInput;
 
-class SensoryRegion : public GenericRegion
+class SensoryRegion : public GenericSublayer
 {
 private:
     SensoryRegion *next;

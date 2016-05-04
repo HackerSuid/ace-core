@@ -1,9 +1,12 @@
-#ifndef HTMREGION_H_
-#define HTMREGION_H_
+#ifndef HTMSUBLAYER_H_
+#define HTMSUBLAYER_H_
 
 #include <vector>
 
-#include "genericregion.h"
+#include "genericsublayer.h"
+#include <list>
+
+#define PRED_STAB_WINDOW_SZ 30
 
 class SensoryRegion;
 class SensoryInput;
@@ -33,17 +36,17 @@ private:
     bool connected;
 };
 
-class HtmRegion : public GenericRegion
+class HtmSublayer : public GenericSublayer
 {
 private:
-    GenericRegion *lower, *higher;
+    GenericSublayer *lower, *higher;
     HtmSublayer *sublayers;
     int rec_field_sz, inhibitionRadius;
     float localActivity, columnComplexity;
     std::vector<SegmentUpdate *> segmentUpdateList;
-    //SegmentUpdate **segmentUpdateList;
     int numActiveColumns[2];
     Htm *htmPtr;
+    std::list<float> predStabWindow;
 
     bool _EligibleToFire(Column *col);
     void _ComputeInhibitionRadius(Column ***columns);
@@ -54,13 +57,13 @@ private:
     );
     void _DequeueSegmentUpdate(SegmentUpdate *segUpdate, bool reinforce);
 public:
-    HtmRegion(
+    HtmSublayer(
         unsigned int h,
         unsigned int w,
         unsigned int cpc,
         Htm *htmPtr
     );
-    ~HtmRegion();
+    ~HtmSublayer();
     void AllocateColumns(
         float rfsz,
         float localActivity,
@@ -78,10 +81,11 @@ public:
     int CurrentActiveColumns();
     // accessors
     Column*** GetInput();
-    void setlower(GenericRegion *reg);
-    void sethigher(GenericRegion *reg);
-    GenericRegion* GetLower() { return this->lower; }
-    GenericRegion* GetHigher() { return this->higher; }
+    void setlower(GenericSublayer *reg);
+    void sethigher(GenericSublayer *reg);
+    GenericSublayer* GetLower() { return this->lower; }
+    GenericSublayer* GetHigher() { return this->higher; }
+    std::list<float> GetPredictionStabilityWindow() { return predStabWindow; }
 };
 
 #endif

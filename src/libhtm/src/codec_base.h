@@ -28,7 +28,7 @@ public:
     }
 
     virtual bool Init(char *target_path) = 0;
-    virtual SensoryRegion* GetPattern() = 0;
+    virtual SensoryRegion* GetPattern(bool Learning) = 0;
     virtual bool FirstPattern() = 0;
     virtual bool Reset() = 0;
     char* GetCodecName();

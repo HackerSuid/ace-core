@@ -4,14 +4,15 @@
 #include <vector>
 #include "genericinput.h"
 
-class HtmRegion;
+class HtmSublayer;
+class Column;
 class DendriteSegment;
 class Synapse;
 
 class Cell : public GenericInput
 {
 public:
-    Cell();
+    Cell(Column *col);
     ~Cell();
     bool IsPredicted();
     bool WasPredicted();
@@ -19,12 +20,14 @@ public:
     bool IsLearning();
     bool WasLearning();
     void SetLearning(bool flag);
-    DendriteSegment* NewSegment(HtmRegion *region, bool FirstPattern);
+    DendriteSegment* NewSegment(HtmSublayer *sublayer, bool FirstPattern);
     DendriteSegment* GetMostActiveSegment();
     DendriteSegment* GetBestMatchingSegment(int lastActiveColumns);
     std::vector<DendriteSegment *> GetSegments();
     int GetNumSegments();
+    Column* GetParentColumn() { return parentColumn; }
 private:
+    Column *parentColumn;
     std::vector<DendriteSegment *> DistalDendriteSegments;
     int distalSegmentCount;
     bool predicted[2];

@@ -3,14 +3,14 @@
 
 #include <vector>
 
-#define CONNECTED_PERM  0.20
-#define PERM_INC        0.15
-#define PERM_DEC        0.025
+#define CONNECTED_PERM  0.200
+#define PERM_INC        0.150
+#define PERM_DEC        0.100
 #define NEAR_CONNECTED  CONNECTED_PERM-(CONNECTED_PERM-0.05)
 //#define NEAR_CONNECTED CONNECTED_PERM-PERM_DEC
 
 class GenericInput;
-class GenericRegion;
+class GenericSublayer;
 
 class Synapse
 {
@@ -21,7 +21,7 @@ private:
 public:
     Synapse(GenericInput *src, int x, int y);
     ~Synapse();
-    void RefreshSynapse(GenericRegion *NewPattern);
+    void RefreshSynapse(GenericSublayer *NewPattern);
     bool IsFiring();
     bool WasFiring();
     bool IsLearning();

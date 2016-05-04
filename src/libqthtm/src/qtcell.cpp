@@ -1,6 +1,10 @@
 #include <stdio.h>
 
 #include "qt.h"
+#include "column.h"
+#include "cell.h"
+#include "dendritesegment.h"
+#include "synapse.h"
 
 QtCell::QtCell(Cell *cell, int w, int h)
 {
@@ -42,8 +46,9 @@ void QtCell::paintEvent(QPaintEvent *event)
     QRect r(0, 0, sizeHint().width(), sizeHint().height());
     if (cell->IsActive())
         p.setBrush(ACTIVE_COLOR);
-    else if (cell->IsPredicted())
+    else if (cell->IsPredicted()) {
         p.setBrush(PREDICTED_COLOR);
+    }
     else
         p.setBrush(INACTIVE_COLOR);
     p.setRenderHint(QPainter::Antialiasing, true);
@@ -54,5 +59,11 @@ void QtCell::paintEvent(QPaintEvent *event)
 void QtCell::mousePressEvent(QMouseEvent *event)
 {
     printf("[0x%08x] a=%d p=%d l=%d\n", cell, cell->IsActive(), cell->IsPredicted(), cell->IsLearning());
+    DendriteSegment *seg = cell->GetMostActiveSegment();
+    if (seg) {
+        std::vector<Synapse *> syns = seg->GetSynapses();
+        for (int i=0; i<seg->GetNumSynapses(); i++)
+            printf("(%d, %d): %d %f\n", syns[i]->GetX(), syns[i]->GetY(), syns[i]->GetSource()->IsActive(), syns[i]->GetPerm());
+    }
 }
 

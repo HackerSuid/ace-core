@@ -4,13 +4,14 @@
 #include <math.h>
 
 #include "column.h"
-#include "genericregion.h"
+#include "genericsublayer.h"
 #include "util.h"
 #include "dendritesegment.h"
 #include "synapse.h"
 #include "cell.h"
 
 Column::Column(
+    int x, int y,
     unsigned int numCells,
     int rfsz,
     float localActivity,
@@ -34,9 +35,11 @@ Column::Column(
     overlapLogHead = overlapLogTail = NULL;
     timeStep = 0;
 
+    this->x = x;
+    this->y = y;
     this->numCells = numCells;
     for (unsigned int i=0; i<numCells; i++)
-        cells.push_back(new Cell());
+        cells.push_back(new Cell(this));
 }
 
 Column::~Column()
@@ -54,11 +57,10 @@ Column::~Column()
  *
  * For example, the afferent pathway of a biological region may originate from
  * the lateral geniculate nuclei (LGN) of the thalamus or from another cortical
- * region.
+ * sublayer.
  */
 void Column::InitializeProximalDendrite(
-    int x, int y,
-    GenericRegion *lower,
+    GenericSublayer *lower,
     int x_ratio, int y_ratio)
 {
     GenericInput ***inputs = lower->GetInput();
@@ -66,8 +68,6 @@ void Column::InitializeProximalDendrite(
     unsigned int w = lower->GetWidth();
     int syn_pos[rec_field_sz][2], a, b, x_idx, y_idx;
 
-    this->x = x;
-    this->y = y;
     // compute the natural center of the column to the input.
     x_center = this->x*x_ratio+(x_ratio/2);
     y_center = this->y*y_ratio+(y_ratio/2);
@@ -89,11 +89,11 @@ void Column::InitializeProximalDendrite(
         } while (!UniqueIdx(x_idx, y_idx, (int *)syn_pos, i));
         syn_pos[i][0] = x_idx;
         syn_pos[i][1] = y_idx;
-        ProximalDendriteSegment->NewSynapse(new Synapse(inputs[x_idx][y_idx], x_idx, y_idx));
+        ProximalDendriteSegment->NewSynapse(new Synapse(inputs[y_idx][x_idx], x_idx, y_idx));
     }
 }
 
-void Column::RefreshNewPattern(GenericRegion *NewPattern)
+void Column::RefreshNewPattern(GenericSublayer *NewPattern)
 {
     ProximalDendriteSegment->RefreshSynapses(NewPattern);
 }
@@ -125,16 +125,6 @@ bool Column::IsHighTierColumn()
     if (overlap < HIGH_TIER * rec_field_sz)
         return false;
     return true;
-}
-
-int Column::GetX()
-{
-    return x;
-}
-
-int Column::GetY()
-{
-    return y;
 }
 
 int Column::GetCenterX()
@@ -322,7 +312,7 @@ Column** Column::GetNeighbors(
     for (int i=left; i<=right; i++)
         for (int j=top; j<=bottom; j++)
             if ((i != x) || (j != y))
-                neighbors[n++] = columns[i][j];
+                neighbors[n++] = columns[j][i];
 
     numNeighbors = n;
 
@@ -350,7 +340,8 @@ Cell* Column::GetBestMatchingCell(
     bool FirstPattern)
 {
     if (FirstPattern) {
-//        printf("\tfirst pattern...\n");
+//        printf("\t\t[0x%08x] cell %d chosen for learning [first pattern]\n",
+//            (unsigned int)(cells[0]), 0);
         return cells[0];
     }
 
@@ -376,8 +367,9 @@ Cell* Column::GetBestMatchingCell(
         // for cell i, get the segment with the most active synapses in the
         // previous timestep.
         bestSeg = cells[i]->GetBestMatchingSegment(numActiveColumns);
-//        if (i>0 && cellNumSegments>0 && bestSeg)
-//            printf("\tchecking if best seg (out of %d) [0x%08x] on c%d is best...", cellNumSegments, bestSeg, i);
+        //if (i>0 && cellNumSegments>0 && bestSeg)
+//        printf("\t\tchecking best seg (%d tot) on c %d.\n",
+//            cellNumSegments, i);
         // if a segment is returned, see if it had more synapses that could
         // have predicted this activity than the highest so far.
         if (bestSeg) {
@@ -407,7 +399,7 @@ Cell* Column::GetBestMatchingCell(
         bestCellIdx = fewestSegCellIdx;
     }
 
-//    printf("\t[0x%08x] cell %d chosen for learning\n",
+//    printf("\t\t[0x%08x] cell %d chosen for learning\n",
 //        (unsigned int)this, bestCellIdx);
 
     return BestCell;

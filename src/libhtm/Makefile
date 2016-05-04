@@ -4,7 +4,7 @@ LIBNAME = libhtm
 
 CC      = g++
 AR      = ar
-CFLAGS  = -g -Wall -O2
+CFLAGS  = -g -Wall -O2 -std=c++11
 LDFLAGS = -fPIC -shared -Wl,-soname,$(LIBNAME).so
 
 LIBS = 
@@ -13,27 +13,31 @@ HFILES  = src/cell.h \
           src/column.h \
           src/dendritesegment.h \
           src/genericregion.h \
+          src/genericsublayer.h \
           src/htm.h \
           src/sensoryinput.h \
           src/synapse.h \
           src/codec_base.h \
           src/genericinput.h \
-          src/htmregion.h \
           src/sensoryregion.h \
-          src/util.h
+          src/util.h \
+          src/htmsublayer.h
+#          src/htmregion.h
 
 OBJS    = obj/cell.o \
           obj/column.o \
           obj/dendritesegment.o \
           obj/genericregion.o \
+          obj/genericsublayer.o \
           obj/htm.o \
           obj/sensoryinput.o \
           obj/synapse.o \
           obj/codec_base.o \
           obj/genericinput.o \
-          obj/htmregion.o \
           obj/sensoryregion.o \
-          obj/util.o
+          obj/util.o \
+          obj/htmsublayer.o
+#          obj/htmregion.o
 
 INSTALL = bin/
 
@@ -64,6 +68,9 @@ obj/dendritesegment.o:   src/dendritesegment.cpp
 obj/genericregion.o:   src/genericregion.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
+obj/genericsublayer.o: src/genericsublayer.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
+
 obj/htm.o:   src/htm.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -79,7 +86,10 @@ obj/codec_base.o:   src/codec_base.cpp
 obj/genericinput.o:   src/genericinput.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-obj/htmregion.o:   src/htmregion.cpp
+#obj/htmregion.o:   src/htmregion.cpp
+#	$(CC) $(CFLAGS) -c $< -o $@
+
+obj/htmsublayer.o: src/htmsublayer.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 obj/sensoryregion.o:   src/sensoryregion.cpp

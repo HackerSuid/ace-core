@@ -8,10 +8,13 @@ class GenericInput
 {
 private:
 protected:
+    int x, y;
     bool active[2], learning[2];
 public:
     GenericInput();
     ~GenericInput();
+    int GetX() { return x; }
+    int GetY() { return y; }
     bool IsActive();
     bool WasActive();
     void SetActive(bool flag);

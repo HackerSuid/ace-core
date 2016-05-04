@@ -8,7 +8,7 @@
 #include <rapidxml/rapidxml.hpp>
 
 #include "htm.h"
-#include "htmregion.h"
+#include "htmsublayer.h"
 #include "sensoryregion.h"
 #include "sensoryinput.h"
 #include "codec_base.h"
@@ -16,9 +16,9 @@
 
 Htm::Htm()
 {
-    regions = NULL;
-    num_regions = 0;
-    Learning = true;
+    sublayers = NULL;
+    num_sublayers = 0;
+    Learning = false;
     currentPattern = NULL;
 }
 
@@ -28,11 +28,11 @@ Htm::~Htm()
 
 void Htm::InitHtm()
 {
-    printf("loading config: %s.\n", LOCAL_XML_CONF_PATH);
+    printf("Loading config: %s\n", LOCAL_XML_CONF_PATH);
     // initialization of Htm regions and columns.
     if (!LoadXmlConfig(LOCAL_XML_CONF_PATH))
         abort();
-    printf("Cleating and initializing codec\n");
+    printf("Creating and initializing codec...\n");
     // instantiation of the codec.
     if (!(codec = Codec::Instantiate()))
         abort();
@@ -40,6 +40,7 @@ void Htm::InitHtm()
     if (!codec->Init(target_path))
         abort();
     // initialization and linkage of the regions.
+    printf("Connecting cortical sublayers to sensory stream...\n");
     this->ConnectHeirarchy();
     printf("...complete.\n");
 }
@@ -72,24 +73,32 @@ bool Htm::LoadXmlConfig(const char *pathname)
     window_h = atoi(HtmNode->first_attribute("WinHeight")->value());
     allowBoosting = atob(HtmNode->first_attribute("allowBoosting")->value());
     // Add regions to the Htm
-    rapidxml::xml_node<> *reg = HtmNode->first_node("Region");
-    if (!reg) {
-        fprintf(stderr, "No regions found in configuration!\n");
+    rapidxml::xml_node<> *sublayer_node = HtmNode->first_node("Sublayer");
+    if (!sublayer_node) {
+        fprintf(stderr, "No sublayers found in configuration!\n");
         return false;
     }
     do {
-        unsigned int h = atoi(reg->first_attribute("height")->value());
-        unsigned int w = atoi(reg->first_attribute("width")->value());
-        unsigned int cpc = atoi(reg->first_attribute("cellsPerCol")->value());
+        unsigned int h = atoi(sublayer_node->first_attribute("height")->value());
+        unsigned int w = atoi(sublayer_node->first_attribute("width")->value());
+        unsigned int cpc = atoi(
+            sublayer_node->first_attribute("cellsPerCol")->value()
+        );
         //printf("%d columns: %d x %d.\n", h*w, h, w);
-        HtmRegion *curr = new HtmRegion(h, w, cpc, this);
+        HtmSublayer *curr = new HtmSublayer(h, w, cpc, this);
 
-        rapidxml::xml_node<> *cols = reg->first_node("Columns");
+        rapidxml::xml_node<> *cols = sublayer_node->first_node("Columns");
         float rfsz = atof(cols->first_attribute("recFieldSz")->value());
-        float localActivity = atof(cols->first_attribute("localActivity")->value());
-        float columnComplexity = atof(cols->first_attribute("columnComplexity")->value());
+        float localActivity = atof(
+            cols->first_attribute("localActivity")->value()
+        );
+        float columnComplexity = atof(
+            cols->first_attribute("columnComplexity")->value()
+        );
         bool highTier = atob(cols->first_attribute("highTier")->value());
-        int activityCycleWindow = atoi(cols->first_attribute("activityCycleWindow")->value());
+        int activityCycleWindow = atoi(
+            cols->first_attribute("activityCycleWindow")->value()
+        );
         curr->AllocateColumns(
             rfsz,
             localActivity,
@@ -98,8 +107,8 @@ bool Htm::LoadXmlConfig(const char *pathname)
             activityCycleWindow
         );
 
-        this->new_region(curr);
-    } while ((reg = reg->next_sibling("Region")));
+        this->NewSublayer(curr);
+    } while ((sublayer_node = sublayer_node->next_sibling("Region")));
 
     close(xmlfd);
     return true;
@@ -108,16 +117,16 @@ bool Htm::LoadXmlConfig(const char *pathname)
 // Set lower/higher pointers and initialize potential synapses.
 void Htm::ConnectHeirarchy()
 {
-    for (int i=0; i<num_regions; i++) {
+    for (int i=0; i<num_sublayers; i++) {
         if (i==0)
             ConnectSensoryRegion(false);
         else
-            regions[i]->setlower(regions[i-1]);
-        regions[i]->InitializeProximalDendrites();
-        if (i==num_regions-1)
-            regions[i]->sethigher(NULL);
+            sublayers[i]->setlower(sublayers[i-1]);
+        sublayers[i]->InitializeProximalDendrites();
+        if (i==num_sublayers-1)
+            sublayers[i]->sethigher(NULL);
         else
-            regions[i]->sethigher(regions[i+1]);
+            sublayers[i]->sethigher(sublayers[i+1]);
     }
 }
 
@@ -134,9 +143,9 @@ void Htm::ConnectSensoryRegion(bool refresh)
     if (NewPattern == NULL)
         return;
 
-    regions[0]->setlower(NewPattern);
+    sublayers[0]->setlower(NewPattern);
     if (refresh)
-        regions[0]->RefreshLowerSynapses();
+        sublayers[0]->RefreshLowerSynapses();
 }
 
 // Return most recently seen pattern.
@@ -148,7 +157,7 @@ SensoryRegion* Htm::CurrentPattern()
 // Get the next input pattern from the codec and return it.
 SensoryRegion* Htm::ConsumePattern()
 {
-    currentPattern = codec->GetPattern(); // may become NULL
+    currentPattern = codec->GetPattern(Learning);
     return currentPattern;
 }
 
@@ -159,6 +168,7 @@ bool Htm::FirstPattern()
 
 void Htm::ResetCodec()
 {
+    Learning = false;
     codec->Reset();
 }
 
@@ -167,30 +177,32 @@ void Htm::PrintPattern(SensoryRegion *pattern)
     printf("Printing pattern.\n");
     SensoryInput ***input = pattern->GetInput();
 
-    for (unsigned int i=0; i<pattern->GetWidth(); i++) {
-        for (unsigned int j=0; j<pattern->GetHeight(); j++)
+    for (unsigned int i=0; i<pattern->GetHeight(); i++) {
+        for (unsigned int j=0; j<pattern->GetWidth(); j++)
             printf("%d", input[i][j]->IsActive());
         printf("\n");
     }
 }
 
-int Htm::new_region(HtmRegion *reg)
+int Htm::NewSublayer(HtmSublayer *sublayer)
 {
-    if (!regions)
-        regions = (HtmRegion **)malloc(sizeof(HtmRegion *) * (num_regions=1));
+    if (!sublayers)
+        sublayers = (HtmSublayer **)malloc(sizeof(HtmSublayer *) * (num_sublayers=1));
     else
-        regions = (HtmRegion **)realloc(regions, sizeof(HtmRegion *) * ++num_regions);
+        sublayers = (HtmSublayer **)realloc(regions, sizeof(HtmSublayer *) * ++num_sublayers);
 
-    regions[num_regions-1] = reg;
+    sublayers[num_sublayers-1] = sublayer;
 
     return 1;
 }
 
 void Htm::CLA()
 {
+    if (Learning == false)
+        Learning = true;
     //printf("Running CLA...\n");
-    for (int i=0; i<num_regions; i++)
-        regions[i]->CLA(Learning, allowBoosting);
+    for (int i=0; i<num_sublayers; i++)
+        sublayers[i]->CLA(Learning, allowBoosting);
     //printf("CLA complete.\n");
 }
 
@@ -206,14 +218,14 @@ unsigned int Htm::GetWindowHeight()
     return this->window_h;
 }
 
-unsigned int Htm::GetNumRegions()
+unsigned int Htm::GetNumSublayers()
 {
-    return this->num_regions;
+    return this->num_sublayers;
 }
 
-HtmRegion** Htm::GetRegions()
+HtmSublayer** Htm::GetSublayers()
 {
-    return this->regions;
+    return this->sublayers;
 }
 
 char* Htm::GetCodecName()

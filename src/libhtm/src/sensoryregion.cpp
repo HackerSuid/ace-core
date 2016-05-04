@@ -20,7 +20,7 @@ SensoryRegion::SensoryRegion(
         input[i] = (GenericInput **)malloc(sizeof(GenericInput *) * w);
         for (unsigned int j=0; j<w; j++)
             input[i][j] = bits[i][j];
-    }       
+    }
 }
 
 SensoryRegion::~SensoryRegion()

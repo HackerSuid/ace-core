@@ -47,5 +47,5 @@ install:
 	cp $(OBJ) $(INSTALL_DIR)
 
 clean:
-	rm -f $(OBJ)
+	rm -f $(OBJS) $(CODEC_OBJ)
 

@@ -1,8 +1,9 @@
 #include <stdio.h>
+#include <numeric>
 
 #include "qt.h"
 #include "htm.h"
-#include "htmregion.h"
+#include "htmsublayer.h"
 #include "column.h"
 
 QtHtm::QtHtm(QWidget *parent, Htm *htm)
@@ -17,8 +18,9 @@ QtHtm::~QtHtm()
 }
 
 /*
- * Notice: only one region is allowed by the code.
- * TODO: allow multiple regions in a hierarchy to be configured.
+ * Notice: only one sublayer is allowed by the code.
+ * TODO: allow multiple sublayers and regions in a hierarchy to be
+ * configured.
  */
 QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
 {
@@ -28,15 +30,18 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
     unitGrid = new QGridLayout();
     unitGrid->setSpacing(0);
     unitGrid->setAlignment(Qt::AlignCenter);
-    HtmRegion **regions = htm->GetRegions();
-    int w = regions[0]->GetWidth();
-    int h = regions[0]->GetHeight();
-    int c = regions[0]->GetDepth();
-    Column ***cols = regions[0]->GetInput();
+    HtmSublayer **sublayers = htm->GetSublayers();
+    int w = sublayers[0]->GetWidth();
+    int h = sublayers[0]->GetHeight();
+    int c = sublayers[0]->GetDepth();
+    Column ***cols = sublayers[0]->GetInput();
 
+    QtSensoryRegion *qtinput =
+        ((QtFront *)parentWidget())->GetCurrentInputDisplay();
+    QGridLayout *inputGrid = qtinput->UnitGrid();
     for (int i=0; i<h; i++) {
         for (int j=0; j<w; j++) {
-            QtUnit *unit = new QtUnit(cols[i][j], objHtm, c);
+            QtUnit *unit = new QtUnit(cols[i][j], objHtm, inputGrid, c);
             unit->SetClickable(true);
             if (cols[i][j]->IsActive())
                 unit->setBrushColor(ACTIVE_COLOR);
@@ -45,6 +50,19 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
     }
 
     return unitGrid;
+}
+
+float QtHtm::PredictionStabilityMetric()
+{
+    HtmSublayer *sublayer = (htm->GetSublayers())[0];
+    std::list<float> stabwindow = sublayer->GetPredictionStabilityWindow();
+    if (stabwindow.size() == 0)
+        return 0.0;
+    return std::accumulate(
+        stabwindow.begin(),
+        stabwindow.end(),
+        0.0
+    ) / stabwindow.size();
 }
 
 /*
@@ -57,10 +75,10 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
  */
 void QtHtm::SetQtSynapses(QGridLayout *inputGrid)
 {
-    HtmRegion **regions = htm->GetRegions();
-    Column ***cols = regions[0]->GetInput();
-    int w = regions[0]->GetWidth();
-    int h = regions[0]->GetHeight();
+    HtmSublayer **sublayers = htm->GetSublayers();
+    Column ***cols = sublayers[0]->GetInput();
+    int w = sublayers[0]->GetWidth();
+    int h = sublayers[0]->GetHeight();
 
 /*
     for (int i=0; i<h; i++)

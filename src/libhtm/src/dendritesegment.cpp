@@ -9,6 +9,9 @@
 DendriteSegment::DendriteSegment()
 {
     numSynapses = 0;
+    // flag to indicate no temporal context as the first sequence
+    // pattern
+    noTemporalContext = false;
 }
 
 DendriteSegment::~DendriteSegment()
@@ -25,7 +28,9 @@ bool DendriteSegment::IsActive()
 
 bool DendriteSegment::IsActiveFromLearning()
 {
-    if (GetNumIsLearningSynapses() >= (int)numSynapses*SUBSAMPLE_THRESHOLD)
+    int activeLearnSyns = GetNumIsLearningSynapses();
+    if (activeLearnSyns &&
+        activeLearnSyns >= (int)numSynapses*SUBSAMPLE_THRESHOLD)
         return true;
     return false;
 }
@@ -36,7 +41,7 @@ void DendriteSegment::NewSynapse(Synapse *newSyn)
     numSynapses++;
 }
 
-void DendriteSegment::RefreshSynapses(GenericRegion *NewPattern)
+void DendriteSegment::RefreshSynapses(GenericSublayer *NewPattern)
 {
     for (int i=0; i<numSynapses; i++)
         synapses[i]->RefreshSynapse(NewPattern);
@@ -139,5 +144,15 @@ int DendriteSegment::GetNumIsLearningSynapses()
         if (synapses[i]->IsFiring() && synapses[i]->IsLearning())
             learnSyns++;
     return learnSyns;
+}
+
+void DendriteSegment::SetNoTemporalContext()
+{
+    noTemporalContext = true;
+}
+
+bool DendriteSegment::GetNoTemporalContext()
+{
+    return noTemporalContext;
 }
 

@@ -3,7 +3,7 @@
 
 #include "cell.h"
 #include "synapse.h"
-#include "genericregion.h"
+#include "genericsublayer.h"
 #include "genericinput.h"
 
 Synapse::Synapse(GenericInput *src, int x, int y)
@@ -20,9 +20,9 @@ Synapse::~Synapse()
 {
 }
 
-void Synapse::RefreshSynapse(GenericRegion *NewPattern)
+void Synapse::RefreshSynapse(GenericSublayer *NewPattern)
 {
-    source = (NewPattern->GetInput())[srcx][srcy];
+    source = (NewPattern->GetInput())[srcy][srcx];
 }
 
 bool Synapse::IsFiring()

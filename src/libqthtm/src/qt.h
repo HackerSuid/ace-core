@@ -58,8 +58,9 @@ private:
     QWidget *TrainingWindow;
     QGridLayout *TrainingLayout;
     QGroupBox *inputGroup, *htmGroup, *objHtm;
-    QPushButton *TrainNextButton, *TrainIterButton;
-    QLineEdit *IterEdit;
+    QLabel *predWindowVal;
+    QPushButton *TrainSingPattButton, *TrainSingProgButton, *TrainVarButton;
+    QLineEdit *VarEdit;
 
     QWidget *activeWindow;
 
@@ -75,8 +76,9 @@ private:
 private slots:
     void ShowPretrainWidget();
     void ShowTrainingWidget();
-    void RunSingle();
-    void RunVariable();
+    void RunSinglePattern();
+    void RunSingleProgram();
+    void RunVariableProgram();
     int Run();
 protected:
     // override virtual methods from QWidget
@@ -86,8 +88,10 @@ public:
     QtFront(Htm *htm);
     ~QtFront();
     void LoadQt();
+    void UpdateQtDisplay();
     void UpdateInputDisplay(SensoryRegion *newPattern);
     void UpdateHtmDisplay();
+    QtSensoryRegion* GetCurrentInputDisplay() { return CurrentInput; }
     void CreateActions();
     void CreateMenuBar();
     void CreatePretrainWidget();
@@ -122,6 +126,7 @@ public:
     QtHtm(QWidget *parent, Htm *htm);
     ~QtHtm();
     QGridLayout* UnitGrid(QGroupBox *objHtm);
+    float PredictionStabilityMetric();
     void SetQtSynapses(QGridLayout *inputGrid);
     void DrawCell(QPainter *p, unsigned int x, unsigned int y);
 };
@@ -130,7 +135,12 @@ class QtUnit : public QWidget
 {
 Q_OBJECT
 public:
-    QtUnit(GenericInput *GridNode, QGroupBox *objHtm, int c, int w=DEF_UNIT_W, int h=DEF_UNIT_H);
+    QtUnit(
+        GenericInput *GridNode,
+        QGroupBox *objHtm,
+        QGridLayout *inputGrid,
+        int c, int w=DEF_UNIT_W, int h=DEF_UNIT_H
+    );
     ~QtUnit();
     void CreateActions();
     QSize sizeHint() const;
@@ -144,6 +154,7 @@ protected:
     void contextMenuEvent(QContextMenuEvent *event);
     void paintEvent(QPaintEvent *event);
 private:
+    QGridLayout *inputGrid;
     // context menu members
     QAction *showConnections, *hideConnections;
     // cell layout members

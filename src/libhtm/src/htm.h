@@ -7,13 +7,15 @@
 class Codec;
 class SensoryRegion;
 class HtmRegion;
+class HtmSublayer;
 
 class Htm {
 private:
     char *target_path;
     unsigned int window_w, window_h;
     HtmRegion **regions;
-    int num_regions;
+    HtmSublayer **sublayers;
+    int num_sublayers;
     bool Learning, allowBoosting;
     int seqRstFact;
     Codec *codec;
@@ -30,15 +32,15 @@ public:
     void ResetCodec();
     void PrintPattern(SensoryRegion *pattern);
 
-    int new_region(HtmRegion *reg);
+    int NewSublayer(HtmSublayer *reg);
     void ConnectHeirarchy();
     void ConnectSensoryRegion(bool refresh);
     void CLA();
     // accessors
     unsigned int GetWindowHeight();
     unsigned int GetWindowWidth();
-    unsigned int GetNumRegions();
-    HtmRegion** GetRegions();
+    unsigned int GetNumSublayers();
+    HtmSublayer** GetSublayers();
     char* GetCodecName();
     int GetSeqRstIdx() { return seqRstFact; }
 };

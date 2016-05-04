@@ -17,7 +17,7 @@
 #define SUBSAMPLE_THRESHOLD     SUBSAMPLE_PERCENT
 
 class Synapse;
-class GenericRegion;
+class GenericSublayer;
 
 class DendriteSegment
 {
@@ -37,10 +37,13 @@ public:
     std::vector<Synapse *> GetSynapses();
     int GetNumSynapses();
     static float GetSubsamplePercent() { return SUBSAMPLE_PERCENT; }
-    void RefreshSynapses(GenericRegion *NewPattern);
+    void RefreshSynapses(GenericSublayer *NewPattern);
+    void SetNoTemporalContext();
+    bool GetNoTemporalContext();
 private:
     int numSynapses;
     std::vector<Synapse *> synapses;
+    bool noTemporalContext;
 };
 
 #endif
