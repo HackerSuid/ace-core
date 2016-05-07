@@ -2,6 +2,9 @@
  * Represents an organism with primal intelligence that searches
  * through a filesystem for sensory patterns containing reward
  * signals.
+ *
+ * The sequence of sensory patterns is arbitrary in the sense that the
+ * cpg functions are called in no particular order.
  */
 
 #include <stdint.h>
@@ -13,6 +16,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define PURESENSORY_SECTION __attribute__((section (".pure_sensory")))
 #define CPG_SECTION __attribute__((section (".cpg")))
@@ -57,16 +61,26 @@ int consume_pattern(char *cwd, char *filename)
 
 // change to a new directory and open a new directory stream to read
 // from.
-CPG_SECTION
-DIR* enter_room(char *dir, char *cwd, int cwdsize)
+DIR* turn(char *dir, char *direction, char *cwd, int cwdsize)
 {
     DIR *dirp=NULL;
+    char nxtdir[512];
 
-    if ((dirp=opendir(dir)) == NULL) {
+    unsigned int dirlen = strlen(dir);
+    strncpy(nxtdir, dir, sizeof(nxtdir)-1);
+    if (dir[dirlen-1] != '/') {
+        strncpy(nxtdir+dirlen, "/", 1);
+        dirlen++;
+    }
+    strncpy(nxtdir+dirlen, direction, 2);
+    nxtdir[dirlen+2] = 0;
+
+
+    if ((dirp=opendir(nxtdir)) == NULL) {
         perror("opendir() failed");
         return 0;
     }
-    if (chdir(dir) < 0) {
+    if (chdir(nxtdir) < 0) {
         perror("chdir() failed");
         return 0;
     }
@@ -75,16 +89,34 @@ DIR* enter_room(char *dir, char *cwd, int cwdsize)
     return dirp;
 }
 
+CPG_SECTION
+DIR* turn_left(char *dir, char *cwd, int cwdsize)
+{
+    return turn(dir, (char *)"L/", cwd, cwdsize);
+}
+
+CPG_SECTION
+DIR* turn_right(char *dir, char *cwd, int cwdsize)
+{
+    return turn(dir, (char *)"R/", cwd, cwdsize);
+}
+
 // enter a directory room and scan for the resident sensory pattern.
 SENSORIMOTOR_SECTION
-DIR* scan_room(char *dir, char *cwd, int cwdsize)
+int scan_room(char *dir, char *cwd, int cwdsize)
 {
     DIR *dirp = NULL;
     struct dirent *de;
 
-    if ((dirp = enter_room(dir, cwd, cwdsize)) == NULL)
-        return NULL;
-
+    // somewhat favor left to avoid 50/50 oscillating.
+    if (rand()/(float)RAND_MAX < 0.75) {
+        if ((dirp=turn_left(dir, cwd, cwdsize))==NULL)
+            return 0;
+    } else {
+        if ((dirp=turn_right(dir, cwd, cwdsize))==NULL)
+            return 0;
+    }
+ 
     health_status -= HEALTH_DECAY;
 
     while ((de = readdir(dirp)) != NULL) {
@@ -96,8 +128,8 @@ DIR* scan_room(char *dir, char *cwd, int cwdsize)
         }
     }
 
-    rewinddir(dirp);
-    return dirp;
+    closedir(dirp);
+    return 1;
 }
 
 // explore the directory tree of rooms for files and directories
@@ -109,31 +141,41 @@ int explore_world(char *dir)
     char cwd[512];
 
     memset(cwd, 0, sizeof(cwd));
-    if ((dirp = scan_room(dir, cwd, sizeof(cwd))) == NULL)
+    if (scan_room(dir, cwd, sizeof(cwd)) == 0)
         return 0;
 
-    while ((de=readdir(dirp)) != NULL) {
-        if (health_status <= 0) {
-            printf("the primal organism has died.\n");
-            return 0;
-        }
-        //printf("%s: %lld\n", de->d_name, health_status);
-        if (de->d_type == DT_DIR && strncmp(".", de->d_name, 1) != 0) {
-            if (explore_world(de->d_name) == 0)
-                return 0;
-            if (chdir("..") < 0) {
-                perror("chdir() failed");
-                return 0;
-            }
-        }
+    if (health_status <= 0) {
+        printf("the primal organism has died.\n");
+        return 0;
     }
-    closedir(dirp);
+
+    if (explore_world(cwd) == 0)
+        return 0;
 
     return 1;
 }
 
 int main(int argc, char **argv)
 {
+    DIR *dirp=NULL;
+    struct dirent *de=NULL;
+
+    srand(time(NULL)+getpid());
+
+    // begin with the pattern in the world root directory.
+    if ((dirp=opendir(argv[1])) == NULL) {
+        perror("opendir() failed");
+        return 0;
+    }
+    while ((de = readdir(dirp)) != NULL) {
+        if (de->d_type == DT_REG) {
+            if (consume_pattern(argv[1], de->d_name) == 0) {
+                //printf("\tfound pattern %s\n", de->d_name);
+                return 0;
+            }
+        }
+    }
+
     if (!explore_world(argv[1]))
         exit(-1);
 

@@ -281,7 +281,8 @@ bool SensoryCodec::Init(char *target_path)
          * find subcortical functions that passively receive sensory patterns
          * without generating motor behavior. these are functions that call
          * open() and read() on the sensory fd, and optionally alter their own
-         * internal state by performing local operations.
+         * internal state by performing local operations. these are not
+         * very biologically realistic.
          *
          * Sensorimotor functions
          *
