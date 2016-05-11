@@ -26,11 +26,11 @@ Htm::~Htm()
 {
 }
 
-void Htm::InitHtm()
+void Htm::InitHtm(const char *config_file_path)
 {
-    printf("Loading config: %s\n", LOCAL_XML_CONF_PATH);
+    printf("Loading config: %s\n", config_file_path);
     // initialization of Htm regions and columns.
-    if (!LoadXmlConfig(LOCAL_XML_CONF_PATH))
+    if (!LoadXmlConfig(config_file_path))
         abort();
     printf("Creating and initializing codec...\n");
     // instantiation of the codec.
@@ -196,7 +196,7 @@ int Htm::NewSublayer(HtmSublayer *sublayer)
     return 1;
 }
 
-void Htm::CLA()
+void Htm::PushNextClaInput()
 {
     if (Learning == false)
         Learning = true;

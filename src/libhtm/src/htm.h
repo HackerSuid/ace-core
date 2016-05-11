@@ -2,7 +2,6 @@
 #define HTM_H_
 
 #define XML_LEN             2048
-#define LOCAL_XML_CONF_PATH "ace.conf"
 
 class Codec;
 class SensoryRegion;
@@ -23,7 +22,7 @@ private:
 public:
     Htm();
     ~Htm();
-    void InitHtm();
+    void InitHtm(const char *path);
     bool LoadXmlConfig(const char *path);
     void LoadHtmCodec(Codec *codec);
     SensoryRegion* CurrentPattern();
@@ -35,7 +34,7 @@ public:
     int NewSublayer(HtmSublayer *reg);
     void ConnectHeirarchy();
     void ConnectSensoryRegion(bool refresh);
-    void CLA();
+    void PushNextClaInput();
     // accessors
     unsigned int GetWindowHeight();
     unsigned int GetWindowWidth();
