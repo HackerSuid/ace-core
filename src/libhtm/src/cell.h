@@ -18,9 +18,6 @@ public:
     bool IsPredicted();
     bool WasPredicted();
     void SetPredicted(bool flag);
-    bool IsLearning();
-    bool WasLearning();
-    void SetLearning(bool flag);
     DendriteSegment* NewSegment(HtmSublayer *sublayer, bool FirstPattern);
     bool AddSynapsesFromSublayer(
         HtmSublayer *thisSublayer,
