@@ -8,11 +8,13 @@ SensoryRegion::SensoryRegion(
     SensoryInput ***bits,
     unsigned int w,
     unsigned int h,
-    unsigned int d)
+    unsigned int d,
+    SensoryRegion *mp)
 {
     this->width = w;
     this->height = h;
     this->depth = d;
+    motorPattern = mp;
 
     // initialize the input bits
     this->input = (GenericInput ***)malloc(sizeof(GenericInput **) * h);
@@ -25,20 +27,5 @@ SensoryRegion::SensoryRegion(
 
 SensoryRegion::~SensoryRegion()
 {
-}
-
-SensoryInput*** SensoryRegion::GetInput()
-{
-    return (SensoryInput ***)input;
-}
-
-SensoryRegion* SensoryRegion::GetNext()
-{
-    return next;
-}
-
-void SensoryRegion::SetNext(SensoryRegion *pattern)
-{
-    next = pattern;
 }
 

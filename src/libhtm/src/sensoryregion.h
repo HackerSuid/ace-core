@@ -10,11 +10,30 @@ class SensoryRegion : public GenericSublayer
 private:
     SensoryRegion *next;
 public:
-    SensoryRegion(SensoryInput ***bits, unsigned int w, unsigned int h, unsigned int d);
+    SensoryRegion(
+        SensoryInput ***bits,
+        unsigned int w,
+        unsigned int h,
+        unsigned int d,
+        SensoryRegion *mp
+    );
     ~SensoryRegion();
-    SensoryInput*** GetInput();
-    SensoryRegion* GetNext();
-    void SetNext(SensoryRegion *pattern);
+    SensoryInput*** GetInput()
+    {
+        return (SensoryInput ***)input;
+    }
+    SensoryRegion* GetNext()
+    {
+        return next;
+    }
+    void SetNext(SensoryRegion *pattern)
+    {
+        next = pattern;
+    }
+    void SetMotorPattern(SensoryRegion *mp)
+    {
+        motorPattern = mp;
+    }
 };
 
 #endif

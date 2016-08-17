@@ -58,7 +58,7 @@ private:
     QWidget *TrainingWindow;
     QGridLayout *TrainingLayout;
     QGroupBox *inputGroup, *htmGroup, *objHtm;
-    QLabel *predWindowVal;
+    QLabel *predCompWindowVal, *predSpecWindowVal;
     QPushButton *TrainSingPattButton, *TrainSingProgButton, *TrainVarButton;
     QLineEdit *VarEdit;
 
@@ -122,11 +122,14 @@ private:
     QWidget *parent;
     Htm *htm;
     QGridLayout *unitGrid;
+
+    float SlidingWindowAvg(std::list<float> window);
 public:
     QtHtm(QWidget *parent, Htm *htm);
     ~QtHtm();
     QGridLayout* UnitGrid(QGroupBox *objHtm);
-    float PredictionStabilityMetric();
+    float PredictionComprehensionMetric();
+    float PredictionSpecificityMetric();
     void SetQtSynapses(QGridLayout *inputGrid);
     void DrawCell(QPainter *p, unsigned int x, unsigned int y);
 };

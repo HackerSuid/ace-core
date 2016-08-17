@@ -32,17 +32,19 @@ void Htm::InitHtm(const char *config_file_path)
     // initialization of Htm regions and columns.
     if (!LoadXmlConfig(config_file_path))
         abort();
-    printf("Creating and initializing codec...\n");
+    printf("[*] Creating and initializing codec.\n");
     // instantiation of the codec.
     if (!(codec = Codec::Instantiate()))
         abort();
     // initialization of the codec.
-    if (!codec->Init(target_path))
+    unsigned int layerH = sublayers[0]->GetHeight();
+    unsigned int layerW = sublayers[0]->GetWidth();
+    float layerLocalActivity = sublayers[0]->GetLocalActivity();
+    if (!codec->Init(target_path, layerH, layerW, layerLocalActivity))
         abort();
     // initialization and linkage of the regions.
-    printf("Connecting cortical sublayers to sensory stream...\n");
+    printf("[*] Connecting cortical sublayers to sensory stream.\n");
     this->ConnectHeirarchy();
-    printf("...complete.\n");
 }
 
 bool Htm::LoadXmlConfig(const char *pathname)
@@ -84,8 +86,16 @@ bool Htm::LoadXmlConfig(const char *pathname)
         unsigned int cpc = atoi(
             sublayer_node->first_attribute("cellsPerCol")->value()
         );
+        rapidxml::xml_attribute<> *smotor_attr =
+            sublayer_node->first_attribute("sensorimotor");
+        bool sensorimotor = true;
+        if (smotor_attr) {
+            sensorimotor = atob(
+                sublayer_node->first_attribute("sensorimotor")->value()
+            );
+        }
         //printf("%d columns: %d x %d.\n", h*w, h, w);
-        HtmSublayer *curr = new HtmSublayer(h, w, cpc, this);
+        HtmSublayer *curr = new HtmSublayer(h, w, cpc, this, sensorimotor);
 
         rapidxml::xml_node<> *cols = sublayer_node->first_node("Columns");
         float rfsz = atof(cols->first_attribute("recFieldSz")->value());
@@ -119,7 +129,7 @@ void Htm::ConnectHeirarchy()
 {
     for (int i=0; i<num_sublayers; i++) {
         if (i==0)
-            ConnectSensoryRegion(false);
+            ConnectSubcorticalInput(false);
         else
             sublayers[i]->setlower(sublayers[i-1]);
         sublayers[i]->InitializeProximalDendrites();
@@ -136,7 +146,7 @@ void Htm::ConnectHeirarchy()
  * of new SensoryInput objects. This is used at times when the synapses are
  * already initialized, and just need to point to new SensoryInput objects.
  */
-void Htm::ConnectSensoryRegion(bool refresh)
+void Htm::ConnectSubcorticalInput(bool refresh)
 {
     SensoryRegion *NewPattern = ConsumePattern();
 
@@ -177,6 +187,7 @@ void Htm::PrintPattern(SensoryRegion *pattern)
     printf("Printing pattern.\n");
     SensoryInput ***input = pattern->GetInput();
 
+    printf("\t%d x %d\n", pattern->GetHeight(), pattern->GetWidth());
     for (unsigned int i=0; i<pattern->GetHeight(); i++) {
         for (unsigned int j=0; j<pattern->GetWidth(); j++)
             printf("%d", input[i][j]->IsActive());
@@ -196,6 +207,8 @@ int Htm::NewSublayer(HtmSublayer *sublayer)
     return 1;
 }
 
+// the first subcortical input is loaded during initialization, so load the
+// next one at the end.
 void Htm::PushNextClaInput()
 {
     if (Learning == false)
@@ -204,6 +217,37 @@ void Htm::PushNextClaInput()
     for (int i=0; i<num_sublayers; i++)
         sublayers[i]->CLA(Learning, allowBoosting);
     //printf("CLA complete.\n");
+    ConnectSubcorticalInput(true);
+}
+
+void Htm::GenerateGnuplotGraph()
+{
+    std::list<float> predCompWindow =
+        sublayers[0]->GetPredictionComprehensionWindow();
+    int cmdfd = open("/tmp/htm_gnuplot_cmd", O_RDWR, O_CREAT);
+    int datfd = open("/tmp/htm_gnuplot_dat", O_RDWR, O_CREAT);
+
+    // create the file of data points.
+    char numstr[16];
+    std::list<float>::iterator it;
+    int i;
+    for (it=predCompWindow.begin(),i=0; it!=predCompWindow.end(); it++,i++) {
+        memset(numstr, 0, sizeof(numstr));
+        snprintf(numstr, sizeof(numstr), "%d", i);
+        write(datfd, numstr, strlen(numstr));
+        write(datfd, " ", 1);
+        memset(numstr, 0, sizeof(numstr));
+        snprintf(numstr, sizeof(numstr), "%2.2f", (float)(*it));
+        write(datfd, numstr, strlen(numstr));
+        write(datfd, "\n", 1);
+    }
+    // create the script of gnuplot commands
+    char *gnuplotscript =
+        (char *)"#!/usr/local/bin/gnuplot\n" \
+        "set terminal x11\n" \
+        "set style line 1 lc rgb '#0060ad' lt 1 lw 2\n" \
+        "plot 'plotdata.dat' with linespoints ls 1\n";
+    write(cmdfd, gnuplotscript, strlen(gnuplotscript)); 
 }
 
 // accessors

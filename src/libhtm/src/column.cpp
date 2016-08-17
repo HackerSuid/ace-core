@@ -336,6 +336,7 @@ int Column::GetLocalActivity()
  */
 Cell* Column::GetBestMatchingCell(
     DendriteSegment **segment,
+    int *segidx,
     int numActiveColumns,
     bool FirstPattern)
 {
@@ -348,6 +349,7 @@ Cell* Column::GetBestMatchingCell(
     Cell *BestCell = NULL;
     int bestCellIdx = -1;
     DendriteSegment *bestSeg = NULL;
+    int bestSegIdx;
     int highestNumSyns = -1;
 
     Cell *fewestSegCell = NULL;
@@ -366,7 +368,7 @@ Cell* Column::GetBestMatchingCell(
 
         // for cell i, get the segment with the most active synapses in the
         // previous timestep.
-        bestSeg = cells[i]->GetBestMatchingSegment(numActiveColumns);
+        bestSeg = cells[i]->GetBestMatchingSegment(&bestSegIdx, numActiveColumns);
         //if (i>0 && cellNumSegments>0 && bestSeg)
 //        printf("\t\tchecking best seg (%d tot) on c %d.\n",
 //            cellNumSegments, i);
@@ -386,6 +388,7 @@ Cell* Column::GetBestMatchingCell(
                 highestNumSyns = bestSeg->GetNumIsActiveSynapses();
                 BestCell = cells[i];
                 *segment = bestSeg;
+                *segidx = bestSegIdx;
                 bestCellIdx = i;
             } else {
 //                if (i>0 && cellNumSegments>0)

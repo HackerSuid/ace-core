@@ -142,42 +142,54 @@ void QtFront::CreateTrainingWidget()
     controlsLayout->setHorizontalSpacing(1);
     controlsLayout->setVerticalSpacing(3);
 
-    QLabel *predWindowLab = new QLabel("Prediction Stability  ");
-    predWindowVal = new QLabel(
+    QLabel *predCompWindowLab = new QLabel("Prediction Comprehension  ");
+    QLabel *predSpecWindowLab = new QLabel("Prediction Specificity");
+    predCompWindowVal = new QLabel(
         QString::number(
-            HtmDisplay->PredictionStabilityMetric(),
+            HtmDisplay->PredictionComprehensionMetric(),
             'e', 2
         )
     );
-    predWindowLab->setFont(QFont("Arial", 14, QFont::Bold));
-    predWindowVal->setFont(QFont("Arial", 14, QFont::Bold));
-    controlsLayout->addWidget(predWindowLab, 0, 0);
-    controlsLayout->addWidget(predWindowVal, 0, 1);
+    predSpecWindowVal = new QLabel(
+        QString::number(
+            HtmDisplay->PredictionSpecificityMetric(),
+            'e', 2
+        )
+    );
+    predCompWindowLab->setFont(QFont("Arial", 14, QFont::Bold));
+    predSpecWindowLab->setFont(QFont("Arial", 14, QFont::Bold));
+    predCompWindowVal->setFont(QFont("Arial", 14, QFont::Bold));
+    predSpecWindowVal->setFont(QFont("Arial", 14, QFont::Bold));
 
-    controlsLayout->setRowStretch(1, 4);
+    controlsLayout->addWidget(predCompWindowLab, 0, 0);
+    controlsLayout->addWidget(predCompWindowVal, 0, 1);
+    controlsLayout->addWidget(predSpecWindowLab, 1, 0);
+    controlsLayout->addWidget(predSpecWindowVal, 1, 1);
+
+    controlsLayout->setRowStretch(2, 4);
 
     QLabel *singPattLab = new QLabel("Single pattern");
     TrainSingPattButton = new QPushButton("consume");
     TrainSingPattButton->setStyleSheet("color: black;");
-    controlsLayout->addWidget(singPattLab, 2, 0);
-    controlsLayout->addWidget(TrainSingPattButton, 2, 1);
+    controlsLayout->addWidget(singPattLab, 3, 0);
+    controlsLayout->addWidget(TrainSingPattButton, 3, 1);
 
     QLabel *singProgLab = new QLabel("Single program");
     TrainSingProgButton = new QPushButton("execute");
     TrainSingProgButton->setStyleSheet("color: black;");
-    controlsLayout->addWidget(singProgLab, 3, 0);
-    controlsLayout->addWidget(TrainSingProgButton, 3, 1);
+    controlsLayout->addWidget(singProgLab, 4, 0);
+    controlsLayout->addWidget(TrainSingProgButton, 4, 1);
 
     QLabel *VarLab = new QLabel("Variable program: ");
     VarEdit = new QLineEdit();
     VarEdit->setStyleSheet("color: black");
     TrainVarButton = new QPushButton("initiate");
     TrainVarButton->setStyleSheet("color: black;");
-    controlsLayout->addWidget(VarLab, 4, 0);
-    controlsLayout->addWidget(VarEdit, 4, 1);
-    controlsLayout->addWidget(TrainVarButton, 5, 1);
+    controlsLayout->addWidget(VarLab, 5, 0);
+    controlsLayout->addWidget(VarEdit, 5, 1);
+    controlsLayout->addWidget(TrainVarButton, 6, 1);
 
-    controlsLayout->setRowStretch(6, 4);
+    controlsLayout->setRowStretch(7, 4);
     controls->setLayout(controlsLayout);
 
     // groupbox for htm object details.
@@ -247,9 +259,15 @@ void QtFront::UpdateQtDisplay()
 {
     UpdateInputDisplay(CurrentInput->GetPattern());
     UpdateHtmDisplay();
-    predWindowVal->setText(
+    predCompWindowVal->setText(
         QString::number(
-            HtmDisplay->PredictionStabilityMetric(),
+            HtmDisplay->PredictionComprehensionMetric(),
+            'e', 2
+        )
+    );
+    predSpecWindowVal->setText(
+        QString::number(
+            HtmDisplay->PredictionSpecificityMetric(),
             'e', 2
         )
     );
@@ -399,15 +417,13 @@ int QtFront::Run()
     pattern = htm->CurrentPattern();
     if (pattern == NULL) {
         htm->ResetCodec();
-        htm->ConnectSensoryRegion(true);
+        htm->ConnectSubcorticalInput(true);
         return 0;
     }
-    htm->CLA();
+    htm->PushNextClaInput();
 
     CurrentInput = new QtSensoryRegion(this, pattern);
     HtmDisplay = new QtHtm(this, htm);
-    // Connect Htm to the next pattern from the codec.
-    htm->ConnectSensoryRegion(true);
     return 1;
 }
 

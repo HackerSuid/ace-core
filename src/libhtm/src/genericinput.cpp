@@ -6,6 +6,7 @@
 GenericInput::GenericInput()
 {
     memset(&active[0], false, sizeof(bool)*2);
+    memset(&learning[0], false, sizeof(bool)*2);
 }
 
 GenericInput::~GenericInput()

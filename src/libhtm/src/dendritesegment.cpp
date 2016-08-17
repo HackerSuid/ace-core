@@ -16,6 +16,9 @@ DendriteSegment::DendriteSegment()
 
 DendriteSegment::~DendriteSegment()
 {
+    std::vector<Synapse *>::iterator it;
+    for (it=synapses.begin(); it<synapses.end(); it++)
+        delete (*it);
 }
 
 bool DendriteSegment::IsActive()

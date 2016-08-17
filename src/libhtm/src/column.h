@@ -76,6 +76,7 @@ public:
     // Sequence Memory functions
     Cell* GetBestMatchingCell(
         DendriteSegment **segment,
+        int *segidx,
         int numActiveColumns,
         bool FirstPattern
     );

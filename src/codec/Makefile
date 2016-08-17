@@ -23,8 +23,7 @@ CFLAGS   = -g -Wall -O2 -I$(HTMHEADERS)
 LIBS = -lelf
 
 CODEC_SRC = src/codec.cpp
-SRCS  = src/bitmap_codec.cpp \
-        src/elf_codec.cpp
+SRCS  = src/bitmap_codec.cpp
 
 CODEC_OBJ = obj/codec.o
 OBJS  = obj/bitmap_codec.o

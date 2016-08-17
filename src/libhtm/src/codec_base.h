@@ -27,7 +27,12 @@ public:
         return Instance;
     }
 
-    virtual bool Init(char *target_path) = 0;
+    virtual bool Init(
+        char *target_path,
+        unsigned int height,
+        unsigned int width,
+        float localActivity
+    ) = 0;
     virtual SensoryRegion* GetPattern(bool Learning) = 0;
     virtual bool FirstPattern() = 0;
     virtual bool Reset() = 0;

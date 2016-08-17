@@ -52,17 +52,33 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
     return unitGrid;
 }
 
-float QtHtm::PredictionStabilityMetric()
+float QtHtm::SlidingWindowAvg(std::list<float> window)
 {
-    HtmSublayer *sublayer = (htm->GetSublayers())[0];
-    std::list<float> stabwindow = sublayer->GetPredictionStabilityWindow();
-    if (stabwindow.size() == 0)
+    if (window.size() == 0)
         return 0.0;
     return std::accumulate(
-        stabwindow.begin(),
-        stabwindow.end(),
+        window.begin(),
+        window.end(),
         0.0
-    ) / stabwindow.size();
+    ) / window.size();
+}
+
+float QtHtm::PredictionComprehensionMetric()
+{
+    HtmSublayer *sublayer = (htm->GetSublayers())[0];
+
+    return SlidingWindowAvg(
+        sublayer->GetPredictionComprehensionWindow()
+    );
+}
+
+float QtHtm::PredictionSpecificityMetric()
+{
+    HtmSublayer *sublayer = (htm->GetSublayers())[0];
+
+    return SlidingWindowAvg(
+        sublayer->GetPredictionSpecificityWindow()
+    );
 }
 
 /*

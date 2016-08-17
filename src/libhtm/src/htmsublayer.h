@@ -6,7 +6,7 @@
 #include "genericsublayer.h"
 #include <list>
 
-#define PRED_STAB_WINDOW_SZ 30
+#define PRED_COMP_WINDOW_SZ 30
 
 class SensoryRegion;
 class SensoryInput;
@@ -20,18 +20,21 @@ class DendriteSegment;
 class SegmentUpdate
 {
 public:
-    SegmentUpdate(Cell *cell, DendriteSegment *segment, bool connected)
+    SegmentUpdate(Cell *cell, int segidx, DendriteSegment *segment, bool connected)
     {
         this->cell = cell;
         this->segment = segment;
+        this->segidx = segidx;
         this->connected = connected;
     }
     ~SegmentUpdate() {}
     Cell* GetCell() { return cell; }
     DendriteSegment* GetSegment() { return segment; }
+    int GetSegIdx() { return segidx; }
     bool IsConnected() { return connected; }
 private:
     Cell *cell;
+    int segidx;
     DendriteSegment *segment;
     bool connected;
 };
@@ -40,18 +43,19 @@ class HtmSublayer : public GenericSublayer
 {
 private:
     GenericSublayer *lower, *higher;
-    HtmSublayer *sublayers;
     int rec_field_sz, inhibitionRadius;
     float localActivity, columnComplexity;
     std::vector<SegmentUpdate *> segmentUpdateList;
     int numActiveColumns[2];
     Htm *htmPtr;
-    std::list<float> predStabWindow;
+    std::list<float> predCompWindow;
+    std::list<float> predSpecWindow;
 
     bool _EligibleToFire(Column *col);
     void _ComputeInhibitionRadius(Column ***columns);
     void _EnqueueSegmentUpdate(
         Cell *cell,
+        int segidx,
         DendriteSegment *segment,
         bool connected
     );
@@ -61,7 +65,8 @@ public:
         unsigned int h,
         unsigned int w,
         unsigned int cpc,
-        Htm *htmPtr
+        Htm *htmPtr,
+        bool sensorimotorFlag
     );
     ~HtmSublayer();
     void AllocateColumns(
@@ -85,7 +90,16 @@ public:
     void sethigher(GenericSublayer *reg);
     GenericSublayer* GetLower() { return this->lower; }
     GenericSublayer* GetHigher() { return this->higher; }
-    std::list<float> GetPredictionStabilityWindow() { return predStabWindow; }
+    std::list<float> GetPredictionComprehensionWindow()
+    {
+        return predCompWindow;
+    }
+    std::list<float> GetPredictionSpecificityWindow()
+    {
+        return predSpecWindow;
+    }
+    float GetLocalActivity() { return localActivity; }
+    Htm* GetHtmPtr() { return htmPtr; }
 };
 
 #endif

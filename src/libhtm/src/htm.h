@@ -33,8 +33,9 @@ public:
 
     int NewSublayer(HtmSublayer *reg);
     void ConnectHeirarchy();
-    void ConnectSensoryRegion(bool refresh);
+    void ConnectSubcorticalInput(bool refresh);
     void PushNextClaInput();
+    void GenerateGnuplotGraph();
     // accessors
     unsigned int GetWindowHeight();
     unsigned int GetWindowWidth();

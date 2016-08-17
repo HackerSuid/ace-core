@@ -25,30 +25,37 @@
 #include "sensoryregion.h"
 #include "sensoryinput.h"
 
-// Register with the base Codec class.
-bool const SensoryCodec::registered = Codec::Register<SensoryCodec>();
+// sensory codec factories
+//#include "sensory_codec_factory.h"
 
-SensoryCodec::SensoryCodec()
+// Register with the base Codec class.
+bool const ElfCodec::registered = Codec::Register<ElfCodec>();
+
+ElfCodec::ElfCodec()
     : Codec()
 {
     pidx = 0;
     main_addr = 0;
     open_plt = 0;
     read_plt = 0;
-    codecName = strdup("Sensory");
+    codecName = strdup("Elf");
     child_dir = NULL;
-    bitmapCodec = new BitmapCodec();
     firstPattern = true;
-    //elfCodec = new ElfCodec();
+
+    sensoryCodecFactory.Register((char *)".bmp", new BitmapCodec());
 }
 
-SensoryCodec::~SensoryCodec()
+ElfCodec::~ElfCodec()
 {
     if (targetPath) free(targetPath);
     if (codecName) free(codecName);
 }
 
-bool SensoryCodec::Init(char *target_path)
+bool ElfCodec::Init(
+    char *target_path,
+    unsigned int height,
+    unsigned int width,
+    float localActivity)
 {
     Elf *e;
     GElf_Ehdr ehdr;
@@ -71,6 +78,10 @@ bool SensoryCodec::Init(char *target_path)
     unsigned char read_sym_ndx, open_sym_ndx, strtab_ndx;
     unsigned int plt_addr;
     unsigned int read_got_offset, open_got_offset;
+
+    codecHeight = height;
+    codecWidth = width;
+    codecActiveRatio = localActivity;
 
     if (elf_version(EV_CURRENT) == EV_NONE)
         errx(
@@ -143,7 +154,9 @@ bool SensoryCodec::Init(char *target_path)
             );
 
         /*
-         * parse the program header table
+         * parse the program header table. don't actually need any
+         * phdr info, but leaving the code here for educational
+         * purposes.
          *
          *   typedef struct
          *   {
@@ -156,6 +169,9 @@ bool SensoryCodec::Init(char *target_path)
          *     Elf32_Word    p_flags;    // Segment flags
          *     Elf32_Word    p_align;    // Segment alignment
          *   } Elf32_Phdr;
+         */
+
+      /*
         for (int i=0; i<phnum; i++) {
             if (gelf_getphdr(e, i, &phdr) != &phdr)
                 errx(
@@ -174,7 +190,7 @@ bool SensoryCodec::Init(char *target_path)
             printf("\tp_flags 0x%x\n", phdr.p_flags);
             printf("\tp_align 0x%x\n", phdr.p_align);
         }
-         */
+       */
 
         /*
          * parse the section header table
@@ -194,9 +210,13 @@ bool SensoryCodec::Init(char *target_path)
          *   } Elf32_Shdr;
          */
         scn = NULL;
-        // Find the plt section and its associated relocation table
-        // section (.plt and .rel.plt), as well as the global offset table
-        // for function symbol definitions (.got.plt).
+        /*
+         * 1. Find the plt section and its associated relocation table
+         *    section (.plt and .rel.plt), as well as the global offset table
+         *    for function symbol definitions (.got.plt).
+         * 2. Find the custom ELF sections created by the subcortical
+         *    ACE module which represent the function API to learn.
+         */
         while ((scn = elf_nextscn(e, scn)) != NULL) {
             // get section table header.
             if (gelf_getshdr(scn, &shdr) != &shdr)
@@ -313,8 +333,10 @@ bool SensoryCodec::Init(char *target_path)
                 // check if function is pure sensory or sensorimotor
                 if (sym.st_shndx == pure_sensory_ndx)
                     pureSensoryFunctions.push_back(sym.st_value);
-                if (sym.st_shndx == cpg_ndx)
+                if (sym.st_shndx == cpg_ndx) {
                     cpgFunctions.push_back(sym.st_value);
+                    AddNewMotorEncoding(sym.st_value);
+                }
                 if (sym.st_shndx == sensorimotor_ndx)
                     sensorimotorFunctions.push_back(sym.st_value);
             }
@@ -357,7 +379,7 @@ bool SensoryCodec::Init(char *target_path)
 }
 
 // map program header type code to string representation
-char* SensoryCodec::ptype_str(size_t pt)
+char* ElfCodec::ptype_str(size_t pt)
 {
     char *s;
 #define C(V) case  PT_##V: s = #V; break
@@ -377,8 +399,9 @@ char* SensoryCodec::ptype_str(size_t pt)
 // fork() and execl() the target executable, then ptrace its execution
 // up to the call to main() from _libc_start_main() in glibc. pause
 // ptrace at that point (defer the next PTRACE_SINGLESTEP).
-bool SensoryCodec::LoadTarget()
+bool ElfCodec::LoadTarget()
 {
+    printf("[*] Forking/Execing target executable %s\n", targetPath);
     if (!(child_pid=fork())) {
         // replace child process image with new executable and
         // allow ptracing.
@@ -386,13 +409,13 @@ bool SensoryCodec::LoadTarget()
             perror("ptrace");
             return false;
         }
-        execl(targetPath, targetPath, "/root/ace/examples/world", 0);
+        execl(targetPath, targetPath, 0);
     } else if (child_pid > 0) {
         // ACE will trace the child process until main().
         // Wait for child to stop on its first instruction. It will
         // be somewhere in glibc setup/init code.
         wait(&wait_status);
-        printf("child process stopped, step to main()\n");
+        printf("[*] Preparing executable for tracing.\n");
         while (WIFSTOPPED(wait_status)) {
             struct user_regs_struct regs;
             // get the current register values
@@ -413,14 +436,14 @@ bool SensoryCodec::LoadTarget()
         perror("fork");
         return false;
     }
-    printf("Target loaded successfully\n");
+    printf("[*] Target ready!\n");
     return true;
 }
 
-bool SensoryCodec::Reset()
+bool ElfCodec::Reset()
 {
     // re-fork()/execl() the target executable.
-    printf("Reloading target: %s\n", targetPath);
+    printf("[*] Reloading target: %s\n", targetPath);
     if (!LoadTarget()) {
         printf("Codec reset failed to reload target %s\n", targetPath);
         return false;
@@ -431,8 +454,8 @@ bool SensoryCodec::Reset()
 
 // single-step through executable's .text instructions until
 // calling one of the addresses in the vector.
-long SensoryCodec::ExecuteToCall(
-    std::vector<long> addrs,
+unsigned int ElfCodec::ExecuteToCall(
+    std::vector<unsigned int> addrs,
     struct user_regs_struct *regs)
 {
     if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
@@ -455,10 +478,10 @@ long SensoryCodec::ExecuteToCall(
                 ptrace(PTRACE_PEEKTEXT, child_pid, rel_off_addr, 0);
             // compute the address being called using the relative
             // offset.
-            long call_addr =
-                (long)(rel_off_addr)+sizeof(unsigned int)+rel_off;
-            std::vector<long>::iterator beg = addrs.begin();
-            std::vector<long>::iterator end = addrs.end();
+            unsigned int call_addr =
+                (unsigned int)(rel_off_addr)+sizeof(unsigned int)+rel_off;
+            std::vector<unsigned int>::iterator beg = addrs.begin();
+            std::vector<unsigned int>::iterator end = addrs.end();
             if (std::find(beg, end, call_addr) != end)
                 return call_addr;
         }
@@ -478,103 +501,63 @@ long SensoryCodec::ExecuteToCall(
     return 0;
 }
 
-SensoryRegion* SensoryCodec::GetPattern(bool Learning)
+SensoryRegion* ElfCodec::GetPattern(bool Learning)
 {
     long int fd = -1;
     struct user_regs_struct regs;
+    unsigned int cpgAddr;
+    SensoryCodecBinding binding;
 
-    std::vector<long> allFunctions = pureSensoryFunctions;
+    std::vector<unsigned int> allFunctions = pureSensoryFunctions;
     allFunctions.insert(
         allFunctions.end(),
         sensorimotorFunctions.begin(),
         sensorimotorFunctions.end()
     );
     printf("Getting next pattern...\n");
-    long call_addr = ExecuteToCall(allFunctions, &regs);
+    unsigned int call_addr = ExecuteToCall(allFunctions, &regs);
     if (call_addr == 0)
         return NULL;
-    // single-step through executable's .text instructions until
-    // the next open@plt call.
-/*
-    if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
-        perror("ptrace");
+    std::vector<unsigned int>::iterator pure_b =
+        pureSensoryFunctions.begin();
+    std::vector<unsigned int>::iterator pure_e =
+        pureSensoryFunctions.end();
+    std::vector<unsigned int>::iterator cpg_b =
+        cpgFunctions.begin();
+    std::vector<unsigned int>::iterator cpg_e =
+        cpgFunctions.end();
+    std::vector<unsigned int>::iterator smotor_b =
+        sensorimotorFunctions.begin();
+    std::vector<unsigned int>::iterator smotor_e =
+        sensorimotorFunctions.end();
+    SensoryRegion *inputpattern = NULL;
+    if (std::find(pure_b, pure_e, call_addr) != pure_e) {
+        printf("pure sensory function\n");
+        binding = HandlePureSensory(&regs);
+        inputpattern = binding.codec->GetPattern(
+            binding.fd, Learning
+        );
+    } else if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
+        printf("cpg function\n");
+    } else if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
+        printf("sensorimotor function\n");
+        cpgAddr = ExecuteToCall(cpgFunctions, &regs);
+        call_addr = ExecuteToCall(pureSensoryFunctions, &regs);
+        binding = HandlePureSensory(&regs);
+        inputpattern = binding.codec->GetPattern(
+            binding.fd, Learning
+        );
+        inputpattern->SetMotorPattern(
+            motorCommandEncodings[cpgAddr]
+        );
+    } else {
+        // this shouldn't be able to happen.
+        fprintf(stderr, "[X] Error: 0x%08x not marked as an ACE" \
+                " function\n", call_addr);
         return NULL;
     }
-    wait(&wait_status);
-    while (WIFSTOPPED(wait_status)) {
-        struct user_regs_struct regs;
-        // get the current register values
-        ptrace(PTRACE_GETREGS, child_pid, 0, &regs);
-        // get the current instruction being executed.
-        unsigned int xi = ptrace(PTRACE_PEEKTEXT, child_pid, regs.eip, 0);
-        if ((uint8_t)(xi & 0x000000FF) == CALL_OPCODE) {
-            // get the address to the relative offset of the
-            // address being called (located one byte after
-            // current eip).
-            void *rel_off_addr = (void *)(regs.eip+1);
-            // get the relative offset.
-            int rel_off =
-                ptrace(PTRACE_PEEKTEXT, child_pid, rel_off_addr, 0);
-            // compute the address being called using the relative
-            // offset.
-            long call_addr =
-                (long)(rel_off_addr)+sizeof(unsigned int)+rel_off;
-*/
-    std::vector<long>::iterator pure_b = pureSensoryFunctions.begin();
-    std::vector<long>::iterator pure_e = pureSensoryFunctions.end();
-    if (std::find(pure_b, pure_e, call_addr) != pure_e) {
-        fd = HandlePureSensory(&regs);
-/*        std::vector<long> open_read_vect;
-        open_read_vect.push_back(open_plt);
-        call_addr = ExecuteToCall(open_read_vect, &regs);
-//                if (call_addr == open_plt) {
-        unsigned int open_path =
-            ptrace(PTRACE_PEEKTEXT, child_pid, regs.esp);
-        char path_str[128];
-        unsigned char c;
-        int j=0;
-        do {
-            c = ptrace(PTRACE_PEEKTEXT, child_pid, open_path+j);
-            path_str[j] = c;
-            j++;
-        } while (c != 0x00);
-        path_str[j] = 0;
-        unsigned int mode =
-            ptrace(PTRACE_PEEKTEXT, child_pid, regs.esp+0x4);
-        fd = open(path_str, mode);
-//            }
-        open_read_vect.clear();
-        open_read_vect.push_back(read_plt);
-        call_addr = ExecuteToCall(open_read_vect, &regs);*/
-//                if (call_addr == read_plt) {
-            // NOTE: not guaranteed to be the same fd.
-    }
-    std::vector<long>::iterator cpg_b = cpgFunctions.begin();
-    std::vector<long>::iterator cpg_e = cpgFunctions.end();
-    if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
-        printf("cpg function\n");
-    }
-    std::vector<long>::iterator smotor_b = sensorimotorFunctions.begin();
-    std::vector<long>::iterator smotor_e = sensorimotorFunctions.end();
-    if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
-        printf("sensorimotor function\n");
-        call_addr = ExecuteToCall(cpgFunctions, &regs);
-        call_addr = ExecuteToCall(pureSensoryFunctions, &regs);
-        fd = HandlePureSensory(&regs);
-    }
-/*
-        // Otherwise, continue; make the child execute another
-        // instruction.
-        if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
-            perror("ptrace");
-            return NULL;
-        }
-        // Wait for child to stop on its next instruction.
-        wait(&wait_status);
-    }
-*/
-    SensoryRegion *inputpattern = bitmapCodec->GetPattern(fd, Learning);
-    close(fd);
+
+    close(binding.fd);
 
     if (Learning && firstPattern)
         firstPattern = false;
@@ -582,14 +565,16 @@ SensoryRegion* SensoryCodec::GetPattern(bool Learning)
     return inputpattern;
 }
 
-int SensoryCodec::HandlePureSensory(struct user_regs_struct *regs)
-{
-    std::vector<long> open_read_vect;
-    long call_addr;
+SensoryCodecBinding ElfCodec::HandlePureSensory(
+    struct user_regs_struct *regs
+) {
+    std::vector<unsigned int> open_read_vect;
+    unsigned int call_addr;
     unsigned int open_path, mode;
-    char path_str[128];
+    char *path_str = (char *)malloc(sizeof(char)*128);
     unsigned char c;
     int fd, j=0;
+    SensoryCodecBinding bind;
 
     open_read_vect.push_back(open_plt);
     call_addr = ExecuteToCall(open_read_vect, regs);
@@ -602,23 +587,55 @@ int SensoryCodec::HandlePureSensory(struct user_regs_struct *regs)
     } while (c != 0x00);
     path_str[j] = 0;
     mode = ptrace(PTRACE_PEEKTEXT, child_pid, regs->esp+0x4);
-    printf("open(%s, %d)\n", path_str, mode);
+    //printf("open(%s, %d)\n", path_str, mode);
     fd = open(path_str, mode);
+    bind.fd = fd;
+    bind.codec = sensoryCodecFactory.Get(
+        (const char *)strrchr((char *)path_str, '.')
+    );
     open_read_vect.clear();
     open_read_vect.push_back(read_plt);
     call_addr = ExecuteToCall(open_read_vect, regs);
 
-    return fd;
+    free(path_str);
+    return bind;
 }
 
-int SensoryCodec::GetRewardSignal()
+// Encode the function address of the motor command as a random, unique
+// pattern in a SensoryRegion
+void ElfCodec::AddNewMotorEncoding(unsigned int motorCallAddr)
+{
+    SensoryInput ***motorInputs=(SensoryInput ***)malloc(
+        sizeof(SensoryInput **) * codecHeight
+    );
+    unsigned int codecArea = codecHeight * codecWidth;
+    unsigned int numActiveBits = codecArea * codecActiveRatio;
+
+    for (unsigned int i=0; i<codecHeight; i++) {
+        motorInputs[i] = (SensoryInput **)malloc(
+            sizeof(SensoryInput *) * codecWidth
+        );
+        for (unsigned int j=0; j<codecWidth; j++) {
+            motorInputs[i][j] = new SensoryInput(j, i);
+            // you might think this is wrong, but it's not.
+            motorInputs[i][j]->SetActive(
+                rand()%(codecArea+1)<=numActiveBits ? 1 : 0
+            );
+        }
+    }
+    motorCommandEncodings[motorCallAddr] = new SensoryRegion(
+        motorInputs, codecWidth, codecHeight, 0, NULL
+    );
+}
+
+int ElfCodec::GetRewardSignal()
 {
     return 1;
 }
 
 // whether or not the codec is processing the first pattern of a pre-determined
 // sequence.
-bool SensoryCodec::FirstPattern()
+bool ElfCodec::FirstPattern()
 {
     return firstPattern;
 }

@@ -14,16 +14,12 @@
 #include "codec.h"
 
 BitmapCodec::BitmapCodec()
+    : SensoryCodec()
 {
 }
 
 BitmapCodec::~BitmapCodec()
 {
-}
-
-bool BitmapCodec::Init(char *target_path)
-{
-    return true;
 }
 
 // Take a bitmap file and convert to an SensoryRegion
@@ -53,7 +49,7 @@ SensoryRegion* BitmapCodec::GetPattern(int sense_fd, bool Learning)
     //fclose(fp);
 
     // input patterns will have zero cells.
-    pattern = new SensoryRegion(input, bmh->bmih.width, bmh->bmih.height, 0);
+    pattern = new SensoryRegion(input, bmh->bmih.width, bmh->bmih.height, 0, NULL);
 
     return pattern;
 }
@@ -73,10 +69,5 @@ BITMAPHEADER* BitmapCodec::ReadBitmapHeader(int fd)
     //fread((BITMAPINFOHEADER *)&(bmh->bmih), sizeof(BITMAPINFOHEADER), 1, *fp);
 
     return bmh;
-}
-
-void BitmapCodec::Reset()
-{
-    pidx = 0;
 }
 

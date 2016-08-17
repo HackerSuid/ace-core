@@ -4,6 +4,7 @@
 #include <vector>
 #include "genericinput.h"
 
+class GenericSublayer;
 class HtmSublayer;
 class Column;
 class DendriteSegment;
@@ -21,8 +22,17 @@ public:
     bool WasLearning();
     void SetLearning(bool flag);
     DendriteSegment* NewSegment(HtmSublayer *sublayer, bool FirstPattern);
+    bool AddSynapsesFromSublayer(
+        HtmSublayer *thisSublayer,
+        GenericSublayer *src,
+        DendriteSegment *seg
+    );
+    void RemoveSegment(int segidx);
     DendriteSegment* GetMostActiveSegment();
-    DendriteSegment* GetBestMatchingSegment(int lastActiveColumns);
+    DendriteSegment* GetBestMatchingSegment(
+        int *bestSegIdx,
+        int lastActiveColumns
+    );
     std::vector<DendriteSegment *> GetSegments();
     int GetNumSegments();
     Column* GetParentColumn() { return parentColumn; }

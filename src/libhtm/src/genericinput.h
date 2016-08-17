@@ -17,7 +17,14 @@ public:
     int GetY() { return y; }
     bool IsActive();
     bool WasActive();
+    bool IsLearning() { return learning[0]; }
+    bool WasLearning() { return learning[1]; }
     void SetActive(bool flag);
+    void SetLearning(bool flag)
+    {
+        learning[1] = learning[0];
+        learning[0] = flag;
+    }
 };
 
 #endif

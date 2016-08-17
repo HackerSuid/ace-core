@@ -1,8 +1,9 @@
-#ifndef CODEC_H_
-#define CODEC_H_
+#ifndef ELFCODEC_H_
+#define ELFCODEC_H_
 
 #include <sys/ptrace.h>
 #include <vector>
+#include <map>
 
 #include "codec_base.h"
 
@@ -48,61 +49,115 @@ typedef struct
     unsigned char r, g, b;
 } Pixel;
 
-class BitmapCodec;
-class ElfCodec;
-
-class SensoryCodec : public Codec
+// custom std::map comparator for char pointers
+struct strcmpr
 {
-public:
-    SensoryCodec();
-    ~SensoryCodec();
-
-    bool Init(char *target_path);
-    bool LoadTarget();
-    long ExecuteToCall(std::vector<long>, struct user_regs_struct*);
-    SensoryRegion* GetPattern(bool Learning);
-    int HandlePureSensory(struct user_regs_struct *regs);
-    int GetRewardSignal();
-    bool FirstPattern();
-    bool Reset();
-
-private:
-    BitmapCodec *bitmapCodec;
-    ElfCodec *elfCodec;
-    static bool const registered;
-    bool firstPattern;
-    pid_t child_pid;
-    char *child_dir;
-    int wait_status;
-
-    long read_plt, open_plt, main_addr;
-    std::vector<long> pureSensoryFunctions;
-    std::vector<long> cpgFunctions;
-    std::vector<long> sensorimotorFunctions;
-
-    char* ptype_str(size_t pt);
+    bool operator()(const char *a, const char *b) const
+    {
+        return strcmp(a, b);
+    }
 };
 
-class BitmapCodec
+class SensoryCodec;
+
+typedef struct
+{
+    int fd;
+    SensoryCodec *codec;
+} SensoryCodecBinding;
+
+class SensoryCodec
+{
+public:
+    virtual ~SensoryCodec() {}
+    virtual SensoryRegion* GetPattern(
+        int sense_fd,
+        bool Learning
+    ) = 0;
+};
+
+class BitmapCodec : public SensoryCodec
 {
 public:
     BitmapCodec();
     ~BitmapCodec();
 
-    bool Init(char *target_path);
     SensoryRegion* GetPattern(int sense_fd, bool Learning);
-    void Reset();
 
     BITMAPHEADER* ReadBitmapHeader(int);
-private:
-    int pidx;
 };
 
-class ElfCodec
+class SensoryCodecFactory
+{
+public:
+    ~SensoryCodecFactory()
+    {
+        typename std::map<const char *, SensoryCodec *, strcmpr>::iterator it =
+            CodecCtorMap.begin();
+        while (it != CodecCtorMap.end())
+        {
+            delete (*it).second;
+            ++it;
+        }
+    }
+
+    void Register(const char *id, SensoryCodec *Ctor)
+    {
+        CodecCtorMap[id] = Ctor;
+    }
+
+    SensoryCodec* Get(const char *id)
+    {
+        return CodecCtorMap[id];
+    }
+
+private:
+    std::map<const char *, SensoryCodec *, strcmpr> CodecCtorMap;
+};
+
+
+class ElfCodec : public Codec
 {
 public:
     ElfCodec();
     ~ElfCodec();
+
+    bool Init(
+        char *target_path,
+        unsigned int height,
+        unsigned int width,
+        float localActivity
+    );
+    bool LoadTarget();
+    unsigned int ExecuteToCall(
+        std::vector<unsigned int>,
+        struct user_regs_struct*
+    );
+    SensoryRegion* GetPattern(bool Learning);
+    SensoryCodecBinding HandlePureSensory(struct user_regs_struct *regs);
+    void AddNewMotorEncoding(unsigned int motorCallAddr);
+    int GetRewardSignal();
+    bool FirstPattern();
+    bool Reset();
+
+private:
+    SensoryCodecFactory sensoryCodecFactory;
+    std::map<unsigned int, SensoryRegion *> motorCommandEncodings;
+
+    static bool const registered;
+    bool firstPattern;
+    pid_t child_pid;
+    char *child_dir;
+    int wait_status;
+    unsigned codecHeight, codecWidth;
+    float codecActiveRatio;
+
+    unsigned int read_plt, open_plt, main_addr;
+    std::vector<unsigned int> pureSensoryFunctions;
+    std::vector<unsigned int> cpgFunctions;
+    std::vector<unsigned int> sensorimotorFunctions;
+
+    char* ptype_str(size_t pt);
 };
 
 #endif
