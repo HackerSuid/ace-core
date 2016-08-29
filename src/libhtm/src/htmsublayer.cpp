@@ -54,7 +54,8 @@ void HtmSublayer::AllocateColumns(
                 localActivity,
                 columnComplexity,
                 highTier,
-                activityCycleWindow
+                activityCycleWindow,
+                sensorimotorLayer
             );
     }
 }
@@ -104,7 +105,7 @@ void HtmSublayer::CLA(bool Learning, bool allowBoosting)
      */
     SpatialPooler(Learning, allowBoosting);
     /*
-     * Sequence (Temporal) Memory
+     * Sequence (Temporal/Transition) Memory
      * 
      * 1. Within columns with active proximal dendrite segments, activate cells
      *    that are already partially depolarized, or all of them if none are
@@ -112,11 +113,7 @@ void HtmSublayer::CLA(bool Learning, bool allowBoosting)
      *    Create new dendrite segments on cells chosen to learn to predict
      *    the current feedforward input pattern.
      * 2. Form a prediction given the lateral, intrinsic connections of the
-     *    region by depolarzing cells with active distal dendrite segments.
-     *
-     * Note: if this is the first input pattern of the sequence, then temporal
-     * learning, inference, and prediction is skipped. The first pattern in a
-     * sequence physically has no context.
+     *    region by depolarizing cells with active distal dendrite segments.
      */
     SequenceMemory(Learning, htmPtr->FirstPattern());
 
@@ -208,17 +205,37 @@ void HtmSublayer::SpatialPooler(bool Learning, bool allowBoosting)
 
 void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
 {
+    // the sublayer's columns are declared as GenericInputs.
     Column ***columns = (Column ***)input;
     /*
      * These vectors are used as temporary storage of the column and cell
-     * states for the current timestep, and they are used as references to 
-     * modify the corresponding state machines after the current timestep has
-     * been processed by all cells.
+     * states for the current timestep, and they are used to modify the
+     * corresponding state machines after the current timestep has been
+     * processed by all cells.
      */
     std::vector<Column *> inactiveColumns;
     std::vector<Cell *> predictedCells, nonPredictedCells;
     std::vector<Cell *> learningCells, nonLearningCells;
 
+    /*
+     * variables for computing prediction comprehension and specificity.
+     *
+     * prediction comprehension compares the number of active columns that were
+     * successfully predicted to the total number of active columns.
+     * if all columns with active proximal dendrite segments were predicted
+     * by activation of distal segments, then this means that the sublayer
+     * comprehended that pattern of the sequence. the comprehension metric is
+     * averaged over time to compute the comprehension of sequences.
+     *
+     * prediction specificity measures a useful performance metric that is
+     * not provided by prediction comprehension. it's possible and likely that
+     * when comprehension is perfect there are many inactive columns that
+     * were also predicted because of some temporal context ambiguity.
+     * in other words, the sublayer perfectly comprehends the sequences of
+     * patterns, but in a sort of generic, ambiguious way. prediction
+     * specificity compares the number of predicted active columns to the
+     * number of predicted inactive columns.
+     */
     unsigned long numActiveColsPredicted=0, numInactiveColsPredicted=0;
     /*
      * For each active column:
@@ -294,7 +311,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                             learningCells.push_back(cells[k]);
                             learnCellChosen = true;
                         } else {
-//                            printf("cell %d predicted BUT NOT chosen for learning\n", k);
+                            //printf("cell %d predicted BUT NOT chosen for learning\n", k);
                         }
                     } else
                         nonPredictedCells.push_back(cells[k]);
@@ -305,7 +322,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                  * Otherwise deactivate the non-predicted cells.
                  */
                 if (!buPredicted) {
-//                    printf("\tno cells predicted; activating all cells\n");
+                    //printf("\tno cells predicted; activating all cells\n");
                     for (int k=0; k<nc; k++) {
                         /*
                          * It was just added to the non-prediction list, which
@@ -324,16 +341,16 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                  *
                  */
                 if (!learnCellChosen) {
-                    //printf("\tchoosing learning cell\n");
+                    printf("\tchoosing learning cell\n");
                     DendriteSegment *segment = NULL;
                     int segidx;
                     Cell *BestCell = columns[i][j]->GetBestMatchingCell(
                         &segment,
                         &segidx,
-                        this->LastActiveColumns(),
+                        this,
                         firstPattern
                     );
-                    /* BestCell will be the only cell learning this transition. */
+                    // BestCell will be the only cell learning this transition.
                     learningCells.push_back(BestCell);
                     /*
                      * Queue up the segment of BestCell to be reinforced.

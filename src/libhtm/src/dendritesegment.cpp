@@ -6,9 +6,11 @@
 #include "synapse.h"
 #include "genericinput.h"
 
-DendriteSegment::DendriteSegment()
+DendriteSegment::DendriteSegment(bool sensorimotorFlag)
 {
-    numSynapses = 0;
+    sensorimotorSegment = sensorimotorFlag;
+    numSensorySyns = 0;
+    numMotorSyns = 0;
     // flag to indicate no temporal context as the first sequence
     // pattern
     noTemporalContext = false;
@@ -21,19 +23,28 @@ DendriteSegment::~DendriteSegment()
         delete (*it);
 }
 
+/*
+ * If a dendrite segment is attached to a sensorimotor cell, then both
+ * sensory pattern and motor patterns are subsampled for synapses. Take this
+ * into account when computing its activation.
+ */
 bool DendriteSegment::IsActive()
 {
     int activeSyns = GetNumIsActiveSynapses();
-    if (activeSyns and (activeSyns >= (int)numSynapses*SUBSAMPLE_THRESHOLD))
+    int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
+    if (activeSyns && (activeSyns >= threshold))
         return true;
     return false;
 }
 
+/*
+ * Again, take sensory and motor pattern subsampling into consideration.
+ */
 bool DendriteSegment::IsActiveFromLearning()
 {
     int activeLearnSyns = GetNumIsLearningSynapses();
-    if (activeLearnSyns &&
-        activeLearnSyns >= (int)numSynapses*SUBSAMPLE_THRESHOLD)
+    int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
+    if (activeLearnSyns && (activeLearnSyns >= threshold))
         return true;
     return false;
 }
@@ -41,12 +52,16 @@ bool DendriteSegment::IsActiveFromLearning()
 void DendriteSegment::NewSynapse(Synapse *newSyn)
 {
     synapses.push_back(newSyn);
-    numSynapses++;
+
+    if (newSyn->IsMotor())
+        numMotorSyns++;
+    else
+        numSensorySyns++;
 }
 
 void DendriteSegment::RefreshSynapses(GenericSublayer *NewPattern)
 {
-    for (int i=0; i<numSynapses; i++)
+    for (unsigned int i=0; i<synapses.size(); i++)
         synapses[i]->RefreshSynapse(NewPattern);
 }
 
@@ -69,7 +84,7 @@ std::vector<Synapse*> DendriteSegment::GetIsActiveSynapses()
 {
     std::vector<Synapse*> activeSyns;
 
-    for (int i=0; i<numSynapses; i++)
+    for (unsigned int i=0; i<synapses.size(); i++)
         if (synapses[i]->IsFiring())
             activeSyns.push_back(synapses[i]);
 
@@ -81,7 +96,7 @@ std::vector<Synapse*> DendriteSegment::GetWasActiveSynapses()
 {
     std::vector<Synapse*> activeSyns;
 
-    for (int i=0; i<numSynapses; i++)
+    for (unsigned int i=0; i<synapses.size(); i++)
         if (synapses[i]->WasFiring())
             activeSyns.push_back(synapses[i]);
 
@@ -92,7 +107,7 @@ std::vector<Synapse*> DendriteSegment::GetWasNearActiveSynapses()
 {
     std::vector<Synapse*> nearActiveSyns;
 
-    for (int i=0; i<numSynapses; i++)
+    for (unsigned int i=0; i<synapses.size(); i++)
         if (synapses[i]->IsNearConnected() && synapses[i]->GetSource()->WasActive())
             nearActiveSyns.push_back(synapses[i]);
 
@@ -106,7 +121,7 @@ int DendriteSegment::GetNumIsActiveSynapses()
 {
     int activeSyns = 0;
 
-    for (int i=0; i<numSynapses; i++)
+    for (unsigned int i=0; i<synapses.size(); i++)
         if (synapses[i]->IsFiring())
             activeSyns++;
 
@@ -120,7 +135,7 @@ int DendriteSegment::GetNumIsNearActiveSynapses()
 {
     int nearActiveSyns = 0;
 
-    for (int i=0; i<numSynapses; i++)
+    for (unsigned int i=0; i<synapses.size(); i++)
         if (synapses[i]->IsNearConnected() && synapses[i]->GetSource()->IsActive())
             nearActiveSyns++;
 
@@ -131,7 +146,7 @@ std::vector<Synapse*> DendriteSegment::GetIsLearningSynapses()
 {
     std::vector<Synapse *> learnSyns;
 
-    for (int i=0; i<numSynapses; i++) {
+    for (unsigned int i=0; i<synapses.size(); i++) {
         if (synapses[i]->IsFiring() && synapses[i]->IsLearning())
             learnSyns.push_back(synapses[i]);
     }
@@ -143,7 +158,7 @@ int DendriteSegment::GetNumIsLearningSynapses()
 {
     int learnSyns = 0;
 
-    for (int i=0; i<numSynapses; i++)
+    for (unsigned int i=0; i<synapses.size(); i++)
         if (synapses[i]->IsFiring() && synapses[i]->IsLearning())
             learnSyns++;
     return learnSyns;

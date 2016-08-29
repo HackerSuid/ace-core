@@ -6,6 +6,7 @@
 
 #include "genericsublayer.h"
 #include "htmsublayer.h"
+#include "sensoryregion.h"
 #include "htm.h"
 #include "column.h"
 #include "cell.h"
@@ -62,48 +63,45 @@ search through all the cells within the sublayer for cells that were
  */
 DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
 {
-    DendriteSegment *newSeg = new DendriteSegment;
+    DendriteSegment *newSeg = new DendriteSegment(sublayer->IsSensorimotor());
     bool synsFound = false;
 
-    if (FirstPattern) {
-        /*
-         * For sensorimotor sublayers, the first pattern will only
-         * be in motor-context. For purely sensory sublayers, the
-         * pattern will have no context.
-         */
-        if (sublayer->IsSensorimotor()) {
-            SensoryRegion *mp = sublayer->GetLower()->GetMotorPattern();
-            //sublayer->GetHtmPtr()->PrintPattern(mp);
-            if (mp) {
-                printf("\tAdding synapses to distal dendrite from motor pattern.\n");
-                synsFound = AddSynapsesFromSublayer(
-                    sublayer, (GenericSublayer *)mp, newSeg
-                );
-                //newSeg->SetNoTemporalContext();
-                //DistalDendriteSegments.push_back(newSeg);
-                //return NULL;
-                DistalDendriteSegments.push_back(newSeg);
-                return newSeg;
-            } else
-                printf("\tNo motor pattern found.\n");
+    /*
+     * For sensorimotor sublayers, the first pattern will only
+     * be in motor-context. For purely sensory sublayers, the
+     * pattern will have no context.
+     */
+
+    if (!FirstPattern) {
+        //printf("\tAdding synapses to distal dendrite from sensory pattern.\n");
+        synsFound = AddSynapsesFromSublayer(sublayer, sublayer, false, newSeg);
+    }
+
+    if (sublayer->IsSensorimotor()) {
+        SensoryRegion *mp = sublayer->GetLower()->GetMotorPattern();
+        //sublayer->GetHtmPtr()->PrintPattern(mp);
+        if (mp) {
+            //printf("\tAdding synapses to distal dendrite from motor pattern.\n");
+            synsFound = AddSynapsesFromSublayer(
+                sublayer, (GenericSublayer *)mp, true, newSeg
+            );
+            //newSeg->SetNoTemporalContext();
+            //DistalDendriteSegments.push_back(newSeg);
+            //return NULL;
+            DistalDendriteSegments.push_back(newSeg);
+            return newSeg;
         } else {
-            printf("\tSublayer is not sensorimotor-capable.\n");
+            printf("\tNo motor pattern found.\n");
             newSeg->SetNoTemporalContext();
             DistalDendriteSegments.push_back(newSeg);
             return NULL;
         }
+    } else {
+        printf("\tSublayer is not sensorimotor-capable.\n");
+        newSeg->SetNoTemporalContext();
+        DistalDendriteSegments.push_back(newSeg);
+        return NULL;
     }
-
-    printf("\tAdding synapses to distal dendrite from sensory pattern.\n");
-    /*
-    printf("\t\tcreating %d synapses for cell in column (%d,%d)\n",
-            subsampleSz, cellx, celly);
-    printf("subsampleSz = %d * %f = %d\n",
-            sublayer->LastActiveColumns(),
-            DendriteSegment::GetSubsamplePercent(), subsampleSz
-    );
-    */
-    synsFound = AddSynapsesFromSublayer(sublayer, sublayer, newSeg);
 
     // if zero synapses were formed, then there was no previous activity
     // in the sequence so skip adding a new segment.
@@ -111,7 +109,7 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
         //printf("\t\tfound %d cells\n", synsFound);
         DistalDendriteSegments.push_back(newSeg);
     } else {
-        //printf("\t\tDid not find any previous activity.\n");
+        printf("\t\tDid not find any previous activity.\n");
         delete newSeg;
         newSeg = NULL;
     }
@@ -123,6 +121,7 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
 bool Cell::AddSynapsesFromSublayer(
     HtmSublayer *thisSublayer,
     GenericSublayer *src,
+    bool motorSrc,
     DendriteSegment *seg)
 {
     GenericInput ***inputBits = src->GetInput();
@@ -136,12 +135,20 @@ bool Cell::AddSynapsesFromSublayer(
 
     bool foundSampleSize = false;
     int synsFound = 0;
-    int subsampleSz = thisSublayer->LastActiveColumns() *
-                      DendriteSegment::GetSubsamplePercent();
+    int subsampleSz =
+        (motorSrc ? thisSublayer->CurrentActiveColumns() :
+                    thisSublayer->LastActiveColumns()) *
+        DendriteSegment::GetSubsamplePercent();
     std::vector<GenericInput *> projections;
 
     auto il = { h-1-celly, celly, w-1-cellx, cellx };
 
+    //printf("\tcreating %d synapses for cell in column (%d,%d)\n",
+            //subsampleSz, cellx, celly);
+    //printf("subsampleSz = %d * %f = %d\n",
+    //        thisSublayer->CurrentActiveColumns(),
+    //        DendriteSegment::GetSubsamplePercent(), subsampleSz
+    //);
     for (int distance=1; distance<std::max(il); distance++) {
         for (int yd=-distance; yd<=distance&&!foundSampleSize; yd++) {
             for (int xd=-distance; xd<=distance&&!foundSampleSize; xd++) {
@@ -178,16 +185,19 @@ bool Cell::AddSynapsesFromSublayer(
                 } else {
                     projections.push_back(inputBits[y][x]);
                 }
-                //printf("\t\tchecking cells...\n");
-                for (int k=0; k<d && !foundSampleSize; k++) {
+                //printf("\t\tchecking input projections...\n");
+                for (unsigned k=0; k<projections.size() && !foundSampleSize; k++) {
                     /*
                      * The cla wants to form new synapses with cells that would
                      * have been able to predict this cell's activity.
                      */
-                    if (projections[k]->WasLearning() && projections[k]->WasActive()) {
+                    bool activeflag =
+                        motorSrc ? projections[k]->IsActive() :
+                                   projections[k]->WasActive();
+                    if (projections[k]->WasLearning() && activeflag) {
                         //printf("\t\t\t(col %d,%d, c %d)\n", x, y, k);
                         Synapse *newSyn = new Synapse(
-                            projections[k], x, y
+                            projections[k], x, y, motorSrc
                         );
                         //printf("\t\tnew synapse 0x%08x\n", newSyn);
                         seg->NewSynapse(newSyn);
@@ -201,6 +211,7 @@ bool Cell::AddSynapsesFromSublayer(
         }
     }
 
+    //printf("\t\tformed %d synapses.\n", synsFound);
     return true;
 }
 
@@ -234,22 +245,37 @@ DendriteSegment* Cell::GetMostActiveSegment()
  */
 DendriteSegment* Cell::GetBestMatchingSegment(
     int *bestSegIdx,
-    int lastActiveColumns)
+    HtmSublayer *sublayer)
 {
     int synCount = 0, mostSynCount = -1;
     DendriteSegment *bestSeg = NULL;
 
     /*
      * To be considered as the best match, a segment must have a minimum number
-     * of active synapses that are at least nearly connected.
+     * of active, sensory synapses that are at least nearly connected. Motor
+     * synapses may also contribute to segment activation.
      */
-    int minThreshold = lastActiveColumns * DendriteSegment::GetSubsamplePercent();
+    int lastActiveColumns = sublayer->LastActiveColumns();
+    int minThreshold;
+    SensoryRegion *mp = sublayer->GetLower()->GetMotorPattern();
+
+    if (parentColumn->IsSensorimotorColumn() && mp) {
+        minThreshold = 
+            (lastActiveColumns + mp->GetNumActiveInputs()) *
+            DendriteSegment::GetSubsamplePercent();
+    } else {
+        minThreshold = lastActiveColumns *
+            DendriteSegment::GetSubsamplePercent();
+    }
 
     std::vector<DendriteSegment *>::iterator beg = DistalDendriteSegments.begin();
     std::vector<DendriteSegment *>::iterator end = DistalDendriteSegments.end();
     int x=0;
     for (std::vector<DendriteSegment *>::iterator i = beg; i != end; i++, x++) {
         synCount = (*i)->GetNumIsNearActiveSynapses();
+        printf("\t\t\tsegment has %d near active, %d sensory syns\n",
+            synCount, (*i)->GetNumSensorySyns());
+        printf("\t\t\tthreshold %d minThreshold\n");
         if (synCount >= minThreshold)
             if (synCount > mostSynCount) {
                 mostSynCount = synCount;

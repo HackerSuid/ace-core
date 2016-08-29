@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 {
     DIR *dirp=NULL;
     struct dirent *de=NULL;
-    char *root=(char *)"/root/ace/examples/drctn_world/";
+    char *root=(char *)"/mnt/lfs/root/ace/examples/drctn_world";
 
     srand(time(NULL)+getpid());
 /*

@@ -2,6 +2,7 @@
 #define SENSORYINPUT_H_
 
 #include "genericinput.h"
+#include <string.h>
 
 class SensoryInput : public GenericInput
 {

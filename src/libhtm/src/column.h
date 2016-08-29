@@ -8,6 +8,7 @@
 #define MAX_ACTIVE_PERCENT  0.25
 
 class GenericSublayer;
+class HtmSublayer;
 class Cell;
 class DendriteSegment;
 
@@ -40,6 +41,7 @@ private:
     int inhibitionRadius;
     bool highTier;
     DendriteSegment *ProximalDendriteSegment;
+    bool sensorimotorColumn;
 
     void UpdateBoostingStructure(
         struct ActivityLogEntry **head,
@@ -54,7 +56,8 @@ public:
         float localActivity,
         float columnComplexity,
         bool highTier,
-        int activityCycleWindow
+        int activityCycleWindow,
+        bool sensorimotorColumn
     );
     ~Column();
     void InitializeProximalDendrite(
@@ -77,7 +80,7 @@ public:
     Cell* GetBestMatchingCell(
         DendriteSegment **segment,
         int *segidx,
-        int numActiveColumns,
+        HtmSublayer *sublayer,
         bool FirstPattern
     );
 
@@ -104,6 +107,8 @@ public:
 
     int GetNumCells();
     std::vector<Cell *> GetCells();
+
+    bool IsSensorimotorColumn() { return sensorimotorColumn; }
 };
 
 #endif

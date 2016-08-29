@@ -9,9 +9,11 @@ class SensoryRegion : public GenericSublayer
 {
 private:
     SensoryRegion *next;
+    int numActiveInputs;
 public:
     SensoryRegion(
         SensoryInput ***bits,
+        int numActiveInputs,
         unsigned int w,
         unsigned int h,
         unsigned int d,
@@ -33,6 +35,10 @@ public:
     void SetMotorPattern(SensoryRegion *mp)
     {
         motorPattern = mp;
+    }
+    int GetNumActiveInputs()
+    {
+        return numActiveInputs;
     }
 };
 

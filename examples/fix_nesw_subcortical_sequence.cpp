@@ -27,7 +27,7 @@
 #define HEALTH_DECAY    5
 #define HEALTH_REGEN    (2*HEALTH_DECAY)
 
-#define WORLD_ROOT  "/root/ace/examples/abacad_world/"
+#define WORLD_ROOT  "/mnt/lfs/root/ace/examples/abcdxbcy_world/"
 
 long long int health_status = HEALTH_BASE;
 
@@ -67,7 +67,7 @@ DIR* enter_room(char *dir, char *cwd, int cwdsize)
 {
     DIR *dirp=NULL;
 
-//    printf("opendir(%s)\n", dir);
+    //printf("opendir(%s)\n", dir);
     if ((dirp=opendir(dir)) == NULL) {
         perror("opendir() failed");
         return 0;

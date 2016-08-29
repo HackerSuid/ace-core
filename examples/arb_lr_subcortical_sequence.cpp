@@ -156,10 +156,11 @@ int main(int argc, char **argv)
 {
     DIR *dirp=NULL;
     struct dirent *de=NULL;
-    char *root=(char *)"/root/ace/examples/LR_world/";
+    char *root=(char *)"/mnt/lfs/root/ace/examples/LR_world/";
 
     srand(time(NULL)+getpid());
 
+/*
     // begin with the pattern in the world root directory.
     if ((dirp=opendir(root)) == NULL) {
         perror("opendir() failed");
@@ -173,6 +174,7 @@ int main(int argc, char **argv)
             }
         }
     }
+*/
 
     if (!explore_world(root))
         exit(-1);

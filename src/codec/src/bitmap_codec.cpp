@@ -29,6 +29,7 @@ SensoryRegion* BitmapCodec::GetPattern(int sense_fd, bool Learning)
     Pixel rgb;
     SensoryRegion *pattern=NULL;
     SensoryInput ***input=NULL;
+    int numActiveInputs = 0;
 
     if ((bmh = ReadBitmapHeader(sense_fd)) == NULL)
         return NULL;
@@ -44,12 +45,18 @@ SensoryRegion* BitmapCodec::GetPattern(int sense_fd, bool Learning)
             read(sense_fd, &rgb, sizeof(rgb));
             input[(bmh->bmih.height-1)-i][j] = new SensoryInput(j, i);
             input[(bmh->bmih.height-1)-i][j]->SetActive(!(rgb.r|rgb.g|rgb.b));
+            if (!(rgb.r|rgb.g|rgb.b))
+                numActiveInputs++;
         }
     }
     //fclose(fp);
 
     // input patterns will have zero cells.
-    pattern = new SensoryRegion(input, bmh->bmih.width, bmh->bmih.height, 0, NULL);
+    pattern = new SensoryRegion(
+        input, numActiveInputs,
+        bmh->bmih.width, bmh->bmih.height,
+        0, NULL
+    );
 
     return pattern;
 }

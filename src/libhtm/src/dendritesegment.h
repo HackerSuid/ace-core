@@ -22,7 +22,7 @@ class GenericSublayer;
 class DendriteSegment
 {
 public:
-    DendriteSegment();
+    DendriteSegment(bool sensorimotorFlag);
     ~DendriteSegment();
     bool IsActive();
     bool IsActiveFromLearning();
@@ -36,12 +36,15 @@ public:
     int GetNumIsLearningSynapses();
     std::vector<Synapse *> GetSynapses();
     int GetNumSynapses();
+    int GetNumSensorySyns() { return numSensorySyns; }
+    int GetNumMotorSyns() { return numMotorSyns; }
     static float GetSubsamplePercent() { return SUBSAMPLE_PERCENT; }
     void RefreshSynapses(GenericSublayer *NewPattern);
     void SetNoTemporalContext();
     bool GetNoTemporalContext();
 private:
-    int numSynapses;
+    bool sensorimotorSegment;
+    int numSensorySyns, numMotorSyns;
     std::vector<Synapse *> synapses;
     bool noTemporalContext;
 };

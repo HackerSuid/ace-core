@@ -22,13 +22,14 @@ public:
     bool AddSynapsesFromSublayer(
         HtmSublayer *thisSublayer,
         GenericSublayer *src,
+        bool smotorSrc,
         DendriteSegment *seg
     );
     void RemoveSegment(int segidx);
     DendriteSegment* GetMostActiveSegment();
     DendriteSegment* GetBestMatchingSegment(
         int *bestSegIdx,
-        int lastActiveColumns
+        HtmSublayer *sublayer
     );
     std::vector<DendriteSegment *> GetSegments();
     int GetNumSegments();

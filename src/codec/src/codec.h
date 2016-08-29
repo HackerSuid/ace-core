@@ -59,6 +59,7 @@ struct strcmpr
 };
 
 class SensoryCodec;
+class SensoryInput;
 
 typedef struct
 {
@@ -143,6 +144,7 @@ public:
 private:
     SensoryCodecFactory sensoryCodecFactory;
     std::map<unsigned int, SensoryRegion *> motorCommandEncodings;
+    SensoryInput ***masterMotorEncoding;
 
     static bool const registered;
     bool firstPattern;

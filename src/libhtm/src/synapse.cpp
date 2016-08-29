@@ -6,9 +6,10 @@
 #include "genericsublayer.h"
 #include "genericinput.h"
 
-Synapse::Synapse(GenericInput *src, int x, int y)
+Synapse::Synapse(GenericInput *src, int x, int y, bool motorSrc)
 {
     source = src;
+    motorSyn = motorSrc;
     srcx = x;
     srcy = y;
     // synaptic permanence value is initialized around the connected threshold.

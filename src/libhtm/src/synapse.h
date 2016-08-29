@@ -16,10 +16,11 @@ class Synapse
 {
 private:
     GenericInput *source;
+    bool motorSyn;
     int srcx, srcy;
     float perm;
 public:
-    Synapse(GenericInput *src, int x, int y);
+    Synapse(GenericInput *src, int x, int y, bool motorSrc);
     ~Synapse();
     void RefreshSynapse(GenericSublayer *NewPattern);
     bool IsFiring();
@@ -28,6 +29,7 @@ public:
     bool WasLearning();
     bool IsConnected();
     bool IsNearConnected();
+    bool IsMotor() { return motorSyn; }
     float GetPerm();
     void IncPerm(float factor=1.0);
     void DecPerm(float factor=1.0);

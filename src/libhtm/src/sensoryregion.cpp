@@ -6,6 +6,7 @@
 
 SensoryRegion::SensoryRegion(
     SensoryInput ***bits,
+    int numActiveInputs,
     unsigned int w,
     unsigned int h,
     unsigned int d,
@@ -15,6 +16,8 @@ SensoryRegion::SensoryRegion(
     this->height = h;
     this->depth = d;
     motorPattern = mp;
+
+    this->numActiveInputs = numActiveInputs;
 
     // initialize the input bits
     this->input = (GenericInput ***)malloc(sizeof(GenericInput **) * h);

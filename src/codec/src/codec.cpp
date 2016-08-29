@@ -83,6 +83,18 @@ bool ElfCodec::Init(
     codecWidth = width;
     codecActiveRatio = localActivity;
 
+    masterMotorEncoding = (SensoryInput ***)malloc(
+        sizeof(SensoryInput **) * codecHeight
+    );
+    // instantiate the master motor encoding.
+    for (unsigned int i=0; i<codecHeight; i++) {
+        masterMotorEncoding[i] = (SensoryInput **)malloc(
+            sizeof(SensoryInput *) * codecWidth
+        );
+        for (unsigned int j=0; j<codecWidth; j++)
+            masterMotorEncoding[i][j] = new SensoryInput(j, i);
+    }
+
     if (elf_version(EV_CURRENT) == EV_NONE)
         errx(
             EX_SOFTWARE,
@@ -421,7 +433,7 @@ bool ElfCodec::LoadTarget()
             // get the current register values
             ptrace(PTRACE_GETREGS, child_pid, 0, &regs);
             // break on main().
-            if (regs.eip == main_addr)
+            if ((unsigned int)regs.eip == main_addr)
                 break;
             // Otherwise, continue; make the child execute another
             // instruction.
@@ -540,7 +552,7 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
     } else if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
         printf("cpg function\n");
     } else if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
-        printf("sensorimotor function\n");
+        printf("sensorimotor function.\n");
         cpgAddr = ExecuteToCall(cpgFunctions, &regs);
         call_addr = ExecuteToCall(pureSensoryFunctions, &regs);
         binding = HandlePureSensory(&regs);
@@ -608,6 +620,7 @@ void ElfCodec::AddNewMotorEncoding(unsigned int motorCallAddr)
     SensoryInput ***motorInputs=(SensoryInput ***)malloc(
         sizeof(SensoryInput **) * codecHeight
     );
+    int numActiveMotorInputs = 0;
     unsigned int codecArea = codecHeight * codecWidth;
     unsigned int numActiveBits = codecArea * codecActiveRatio;
 
@@ -617,14 +630,23 @@ void ElfCodec::AddNewMotorEncoding(unsigned int motorCallAddr)
         );
         for (unsigned int j=0; j<codecWidth; j++) {
             motorInputs[i][j] = new SensoryInput(j, i);
-            // you might think this is wrong, but it's not.
-            motorInputs[i][j]->SetActive(
-                rand()%(codecArea+1)<=numActiveBits ? 1 : 0
-            );
+            // check that this bit is not already set in another encoding
+            // within the master encoding union pattern. if it is not, randomly
+            // set it to inactive or active.
+            if (masterMotorEncoding[i][j]->IsActive())
+                motorInputs[i][j]->SetActive(0);
+            else {
+                bool rndActive =
+                    ((rand() % (codecArea+1)) <= numActiveBits) ? 1 : 0;
+                motorInputs[i][j]->SetActive(rndActive);
+                masterMotorEncoding[i][j]->SetActive(rndActive);
+                if (rndActive)
+                    numActiveMotorInputs++;
+            }
         }
     }
     motorCommandEncodings[motorCallAddr] = new SensoryRegion(
-        motorInputs, codecWidth, codecHeight, 0, NULL
+        motorInputs, numActiveMotorInputs, codecWidth, codecHeight, 0, NULL
     );
 }
 

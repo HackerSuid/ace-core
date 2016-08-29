@@ -5,6 +5,7 @@
 
 #include "column.h"
 #include "genericsublayer.h"
+#include "htmsublayer.h"
 #include "util.h"
 #include "dendritesegment.h"
 #include "synapse.h"
@@ -17,7 +18,8 @@ Column::Column(
     float localActivity,
     float columnComplexity,
     bool highTier,
-    int activityCycleWindow)
+    int activityCycleWindow,
+    bool sensorimotorColumn)
 {
     ProximalDendriteSegment = NULL;
     rec_field_sz = rfsz;
@@ -34,6 +36,7 @@ Column::Column(
     activityLogHead = activityLogTail = NULL;
     overlapLogHead = overlapLogTail = NULL;
     timeStep = 0;
+    this->sensorimotorColumn = sensorimotorColumn;
 
     this->x = x;
     this->y = y;
@@ -73,7 +76,7 @@ void Column::InitializeProximalDendrite(
     y_center = this->y*y_ratio+(y_ratio/2);
 
     memset(syn_pos, 0, sizeof(syn_pos));
-    ProximalDendriteSegment = new DendriteSegment;
+    ProximalDendriteSegment = new DendriteSegment(false);
     int rec_fld_rad = rec_field_sz/4;
     for (int i=0; i<rec_field_sz; i++) {
         do {
@@ -89,7 +92,7 @@ void Column::InitializeProximalDendrite(
         } while (!UniqueIdx(x_idx, y_idx, (int *)syn_pos, i));
         syn_pos[i][0] = x_idx;
         syn_pos[i][1] = y_idx;
-        ProximalDendriteSegment->NewSynapse(new Synapse(inputs[y_idx][x_idx], x_idx, y_idx));
+        ProximalDendriteSegment->NewSynapse(new Synapse(inputs[y_idx][x_idx], x_idx, y_idx, false));
     }
 }
 
@@ -337,12 +340,11 @@ int Column::GetLocalActivity()
 Cell* Column::GetBestMatchingCell(
     DendriteSegment **segment,
     int *segidx,
-    int numActiveColumns,
+    HtmSublayer *sublayer,
     bool FirstPattern)
 {
     if (FirstPattern) {
-//        printf("\t\t[0x%08x] cell %d chosen for learning [first pattern]\n",
-//            (unsigned int)(cells[0]), 0);
+        printf("\t\tcell 0 chosen for learning [first pattern]\n");
         return cells[0];
     }
 
@@ -368,7 +370,12 @@ Cell* Column::GetBestMatchingCell(
 
         // for cell i, get the segment with the most active synapses in the
         // previous timestep.
-        bestSeg = cells[i]->GetBestMatchingSegment(&bestSegIdx, numActiveColumns);
+        printf("\t\tchecking segments for cell %d\n", i);
+        bestSeg = cells[i]->GetBestMatchingSegment(
+            &bestSegIdx,
+            sublayer
+        );
+        printf("\t\t\tbestseg 0x%08x (not null then best)\n");
         //if (i>0 && cellNumSegments>0 && bestSeg)
 //        printf("\t\tchecking best seg (%d tot) on c %d.\n",
 //            cellNumSegments, i);
@@ -402,8 +409,7 @@ Cell* Column::GetBestMatchingCell(
         bestCellIdx = fewestSegCellIdx;
     }
 
-//    printf("\t\t[0x%08x] cell %d chosen for learning\n",
-//        (unsigned int)this, bestCellIdx);
+    printf("\t\tcell %d chosen for learning\n", bestCellIdx);
 
     return BestCell;
 }
