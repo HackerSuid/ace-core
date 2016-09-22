@@ -1,0 +1,5 @@
+g++ -Wall -std=c++11 -o ./function_codec \
+    ./function_codec.cpp \
+    ./Autoencoder.cpp \
+    ./Layer.cpp \
+    ./Node.cpp
