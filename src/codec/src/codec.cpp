@@ -66,8 +66,9 @@ bool ElfCodec::Init(
     Elf_Scn *scn;
     Elf_Data *symtab_data=NULL, *dynsym_data=NULL;
     Elf_Data *reloc_data=NULL, *plt_data=NULL;
-    Elf_Data *gotplt_data=NULL, *pure_sensory_data=NULL;
-    Elf_Data *sensorimotor_data=NULL, *cpg_data=NULL;
+    Elf_Data *gotplt_data=NULL;
+    Elf_Data *pure_sensory_data=NULL, *sensorimotor_data=NULL;
+    Elf_Data *cpg_data=NULL;
     int elf_fd, elf_class;
     char *ident, *name, *func_name;
     size_t shnum, phnum, shstrndx, pure_sensory_ndx, sensorimotor_ndx;
@@ -78,6 +79,9 @@ bool ElfCodec::Init(
     unsigned char read_sym_ndx, open_sym_ndx, strtab_ndx;
     unsigned int plt_addr;
     unsigned int read_got_offset, open_got_offset;
+
+    std::vector<unsigned char> dynSymsIdx;
+    std::vector<unsigned int> dynFuncGotOffs;
 
     codecHeight = height;
     codecWidth = width;
@@ -277,7 +281,7 @@ bool ElfCodec::Init(
                 // obtain the .dynsyn dynamic linking symbol table
                 dynsym_data = elf_getdata(scn, dynsym_data);
                 dynsym_num = shdr.sh_size/shdr.sh_entsize;
-                for (int i=0; i<dynsym_num; i++) {
+                for (unsigned int i=0; i<dynsym_num; i++) {
                     gelf_getsym(dynsym_data, i, &sym);
                     /*
                     printf("st_name 0x%08x ", sym.st_name);
@@ -289,6 +293,7 @@ bool ElfCodec::Init(
                     */
                     if (GELF_ST_TYPE(sym.st_info)==STT_FUNC) {
                         func_name = elf_strptr(e, shdr.sh_link, sym.st_name);
+                        dynSymsIdx.push_back((unsigned char)i);
                         if (!strcmp("read", func_name))
                             read_sym_ndx = (unsigned char)i;
                         if (!strcmp("open", func_name))
@@ -326,7 +331,7 @@ bool ElfCodec::Init(
          *
          * Find main() function symbol,
          */
-        for (int i=0; i<symtab_num; i++) {
+        for (unsigned int i=0; i<symtab_num; i++) {
             gelf_getsym(symtab_data, i, &sym);
             /*
             printf("st_name 0x%08x ", sym.st_name);
@@ -340,6 +345,13 @@ bool ElfCodec::Init(
                 func_name = elf_strptr(
                     e, strtab_ndx, sym.st_name
                 );
+                std::vector<unsigned int> locFunc;
+                if (sym.st_size > 0) {
+                    locFunc.push_back(sym.st_value);
+                    locFunc.push_back(sym.st_size);
+                    localFuncAddrs.push_back(locFunc);
+                    locFunc.clear();
+                }
                 if (!strncmp("main", func_name, 4))
                     main_addr = sym.st_value;
                 // check if function is pure sensory or sensorimotor
@@ -356,8 +368,14 @@ bool ElfCodec::Init(
         // find the relocation table entry for the open and read
         // function symbols and save the relocation offset (virtual
         // memory address)
-        for (int i=0; i<reloc_num; i++) {
+        for (unsigned int i=0; i<reloc_num; i++) {
             gelf_getrel(reloc_data, i, &reloc);
+            std::vector<unsigned char>::iterator itBeg =
+                dynSymsIdx.begin();
+            std::vector<unsigned char>::iterator itEnd =
+                dynSymsIdx.end();
+            if (find(itBeg, itEnd, (unsigned char)(reloc.r_info>>32)) != itEnd)
+                dynFuncGotOffs.push_back(reloc.r_offset);
             if ((unsigned char)(reloc.r_info>>32) == open_sym_ndx)
                 open_got_offset = reloc.r_offset;
             if ((unsigned char)(reloc.r_info>>32) == read_sym_ndx)
@@ -370,6 +388,12 @@ bool ElfCodec::Init(
             unsigned int jmp_offset = 0x2+0x10*i;
             unsigned int jmp_instr =
                 *(unsigned int *)((unsigned int)pltent+jmp_offset);
+            std::vector<unsigned int>::iterator itBeg =
+                dynFuncGotOffs.begin();
+            std::vector<unsigned int>::iterator itEnd =
+                dynFuncGotOffs.end();
+            if (find(itBeg, itEnd, jmp_instr) != itEnd)
+                dynFuncPltAddrs.push_back(plt_addr+jmp_offset-0x2);
             if (jmp_instr == open_got_offset)
                 open_plt = plt_addr+jmp_offset-0x2;
             if (jmp_instr == read_got_offset)
@@ -408,12 +432,24 @@ char* ElfCodec::ptype_str(size_t pt)
 #undef   C
 }
 
-// fork() and execl() the target executable, then ptrace its execution
-// up to the call to main() from _libc_start_main() in glibc. pause
-// ptrace at that point (defer the next PTRACE_SINGLESTEP).
+/*
+ * ElfCodec loads the target executable by calling fork() and
+ * execl() to spawn it as a child process, then ptrace() is used to
+ *  perform two operations on the running process:
+ * 1. For each local and dynamic function, store the binary
+ *    representation to train the machine code autoencoder.
+ * 2. Trace the child process until main() is called by
+ *    _libc_start_main(), then pause execution.
+ * First, wait for child to stop on its first instruction.
+ * It will be somewhere in glibc setup/init code.
+ */
 bool ElfCodec::LoadTarget()
 {
     printf("[*] Forking/Execing target executable %s\n", targetPath);
+    // in order to make it easier to obtain dynamically linked
+    // function machine code, tell the dynamic linker to resolve
+    // GOT entries for PLT functions during initialization.
+    setenv("LD_BIND_NOW", "1", 1);
     if (!(child_pid=fork())) {
         // replace child process image with new executable and
         // allow ptracing.
@@ -423,11 +459,43 @@ bool ElfCodec::LoadTarget()
         }
         execl(targetPath, targetPath, 0);
     } else if (child_pid > 0) {
-        // ACE will trace the child process until main().
-        // Wait for child to stop on its first instruction. It will
-        // be somewhere in glibc setup/init code.
         wait(&wait_status);
-        printf("[*] Preparing executable for tracing.\n");
+        printf("[*] Encoding motor commands from function API.\n");
+        // obtain machine code from local functions.
+        std::vector<unsigned char> machCode;
+        for (unsigned int i=0; i<localFuncAddrs.size(); i++) {
+            printf("%d bytes at 0x%08x\n",
+                localFuncAddrs[i][1],
+                localFuncAddrs[i][0]);
+            for (unsigned int j=0; j<localFuncAddrs[i][1]; j++) {
+                machCode.push_back(ptrace(
+                    PTRACE_PEEKTEXT,
+                    child_pid,
+                    localFuncAddrs[i][0]+j,
+                    0
+                ));
+                printf("%02x ", machCode[j]);
+            }
+            fcnMachCode.push_back(machCode);
+            machCode.clear();
+            printf("\n");
+        }
+        // obtain machine code of dynamically linked functions in
+        // the GOT pointed to from PLT.
+        for (unsigned int i=0; i<dynFuncPltAddrs.size(); i++) {
+            unsigned char byte;
+            unsigned int c=0;
+            do {
+                byte = ptrace(
+                    PTRACE_PEEKTEXT,
+                    child_pid,
+                    dynFuncPltAddrs[i]+c,
+                    0
+                );
+                c++;
+            } while (byte != RET_OPCODE);
+        }
+        printf("[*] Running executable to main() entry.\n");
         while (WIFSTOPPED(wait_status)) {
             struct user_regs_struct regs;
             // get the current register values
@@ -526,7 +594,6 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         sensorimotorFunctions.begin(),
         sensorimotorFunctions.end()
     );
-    printf("Getting next pattern...\n");
     unsigned int call_addr = ExecuteToCall(allFunctions, &regs);
     if (call_addr == 0)
         return NULL;
@@ -544,15 +611,15 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         sensorimotorFunctions.end();
     SensoryRegion *inputpattern = NULL;
     if (std::find(pure_b, pure_e, call_addr) != pure_e) {
-        printf("pure sensory function\n");
+        //printf("pure sensory function\n");
         binding = HandlePureSensory(&regs);
         inputpattern = binding.codec->GetPattern(
             binding.fd, Learning
         );
     } else if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
-        printf("cpg function\n");
+        //printf("cpg function\n");
     } else if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
-        printf("sensorimotor function.\n");
+        //printf("sensorimotor function.\n");
         cpgAddr = ExecuteToCall(cpgFunctions, &regs);
         call_addr = ExecuteToCall(pureSensoryFunctions, &regs);
         binding = HandlePureSensory(&regs);

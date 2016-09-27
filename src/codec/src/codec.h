@@ -8,6 +8,7 @@
 #include "codec_base.h"
 
 #define CALL_OPCODE     0xE8
+#define RET_OPCODE      0xC3
 #define SOFT_INT_OPCODE 0x80CD
 
 #pragma pack(1)     // pack structures to avoid memory padding
@@ -116,6 +117,7 @@ private:
     std::map<const char *, SensoryCodec *, strcmpr> CodecCtorMap;
 };
 
+class Autoencoder;
 
 class ElfCodec : public Codec
 {
@@ -142,9 +144,11 @@ public:
     bool Reset();
 
 private:
+    // private functions
+    char* ptype_str(size_t pt);
+
+    // private data
     SensoryCodecFactory sensoryCodecFactory;
-    std::map<unsigned int, SensoryRegion *> motorCommandEncodings;
-    SensoryInput ***masterMotorEncoding;
 
     static bool const registered;
     bool firstPattern;
@@ -154,12 +158,21 @@ private:
     unsigned codecHeight, codecWidth;
     float codecActiveRatio;
 
+    // deprecated encoder technique
     unsigned int read_plt, open_plt, main_addr;
+
+    std::map<unsigned int, SensoryRegion *> motorCommandEncodings;
+    SensoryInput ***masterMotorEncoding;
     std::vector<unsigned int> pureSensoryFunctions;
     std::vector<unsigned int> cpgFunctions;
     std::vector<unsigned int> sensorimotorFunctions;
 
-    char* ptype_str(size_t pt);
+    // latest encoder technique
+    std::vector< std::vector<unsigned int> > localFuncAddrs;
+    std::vector<unsigned int> dynFuncPltAddrs;
+    std::vector< std::vector<unsigned char> > fcnMachCode;
+
+    Autoencoder *ae;
 };
 
 #endif
