@@ -26,7 +26,11 @@ CODEC_SRC = src/codec.cpp
 SRCS  = src/bitmap_codec.cpp
 
 CODEC_OBJ = obj/codec.o
-OBJS  = obj/bitmap_codec.o
+OBJS  = obj/bitmap_codec.o \
+        obj/Autoencoder.o \
+        obj/Layer.o \
+        obj/Node.o
+
 
 #---------------------------------
 

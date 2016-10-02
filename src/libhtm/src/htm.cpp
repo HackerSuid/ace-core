@@ -213,10 +213,8 @@ void Htm::PushNextClaInput()
 {
     if (Learning == false)
         Learning = true;
-    //printf("Running CLA...\n");
     for (int i=0; i<num_sublayers; i++)
         sublayers[i]->CLA(Learning, allowBoosting);
-    //printf("CLA complete.\n");
     ConnectSubcorticalInput(true);
 }
 

@@ -9,11 +9,11 @@ class Layer;
 class Autoencoder
 {
 public:
-    Autoencoder(unsigned int numInNodes, unsigned int numHidNodes);
+    Autoencoder(unsigned int inputDimension);
     ~Autoencoder();
     void Train(
         unsigned int numEpochs,
-        std::vector< std::vector< std::vector<int> > > trainingData
+        std::vector< std::vector<int> > trainingData
     );
 private:
     Layer *inputLayer, *hiddenLayer, *outputLayer;

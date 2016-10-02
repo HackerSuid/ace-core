@@ -6,7 +6,8 @@
 #include "dendritesegment.h"
 #include "synapse.h"
 
-QtCell::QtCell(Cell *cell, int w, int h)
+QtCell::QtCell(QWidget *parent, Cell *cell, int w, int h)
+    : QWidget(parent)
 {
     // don't resize on repaint.
     setAttribute(Qt::WA_StaticContents);

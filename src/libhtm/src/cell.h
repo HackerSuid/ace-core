@@ -32,7 +32,7 @@ public:
         HtmSublayer *sublayer
     );
     std::vector<DendriteSegment *> GetSegments();
-    int GetNumSegments();
+    unsigned int GetNumSegments();
     Column* GetParentColumn() { return parentColumn; }
 private:
     Column *parentColumn;

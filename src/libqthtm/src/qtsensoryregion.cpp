@@ -30,7 +30,7 @@ QGridLayout* QtSensoryRegion::UnitGrid()
 
     for (int i=0; i<h; i++) {
         for (int j=0; j<w; j++) {
-            QtUnit *unit = new QtUnit(bits[i][j], NULL, 0, NULL, 8, 8);
+            QtUnit *unit = new QtUnit(bits[i][j], NULL, NULL, 0, 3, 3);
             if (bits[i][j]->IsActive())
                 unit->setBrushColor(ACTIVE_COLOR);
             unitGrid->addWidget(unit, i, j, 1, 1);

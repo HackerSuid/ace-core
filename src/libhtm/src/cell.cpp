@@ -227,7 +227,7 @@ DendriteSegment* Cell::GetMostActiveSegment()
 {
     int mostSynapseCount = -1;
     DendriteSegment *mostActiveSeg = NULL;
-    // if no segments yet exist, we will return NULL.
+    // if no segments yet exist, then return NULL.
     int numSegs = this->GetNumSegments();
     for (int i=0; i<numSegs; i++) {
         int synCount = DistalDendriteSegments[i]->GetNumIsActiveSynapses();
@@ -275,7 +275,7 @@ DendriteSegment* Cell::GetBestMatchingSegment(
         synCount = (*i)->GetNumIsNearActiveSynapses();
         printf("\t\t\tsegment has %d near active, %d sensory syns\n",
             synCount, (*i)->GetNumSensorySyns());
-        printf("\t\t\tthreshold %d minThreshold\n");
+        printf("\t\t\tthreshold %d\n", minThreshold);
         if (synCount >= minThreshold)
             if (synCount > mostSynCount) {
                 mostSynCount = synCount;
@@ -293,7 +293,7 @@ std::vector<DendriteSegment *> Cell::GetSegments()
     return DistalDendriteSegments;
 }
 
-int Cell::GetNumSegments()
+unsigned int Cell::GetNumSegments()
 {
     return DistalDendriteSegments.size();
 }

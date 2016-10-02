@@ -1,6 +1,7 @@
 #ifndef ELFCODEC_H_
 #define ELFCODEC_H_
 
+#include <string.h>
 #include <sys/ptrace.h>
 #include <vector>
 #include <map>
@@ -9,6 +10,7 @@
 
 #define CALL_OPCODE     0xE8
 #define RET_OPCODE      0xC3
+#define NOP_OPCODE      0x90
 #define SOFT_INT_OPCODE 0x80CD
 
 #pragma pack(1)     // pack structures to avoid memory padding
@@ -168,8 +170,21 @@ private:
     std::vector<unsigned int> sensorimotorFunctions;
 
     // latest encoder technique
+
+    // local functions have their size pre-computed and stored in
+    // .symtab as st_size
     std::vector< std::vector<unsigned int> > localFuncAddrs;
+    // when preprocessing the ELF executable, remember relocation
+    // offsets to GOT addresses of functions called from the PLT.
+    std::vector<unsigned int> dynFuncRelocGotAddrs;
+    // when preprocessing the ELF executable, remember the
+    // addresses of PLT entries that indirectly call functions
+    // from the GOT.
     std::vector<unsigned int> dynFuncPltAddrs;
+    // remember which GOT address is called by each PLT entry.
+    std::map<unsigned int, unsigned int> pltToGotMap;
+    // store a lookup table from PLT call to function encoding.
+    std::map<unsigned int, SensoryRegion *> pltToMotorEncodingMap;
     std::vector< std::vector<unsigned char> > fcnMachCode;
 
     Autoencoder *ae;

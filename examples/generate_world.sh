@@ -2,7 +2,7 @@
 
 ROOT=$1
 LEVELS=$2
-DIRECTORIES='N NE E SE S SW W NW'
+DIRECTORIES='L R'
 PATTERNDIR="$(pwd)/sense_patterns"
 
 echo "Generating $LEVELS-level structure world in $ROOT"

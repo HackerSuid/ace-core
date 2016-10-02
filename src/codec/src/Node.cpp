@@ -94,7 +94,9 @@ void Node::ComputeNodeDelta(std::vector<Node *> outNodes)
 {
     nodeDelta = 0;
 
-    for (unsigned int i=0; i<outNodes.size(); i++) {
+    unsigned int outNodesSz = outNodes.size();
+
+    for (unsigned int i=0; i<outNodesSz; i++) {
         nodeDelta += outNodes[i]->GetNodeDelta() *
                      outNodes[i]->GetWeight(this);
     }

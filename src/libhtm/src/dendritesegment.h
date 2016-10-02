@@ -27,15 +27,15 @@ public:
     bool IsActive();
     bool IsActiveFromLearning();
     void NewSynapse(Synapse *newSyn);
-    std::vector<Synapse*> GetIsActiveSynapses();
-    std::vector<Synapse*> GetWasActiveSynapses();
-    std::vector<Synapse*> GetWasNearActiveSynapses();
-    int GetNumIsActiveSynapses();
-    int GetNumIsNearActiveSynapses();
-    std::vector<Synapse*> GetIsLearningSynapses();
-    int GetNumIsLearningSynapses();
     std::vector<Synapse *> GetSynapses();
     int GetNumSynapses();
+    std::vector<Synapse*> GetIsActiveSynapses();
+    unsigned int GetNumIsActiveSynapses();
+    std::vector<Synapse*> GetWasActiveSynapses();
+    std::vector<Synapse*> GetWasNearActiveSynapses();
+    int GetNumIsNearActiveSynapses();
+    std::vector<Synapse*> GetIsLearningSynapses();
+    unsigned int GetNumIsLearningSynapses();
     int GetNumSensorySyns() { return numSensorySyns; }
     int GetNumMotorSyns() { return numMotorSyns; }
     static float GetSubsamplePercent() { return SUBSAMPLE_PERCENT; }

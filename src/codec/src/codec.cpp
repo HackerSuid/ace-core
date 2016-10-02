@@ -28,6 +28,9 @@
 // sensory codec factories
 //#include "sensory_codec_factory.h"
 
+// autoencoder headers
+#include "Autoencoder.h"
+
 // Register with the base Codec class.
 bool const ElfCodec::registered = Codec::Register<ElfCodec>();
 
@@ -81,7 +84,6 @@ bool ElfCodec::Init(
     unsigned int read_got_offset, open_got_offset;
 
     std::vector<unsigned char> dynSymsIdx;
-    std::vector<unsigned int> dynFuncGotOffs;
 
     codecHeight = height;
     codecWidth = width;
@@ -375,7 +377,7 @@ bool ElfCodec::Init(
             std::vector<unsigned char>::iterator itEnd =
                 dynSymsIdx.end();
             if (find(itBeg, itEnd, (unsigned char)(reloc.r_info>>32)) != itEnd)
-                dynFuncGotOffs.push_back(reloc.r_offset);
+                dynFuncRelocGotAddrs.push_back(reloc.r_offset);
             if ((unsigned char)(reloc.r_info>>32) == open_sym_ndx)
                 open_got_offset = reloc.r_offset;
             if ((unsigned char)(reloc.r_info>>32) == read_sym_ndx)
@@ -389,11 +391,11 @@ bool ElfCodec::Init(
             unsigned int jmp_instr =
                 *(unsigned int *)((unsigned int)pltent+jmp_offset);
             std::vector<unsigned int>::iterator itBeg =
-                dynFuncGotOffs.begin();
+                dynFuncRelocGotAddrs.begin();
             std::vector<unsigned int>::iterator itEnd =
-                dynFuncGotOffs.end();
+                dynFuncRelocGotAddrs.end();
             if (find(itBeg, itEnd, jmp_instr) != itEnd)
-                dynFuncPltAddrs.push_back(plt_addr+jmp_offset-0x2);
+                pltToGotMap[plt_addr+jmp_offset-0x2] = jmp_instr;
             if (jmp_instr == open_got_offset)
                 open_plt = plt_addr+jmp_offset-0x2;
             if (jmp_instr == read_got_offset)
@@ -460,49 +462,62 @@ bool ElfCodec::LoadTarget()
         execl(targetPath, targetPath, 0);
     } else if (child_pid > 0) {
         wait(&wait_status);
-        printf("[*] Encoding motor commands from function API.\n");
-        // obtain machine code from local functions.
-        std::vector<unsigned char> machCode;
-        for (unsigned int i=0; i<localFuncAddrs.size(); i++) {
-            printf("%d bytes at 0x%08x\n",
-                localFuncAddrs[i][1],
-                localFuncAddrs[i][0]);
-            for (unsigned int j=0; j<localFuncAddrs[i][1]; j++) {
-                machCode.push_back(ptrace(
-                    PTRACE_PEEKTEXT,
-                    child_pid,
-                    localFuncAddrs[i][0]+j,
-                    0
-                ));
-                printf("%02x ", machCode[j]);
-            }
-            fcnMachCode.push_back(machCode);
-            machCode.clear();
-            printf("\n");
-        }
-        // obtain machine code of dynamically linked functions in
-        // the GOT pointed to from PLT.
-        for (unsigned int i=0; i<dynFuncPltAddrs.size(); i++) {
-            unsigned char byte;
-            unsigned int c=0;
-            do {
-                byte = ptrace(
-                    PTRACE_PEEKTEXT,
-                    child_pid,
-                    dynFuncPltAddrs[i]+c,
-                    0
-                );
-                c++;
-            } while (byte != RET_OPCODE);
-        }
         printf("[*] Running executable to main() entry.\n");
         while (WIFSTOPPED(wait_status)) {
             struct user_regs_struct regs;
             // get the current register values
             ptrace(PTRACE_GETREGS, child_pid, 0, &regs);
             // break on main().
-            if ((unsigned int)regs.eip == main_addr)
-                break;
+            if ((unsigned int)regs.eip == main_addr) {
+                printf("[*] Encoding motor commands from function API.\n");
+                // obtain machine code from local functions.
+                std::vector<unsigned char> machCode;
+                for (unsigned int i=0; i<localFuncAddrs.size(); i++) {
+                    printf("%d bytes at 0x%08x\n",
+                        localFuncAddrs[i][1],
+                        localFuncAddrs[i][0]);
+                    for (unsigned int j=0; j<localFuncAddrs[i][1]; j++) {
+                        machCode.push_back(ptrace(
+                            PTRACE_PEEKTEXT,
+                            child_pid,
+                            localFuncAddrs[i][0]+j,
+                            0
+                        ));
+                        printf("%02x ", machCode[j]);
+                    }
+                    fcnMachCode.push_back(machCode);
+                    machCode.clear();
+                    printf("\n");
+                }
+                // obtain machine code of dynamically linked functions
+                // referenced in the GOT and called indirectly from the
+                // PLT.
+                printf("looping through plt to trace got addresses\n");
+                typedef std::map<unsigned int, unsigned int>::iterator mapIt_t;
+                for (mapIt_t iter=pltToGotMap.begin(); iter!=pltToGotMap.end(); iter++) {
+                    printf("\ttracing 0x%08x\n", iter->second);
+                    unsigned int c=0;
+                    unsigned int relocGotAddr = ptrace(
+                        PTRACE_PEEKTEXT, child_pid,
+                        iter->second, 0
+                    );
+                    printf("\t\t0x%08x\n", relocGotAddr);
+                    do {
+                        machCode.push_back(ptrace(
+                            PTRACE_PEEKTEXT, child_pid,
+                            relocGotAddr+c, 0
+                        ));
+                        c++;
+                        printf("%02x ", machCode.back());
+                    } while (machCode.back() != RET_OPCODE);
+                    fcnMachCode.push_back(machCode);
+                    machCode.clear();
+                    printf("\n");
+                }
+                ae = new Autoencoder(fcnMachCode);
+                ae->Train(25);
+                printf("AE trained.\n");
+            }
             // Otherwise, continue; make the child execute another
             // instruction.
             if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {

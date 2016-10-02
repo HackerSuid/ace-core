@@ -91,6 +91,11 @@ std::vector<Synapse*> DendriteSegment::GetIsActiveSynapses()
     return activeSyns;
 }
 
+unsigned int DendriteSegment::GetNumIsActiveSynapses()
+{
+    return GetIsActiveSynapses().size();
+}
+
 /* Same as above but for the previous timestep */
 std::vector<Synapse*> DendriteSegment::GetWasActiveSynapses()
 {
@@ -112,20 +117,6 @@ std::vector<Synapse*> DendriteSegment::GetWasNearActiveSynapses()
             nearActiveSyns.push_back(synapses[i]);
 
     return nearActiveSyns;
-}
-
-/*
- * returns the number of active synapses as defined above.
- */
-int DendriteSegment::GetNumIsActiveSynapses()
-{
-    int activeSyns = 0;
-
-    for (unsigned int i=0; i<synapses.size(); i++)
-        if (synapses[i]->IsFiring())
-            activeSyns++;
-
-    return activeSyns;
 }
 
 /*
@@ -154,14 +145,9 @@ std::vector<Synapse*> DendriteSegment::GetIsLearningSynapses()
     return learnSyns;
 }
 
-int DendriteSegment::GetNumIsLearningSynapses()
+unsigned int DendriteSegment::GetNumIsLearningSynapses()
 {
-    int learnSyns = 0;
-
-    for (unsigned int i=0; i<synapses.size(); i++)
-        if (synapses[i]->IsFiring() && synapses[i]->IsLearning())
-            learnSyns++;
-    return learnSyns;
+    return GetIsLearningSynapses().size();
 }
 
 void DendriteSegment::SetNoTemporalContext()

@@ -21,11 +21,11 @@
 #define CELL_DIA    8.0
 #define COL_DIA     ((CELL_DIA*2.5)+CELL_DIA)
 
-#define DEF_UNIT_W  30
-#define DEF_UNIT_H  30
+#define DEF_UNIT_W  16
+#define DEF_UNIT_H  16
 
-#define DEF_CELL_W  4
-#define DEF_CELL_H  4
+#define DEF_CELL_W  5
+#define DEF_CELL_H  5
 
 class SensoryRegion;
 class Htm;
@@ -181,7 +181,7 @@ class QtCell : public QWidget
 {
 //Q_OBJECT
 public:
-    QtCell(Cell *cell, int w=DEF_CELL_W, int h=DEF_CELL_H);
+    QtCell(QWidget *parent, Cell *cell, int w=DEF_CELL_W, int h=DEF_CELL_H);
     ~QtCell();
     QSize sizeHint() const;
     void setBrushColor(const QColor &newColor);

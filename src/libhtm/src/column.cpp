@@ -375,7 +375,8 @@ Cell* Column::GetBestMatchingCell(
             &bestSegIdx,
             sublayer
         );
-        printf("\t\t\tbestseg 0x%08x (not null then best)\n");
+        printf("\t\t\tbestSeg 0x%08x (not null then best)\n",
+            (unsigned int)bestSeg);
         //if (i>0 && cellNumSegments>0 && bestSeg)
 //        printf("\t\tchecking best seg (%d tot) on c %d.\n",
 //            cellNumSegments, i);

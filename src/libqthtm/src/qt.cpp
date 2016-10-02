@@ -122,12 +122,12 @@ void QtFront::CreateTrainingWidget()
     TrainingWindow->setObjectName("MainWidget");
     TrainingLayout = new QGridLayout();
 
-    TrainingLayout->setColumnStretch(0, 5);
-    TrainingLayout->setColumnStretch(1, 2);
-    TrainingLayout->setColumnStretch(2, 5);
-    TrainingLayout->setRowStretch(0, 10);
-    TrainingLayout->setRowStretch(1, 4);
-    TrainingLayout->setRowStretch(2, 1);
+    TrainingLayout->setColumnStretch(0, 2);
+    TrainingLayout->setColumnStretch(1, 8);
+    TrainingLayout->setRowStretch(0, 2);
+    TrainingLayout->setRowStretch(1, 8);
+    TrainingLayout->setRowStretch(2, 8);
+    TrainingLayout->setRowStretch(3, 1);
 
     // groupbox for input region.
     inputGroup = new QGroupBox("input");
@@ -206,8 +206,8 @@ void QtFront::CreateTrainingWidget()
 
     TrainingLayout->addWidget(inputGroup, 0, 0, 1, 1);
     TrainingLayout->addWidget(objHtm, 1, 0, 1, 1);
-    TrainingLayout->addWidget(controls, 0, 1, 1, 1);
-    TrainingLayout->addWidget(htmGroup, 0, 2, 2, 1);
+    TrainingLayout->addWidget(controls, 2, 0, 1, 1);
+    TrainingLayout->addWidget(htmGroup, 0, 1, 3, 1);
 
     TrainingWindow->setLayout(TrainingLayout);
 /*    QTabWidget *tab = new QTabWidget();
@@ -257,8 +257,13 @@ void QtFront::ShowTrainingWidget()
 
 void QtFront::UpdateQtDisplay()
 {
+    printf("[*] Updating Qt4 display\n");
+    printf("[*]\tUpdating sensory input display\n");
     UpdateInputDisplay(CurrentInput->GetPattern());
+    printf("[*]\tSensory input display updated!\n");
+    printf("[*]\tUpdating Htm display\n");
     UpdateHtmDisplay();
+    printf("[*]\tHtm display updated!\n");
     predCompWindowVal->setText(
         QString::number(
             HtmDisplay->PredictionComprehensionMetric(),

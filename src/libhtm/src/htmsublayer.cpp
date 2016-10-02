@@ -87,7 +87,6 @@ void HtmSublayer::RefreshLowerSynapses()
             columns[i][j]->RefreshNewPattern(lower);
 }
 
-// Currently this algorithm represents L2/3 in cortex.
 void HtmSublayer::CLA(bool Learning, bool allowBoosting)
 {
     numActiveColumns[0] = 0;
@@ -249,6 +248,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
      *    context. The algorithm is working on the set of active columns after
      *    the spatial pooling phase.
      */
+//    printf("Computing active states\n");
     for (unsigned int i=0; i<height; i++) {
         for (unsigned int j=0; j<width; j++) {
             int nc = columns[i][j]->GetNumCells();
@@ -256,15 +256,15 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
             if (columns[i][j]->IsActive()) {
 //                printf("Col [%d,%d] active\n", j, i);
                 /*
-                 * Search for cells that were predicted and
-                 * activate them; they fire and inhibit ipsicolumnar cells. If
-                 * cells that caused this cell to be predicted were learn
-                 * cells (as opposed to bursting), then they were part of a
-                 * correct sequence prediction, so choose this cell as the
-                 * learning cell for this column. If no cells were predicting
-                 * the current feedforward input seen by this column, activate
-                 * all the cells as if any temporal context is valid. Update
-                 * the learn state vector for each cell along the way.
+                 * Search for cells that were predicted and activate them; they
+                 * fire and inhibit ipsicolumnar cells. If cells that caused
+                 * this cell to be predicted were learn cells (as opposed to
+                 * bursting), then they were part of a correct sequence
+                 * prediction, so choose this cell as the learn cell for this
+                 * column. If no cells were predicting the current feedforward
+                 * input seen by this column, activate all the cells as if any
+                 * temporal context is valid. Update the learn state vector for
+                 * each cell along the way.
                  */
                 bool buPredicted = false;
                 bool learnCellChosen = false;
@@ -438,18 +438,21 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
         }
     }
     /*
-     * 2. Original implementation:
+     * 2. Compute the predictive state of each cell for the current timestep.
      *
-     *    Compute the predictive state of each cell for the current timestep.
-     *    Learned predictions are reinforced here. The cells' learn states are
+     * Original implementation:
+     *
+     *    Learned predictions are reinforced. The cells' learn states are
      *    disregarded when just generating a prediction because a bursting
-     *    column should generate multiple predictions, which always happens.
+     *    column should generate multiple predictions.
      *
-     *    Modified implementation:
+     * Modified implementation:
      *
      *    If the HTM is learning sequences, predictions are only generated
      *    for cells active from lateral, learning cells. So bursting does
      *    not generate extra predictions from non-learning active cells.
+     *
+     * I'm not decided on which version is more useful.
      */
 //    printf("Computing predictions\n");
     for (unsigned int i=0; i<height; i++) {
@@ -463,9 +466,9 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                  * it at its resting potential.
                  */
                 std::vector<DendriteSegment *> segments = cells[k]->GetSegments();
-                int numSegs = cells[k]->GetNumSegments();
+                unsigned int numSegs = cells[k]->GetNumSegments();
                 bool predflag = false;
-                for (int s=0; s<numSegs; s++) {
+                for (unsigned int s=0; s<numSegs; s++) {
                     /*
                      * Only SetPredicted() once if there are multiple active
                      * segments to avoid corrupting the state machine.
@@ -500,7 +503,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
      *    learning cells are modified to avoid a bursting column from causing
      *    baseless predictions.
      */
-//    printf("Modifying synapses...\n");
+//    printf("Modifying synaptic permanences\n");
     int segmentUpdateListSize = segmentUpdateList.size();
     int skipSegments = 0;
 //    printf("\t%d segment updates...\n", segmentUpdateListSize);
@@ -536,7 +539,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
             skipSegments++;
         }
     }
-//    printf("\n\n");
+//    printf("Sequence memory updated!\n");
 }
 
 /*
@@ -747,6 +750,7 @@ void HtmSublayer::_ComputeInhibitionRadius(Column ***columns)
     }
 
     inhibitionRadius = avg_rec_fld_rad;
+    //printf("Inhibition radius: %d\n", inhibitionRadius);
 }
 
 // accessors

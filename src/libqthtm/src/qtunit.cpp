@@ -30,18 +30,25 @@ QtUnit::QtUnit(
 
     cells = c;
     if (cells) {
-        CellGrid = new QGridLayout();
+        //CellGrid = new QGridLayout();
         //CellGrid->setAlignment(Qt::AlignCenter);
-        CellGrid->setSpacing(0);
+        //CellGrid->setSpacing(0);
+        //CellGrid->setMargin(0);
         std::vector<Cell *> HtmCells = ((Column *)node)->GetCells();
         for (int i=0; i<sqrt(cells); i++) {
-        //for (int i=0; i<cells; i++) {
             for (int j=0; j<sqrt(cells); j++) {
-                QtCell *cell = new QtCell(HtmCells[(int)(j+(i*sqrt(cells)))]);
-                CellGrid->addWidget(cell, i, /*0*/j);
+                QtCell *cell = new QtCell(
+                    this, HtmCells[(int)(j+(i*sqrt(cells)))]
+                );
+                //CellGrid->addWidget(cell, i, j);
+                cell->setGeometry(
+                    (j>0?DEF_CELL_W*1.25:DEF_CELL_W)/2*(j+1),
+                    (i>0?DEF_CELL_H*1.25:DEF_CELL_H)/2*(i+1),
+                    DEF_CELL_W, DEF_CELL_H
+                );
             }
         }
-        this->setLayout(CellGrid);
+        //this->setLayout(CellGrid);
     }
 }
 
@@ -83,9 +90,9 @@ void QtUnit::_ToggleConnections(bool flag)
         QtUnit *src = (QtUnit *)(inputGrid->itemAtPosition(
             prox_syns[i]->GetY(), prox_syns[i]->GetX())->widget());
         src->setBrushColor(QColor(0xff, 0xaa, 0x33));
-        printf("(%d, %d)\n", prox_syns[i]->GetX(), prox_syns[i]->GetY());
+        //printf("(%d, %d)\n", prox_syns[i]->GetX(), prox_syns[i]->GetY());
     }
-    printf("repainting\n");
+    //printf("repainting\n");
     ((QtSensoryRegion *)(inputGrid->parentWidget()))->repaint();
 }
 

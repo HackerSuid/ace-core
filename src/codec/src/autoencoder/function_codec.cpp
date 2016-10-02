@@ -8,28 +8,30 @@
 
 #include "Autoencoder.h"
 
-std::vector< std::vector< std::vector<int> > > trainingData;
+#define DEF_EPOCHS  50000
+
+std::vector< std::vector<int> > trainingData;
 
 int main(int argc, char **argv)
 {
-    if (argc < 2) {
-        printf("Provide number of epochs to train.\n");
-        abort();
-    }
+    unsigned int numEpochs = DEF_EPOCHS;
 
-    //trainingData.push_back({{0, 0}, {0}});
-    trainingData.push_back({{0, 1}, {1}});
-    trainingData.push_back({{1, 0}, {1}});
-    trainingData.push_back({{1, 1}, {0}});
-
-    unsigned int numInNodes = trainingData[0][0].size();
+    if (argc > 1)
+        numEpochs = (unsigned int)atoi(argv[1]);
+    if (numEpochs < DEF_EPOCHS)
+        printf("Number of epochs may be insufficient.\n");
 
     srand(time(NULL)+getpid());
 
-    //Autoencoder *ae = new Autoencoder(numInNodes, numInNodes/2);
-    Autoencoder *ae = new Autoencoder(numInNodes, numInNodes);
+    trainingData.push_back({0, 0});
+    trainingData.push_back({0, 1});
+    trainingData.push_back({1, 0});
+    trainingData.push_back({1, 1});
 
-    ae->Train(atoi(argv[1]), trainingData);
+    unsigned int inputDimension = trainingData[0].size();
+
+    Autoencoder *ae = new Autoencoder(inputDimension);
+    ae->Train(numEpochs, trainingData);
 
     return 0;
 }
