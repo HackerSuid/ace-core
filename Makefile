@@ -94,6 +94,7 @@ cleanall:
 	$(MAKE) -C $(HTMDIR) clean
 	$(MAKE) -C $(UIDIR) clean
 	$(MAKE) -C $(CODECDIR) clean
+	rm -f $(ACE_OBJS)
 	rm -f $(DESTDIR)/$(BIN)
 
 .PHONY: clean
@@ -101,4 +102,5 @@ clean:
 	$(MAKE) -C $(RELEASE_TGT) clean
 	$(MAKE) -C $(HTMDIR) clean
 	$(MAKE) -C $(CODECDIR) clean
+	rm -f $(ACE_OBJS)
 
