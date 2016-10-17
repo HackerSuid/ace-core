@@ -2,6 +2,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "Layer.h"
 #include "Node.h"
@@ -26,8 +28,9 @@ void Layer::ForwardPropagationOverNodes()
 {
     unsigned int numNodes = nodes->size();
 
-    for (unsigned int i=0; i<numNodes; i++)
+    for (unsigned int i=0; i<numNodes; i++) {
         ((*nodes)[i])->ComputeActivation();
+    }
 }
 
 void Layer::BackwardPropagationOverNodes()

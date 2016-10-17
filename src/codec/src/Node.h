@@ -26,6 +26,10 @@ public:
     {
         return synapseLinks[node];
     }
+    void SetWeight(Node *node, float w)
+    {
+        synapseLinks[node] = w;
+    }
     // used on the input layer.
     void SetActivationVal(float v) { activationVal = v; }
 private:

@@ -65,9 +65,9 @@ void Node::BackPropagateDelta()
 
     for (unsigned int i=0; i<inNodes->size(); i++) {
         inActivationVal = (*inNodes)[i]->GetActivationVal();
-        //printf("\t\t%f - %f * %f * %f = ",
-        //    synapseLinks[(*inNodes)[i]],
-        //    LRATE, nodeDelta, inActivationVal
+        //printf("\t%f - %f * %f * %f = ",
+            //synapseLinks[(*inNodes)[i]],
+            //LRATE, nodeDelta, inActivationVal
         //);
         synapseLinks[(*inNodes)[i]] -=
             LRATE*nodeDelta*inActivationVal;
@@ -81,8 +81,8 @@ void Node::ComputeNodeDelta(float target)
     nodeDelta = (-1.0*(target - activationVal)) *
                 logisticPrime(linearWeightedSummation);
     //printf("\t%f = (-1.0*(%f - %f)) * %f\n",
-    //    nodeDelta, target, activationVal,
-    //    logisticPrime(linearWeightedSummation));
+        //nodeDelta, target, activationVal,
+        //logisticPrime(linearWeightedSummation));
     //printf("\t\t%f * (1 - %f) = %f\n",
     //    logistic(linearWeightedSummation),
     //    logistic(linearWeightedSummation),

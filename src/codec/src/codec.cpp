@@ -349,6 +349,7 @@ bool ElfCodec::Init(
                 );
                 std::vector<unsigned int> locFunc;
                 if (sym.st_size > 0) {
+                    printf("%s at 0x%08x\n", func_name, sym.st_value);
                     locFunc.push_back(sym.st_value);
                     locFunc.push_back(sym.st_size);
                     localFuncAddrs.push_back(locFunc);
@@ -483,11 +484,11 @@ bool ElfCodec::LoadTarget()
                             localFuncAddrs[i][0]+j,
                             0
                         ));
-                        printf("%02x ", machCode[j]);
+                        //printf("%02x ", machCode[j]);
                     }
                     fcnMachCode.push_back(machCode);
                     machCode.clear();
-                    printf("\n");
+                    //printf("\n");
                 }
                 // obtain machine code of dynamically linked functions
                 // referenced in the GOT and called indirectly from the
@@ -501,21 +502,21 @@ bool ElfCodec::LoadTarget()
                         PTRACE_PEEKTEXT, child_pid,
                         iter->second, 0
                     );
-                    printf("\t\t0x%08x\n", relocGotAddr);
+                    //printf("\t\t0x%08x\n", relocGotAddr);
                     do {
                         machCode.push_back(ptrace(
                             PTRACE_PEEKTEXT, child_pid,
                             relocGotAddr+c, 0
                         ));
                         c++;
-                        printf("%02x ", machCode.back());
+                        //printf("%02x ", machCode.back());
                     } while (machCode.back() != RET_OPCODE);
+                    printf("\n\t\t%u bytes\n", machCode.size());
                     fcnMachCode.push_back(machCode);
                     machCode.clear();
-                    printf("\n");
                 }
                 ae = new Autoencoder(fcnMachCode);
-                ae->Train(25);
+                ae->Train(1001);
                 printf("AE trained.\n");
             }
             // Otherwise, continue; make the child execute another
