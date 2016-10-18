@@ -17,6 +17,7 @@ public:
     ~Autoencoder();
     unsigned int ComputeByteDimension();
     void Train(unsigned int numEpochs);
+    void Classify(std::vector<unsigned char> pattern);
     void ExportNetwork();
     void ImportNetwork();
 private:

@@ -23,10 +23,25 @@ int main(int argc, char **argv)
 
     srand(time(NULL)+getpid());
 
+/*
     trainingData.push_back({0, 0});
     trainingData.push_back({0, 1});
     trainingData.push_back({1, 0});
     trainingData.push_back({1, 1});
+*/
+
+    trainingData.push_back({
+        1, 1, 0, 1, 0, 0, 0, 1,
+        0, 0, 1, 1, 1, 0, 0, 0,
+        0, 0, 1, 0, 0, 1, 0, 0,
+        1, 1, 0, 0, 0, 0, 1, 1
+    });
+    trainingData.push_back({
+        1, 1, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 1, 0, 0, 1,
+        0, 0, 0, 0, 1, 0, 0, 1,
+        1, 1, 0, 0, 0, 0, 1, 1
+    });
 
     unsigned int inputDimension = trainingData[0].size();
 

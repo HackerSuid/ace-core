@@ -173,10 +173,7 @@ private:
 
     // local functions have their size pre-computed and stored in
     // .symtab as st_size
-    std::vector< std::vector<unsigned int> > localFuncAddrs;
-    // when preprocessing the ELF executable, remember relocation
-    // offsets to GOT addresses of functions called from the PLT.
-    std::vector<unsigned int> dynFuncRelocGotAddrs;
+    std::map<unsigned char *, std::vector<unsigned int> > localFuncMap;
     // when preprocessing the ELF executable, remember the
     // addresses of PLT entries that indirectly call functions
     // from the GOT.
@@ -185,7 +182,6 @@ private:
     std::map<unsigned int, unsigned int> pltToGotMap;
     // store a lookup table from PLT call to function encoding.
     std::map<unsigned int, SensoryRegion *> pltToMotorEncodingMap;
-    std::vector< std::vector<unsigned char> > fcnMachCode;
 
     Autoencoder *ae;
 };

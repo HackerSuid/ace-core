@@ -14,12 +14,12 @@ Autoencoder::Autoencoder(std::vector< std::vector<unsigned char> > trainingData)
 {
     this->trainingData = trainingData;
     unsigned int inputDimension = ComputeByteDimension()*8;
-    printf("Autoencoder dimensions: i %u h %u o %u\n",
-        inputDimension, inputDimension/2, inputDimension);
+    //printf("Autoencoder dimensions: i %u h %u o %u\n",
+        //inputDimension, inputDimension/2, inputDimension);
     //printf("creating input nodes\n");
     inputLayer = new Layer(inputDimension, NULL, true);
     //printf("creating hidden nodes\n");
-    hiddenLayer = new Layer(inputDimension, inputLayer, true);
+    hiddenLayer = new Layer(inputDimension/2, inputLayer, true);
     //printf("creating output nodes\n");
     outputLayer = new Layer(inputDimension, hiddenLayer, false);
 }
@@ -48,20 +48,15 @@ void Autoencoder::Train(
     std::vector<Node *> *outNodes = outputLayer->GetNodes();
 
     // Import weight values from exported network file.
-    ImportNetwork();
+    //ImportNetwork();
 
     // train over every example for a specified number of epochs.
     for (unsigned int i=0; i<numEpochs; i++) {
         //printf("epoch %u\n", i);
-        //if (i==1) return;
         float avgErr = 0;
         for (unsigned int e=0; e<trainingData.size(); e++) {
-            //printf("\texample %u/%u\n", e+1, trainingData.size());
             // Forward propagation through each layer.
             // input
-            //printf("example is %u bytes, inNode is %u bytes\n",
-                //trainingData[e].size(), inNodes->size());
-
             unsigned int inNodesSz = inNodes->size()-1;
             unsigned int fcnByteIdx=0, inod=0;
             unsigned int opcodeByte;
@@ -81,16 +76,12 @@ void Autoencoder::Train(
                 }
                 //printf("\n");
             }
-            //for (unsigned int p=0; p<inNodes->size(); p++)
-                //printf("%f ", (*inNodes)[p]->GetActivationVal());
             //printf("\n");
             //if (e==trainingData.size()-1)
                 //return;
             // hidden
             //printf("Feedforward hidden layer\n");
             hiddenLayer->ForwardPropagationOverNodes();
-            //ExportNetwork();
-            //return;
             // output
             //printf("Feedforward output layer\n");
             outputLayer->ForwardPropagationOverNodes();
@@ -109,11 +100,11 @@ void Autoencoder::Train(
             for (unsigned int o=0; o<outNodes->size(); o++) {
                 float diff = (float)(*inNodes)[o]->GetActivationVal() -
                              (*outNodes)[o]->GetActivationVal();
-                printf("%f - %f = %f\n",
-                    (float)(*inNodes)[o]->GetActivationVal(),
-                    (*outNodes)[o]->GetActivationVal(),
-                    diff
-                );
+                //printf("%f - %f = %f\n",
+                    //(float)(*inNodes)[o]->GetActivationVal(),
+                    //(*outNodes)[o]->GetActivationVal(),
+                    //diff
+                //);
                 sampErr += sqrt(pow(diff, 2));
             }
             sampErr /= (*outNodes).size();
@@ -128,10 +119,6 @@ void Autoencoder::Train(
                 );
                 onod++;
             }
-            /*for (unsigned int j=0; j<oNodesSz; j++)
-                (*outNodes)[j]->ComputeNodeDelta(
-                    (float)trainingData[e][j]
-                );*/
             //printf("\tout node delta %f\n",
             //    (*outNodes)[0]->GetNodeDelta()
             //);
@@ -150,22 +137,87 @@ void Autoencoder::Train(
             outputLayer->BackwardPropagationOverNodes();
             //printf("\thidden layer\n");
             hiddenLayer->BackwardPropagationOverNodes();
-            //printf("\tout node weight/bias %f %f\n",
-            //    (*outNodes)[0]->GetWeight((*hidNodes)[0]),
-            //    (*outNodes)[0]->GetWeight((*hidNodes)[1])
-            //);
-            //printf("\thid node weight/bias %f %f\n",
-            //    (*hidNodes)[0]->GetWeight((*inNodes)[0]),
-            //    (*hidNodes)[0]->GetWeight((*inNodes)[1])
-            //);
-
-            //for (unsigned j=0; j<outNodes->size(); j++) {
-            //    printf("node %u: %f\n", j, (*outNodes)[j]->GetActivationVal());
-            //}
         }
         printf("[%u] Average error: %f\n", i, avgErr/trainingData.size());
         ExportNetwork();
     }
+}
+
+void Autoencoder::Classify(std::vector<unsigned char> pattern)
+{
+    std::vector<Node *> *inNodes = inputLayer->GetNodes();
+    std::vector<Node *> *hidNodes = hiddenLayer->GetNodes();
+    std::vector<Node *> *outNodes = outputLayer->GetNodes();
+
+    unsigned int inNodesSz = inNodes->size()-1;
+    unsigned int fcnByteIdx=0, inod=0;
+    unsigned int opcodeByte;
+
+    // set network input nodes to test pattern.
+    while (inod < inNodesSz) {
+        if (pattern[fcnByteIdx]==RET_OPCODE && inod<inNodesSz-8)
+            opcodeByte = NOP_OPCODE;
+        else
+            opcodeByte = pattern[fcnByteIdx++];
+        //printf("%02x ", opcodeByte);
+        for (unsigned int bit=0; bit<8; bit++, inod++) {
+            (*inNodes)[inod]->SetActivationVal(
+                (float)((1<<bit & opcodeByte)>>bit)
+            );
+            //printf("%d", (int)((*inNodes)[inod]->GetActivationVal()));
+        }
+        //printf("\n");
+    }
+    // encode each training data pattern into input nodes.
+    std::vector<Layer *> trainedInputs;
+    for (unsigned int t=0; t<trainingData.size(); t++) {
+        unsigned int nod = 0;
+        fcnByteIdx=0;
+        trainedInputs.push_back(new Layer(inNodesSz, NULL, false));
+        std::vector<Node *> *trainedNodes =
+            trainedInputs.back()->GetNodes();
+        while (nod < inNodesSz) {
+            if (trainingData[t][fcnByteIdx]==RET_OPCODE && nod<inNodesSz-8)
+                opcodeByte = NOP_OPCODE;
+            else
+                opcodeByte = trainingData[t][fcnByteIdx++];
+            //printf("%02x ", opcodeByte);
+            for (unsigned int bit=0; bit<8; bit++, nod++) {
+                (*trainedNodes)[nod]->SetActivationVal(
+                    (float)((1<<bit & opcodeByte)>>bit)
+                );
+                //printf("%d", (int)((*trainedNodes)[nod]->GetActivationVal()));
+            }
+            //printf("\n");
+        }
+    }
+
+    hiddenLayer->ForwardPropagationOverNodes();
+    outputLayer->ForwardPropagationOverNodes();
+
+    float lowestErr = (float)RAND_MAX;
+    unsigned int lowIdx;
+    for (unsigned int e=0; e<trainedInputs.size(); e++) {
+        float sampErr = 0;
+        std::vector<Node *> *nodes = trainedInputs[e]->GetNodes();
+        for (unsigned int o=0; o<outNodes->size(); o++) {
+            float diff = (*nodes)[o]->GetActivationVal() -
+                         (float)(*outNodes)[o]->GetActivationVal();
+            //printf("%f - %f = %f\n",
+                //(float)(*inNodes)[o]->GetActivationVal(),
+                //(*outNodes)[o]->GetActivationVal(),
+                //diff
+            //);
+            sampErr += sqrt(pow(diff, 2));
+        }
+        sampErr /= (*outNodes).size();
+        printf("\tsampErr %u: %f\n", e, sampErr);
+        if (sampErr < lowestErr) {
+            lowestErr = sampErr;
+            lowIdx = e;
+        }
+    }
+    printf("Err %f idx %u\n", lowestErr, lowIdx);
 }
 
 void Autoencoder::ExportNetwork()

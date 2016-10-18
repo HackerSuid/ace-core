@@ -5,7 +5,7 @@
 #include <vector>
 #include <map>
 
-#define LRATE 1.0
+#define LRATE 0.8
 
 class Layer;
 

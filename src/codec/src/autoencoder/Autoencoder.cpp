@@ -8,10 +8,12 @@
 
 Autoencoder::Autoencoder(unsigned int inputDimension)
 {
+    printf("Autoencoder dimensions: i %u h %u o %u\n",
+        inputDimension, inputDimension/2, inputDimension);
     //printf("creating input nodes\n");
     inputLayer = new Layer(inputDimension, NULL, true);
     //printf("creating hidden nodes\n");
-    hiddenLayer = new Layer(inputDimension/2, inputLayer, true);
+    hiddenLayer = new Layer(inputDimension, inputLayer, true);
     //printf("creating output nodes\n");
     outputLayer = new Layer(inputDimension, hiddenLayer, false);
 }
@@ -30,8 +32,9 @@ void Autoencoder::Train(
 
     // train over every example for a specified number of epochs.
     for (unsigned int i=0; i<numEpochs; i++) {
+        float avgErr = 0;
         for (unsigned int e=0; e<trainingData.size(); e++) {
-            if (i == numEpochs-1) {
+            /*if (i == numEpochs-1) {
                 printf("training data: ");
                 printf("\t%d %d => %d %d\n",
                     trainingData[e][0],
@@ -39,12 +42,12 @@ void Autoencoder::Train(
                     trainingData[e][0],
                     trainingData[e][1]
                 );
-            }
+            }*/
             // Forward propagation through each layer.
             // input
             for (unsigned int inod=0; inod<inNodes->size()-1; inod++)
                 (*inNodes)[inod]->SetActivationVal(
-                    trainingData[e][inod]
+                    (float)trainingData[e][inod]
                 );
             // hidden
             //printf("Feedforward hidden layer\n");
@@ -54,11 +57,18 @@ void Autoencoder::Train(
             outputLayer->ForwardPropagationOverNodes();
 
             if (i == numEpochs-1) {
-                for (unsigned j=0; j<outNodes->size(); j++)
-                    printf("target %d, actual %f\n",
-                        trainingData[e][j],
-                        (*outNodes)[j]->GetActivationVal()
-                    );
+                float sampErr = 0;
+                for (unsigned j=0; j<outNodes->size(); j++) {
+                    float diff = (float)trainingData[e][j] -
+                                 (*outNodes)[j]->GetActivationVal();
+                    sampErr += sqrt(pow(diff, 2));
+                    //printf("target %d, actual %f\n",
+                    //    trainingData[e][j],
+                    //    (*outNodes)[j]->GetActivationVal()
+                    //);
+                }
+                sampErr /= (*outNodes).size();
+                avgErr += sampErr;
             }
 
             // Compute output layer deltas.
@@ -98,6 +108,8 @@ void Autoencoder::Train(
             //    printf("node %u: %f\n", j, (*outNodes)[j]->GetActivationVal());
             //}
         }
+        if (i==numEpochs-1)
+            printf("Avg err = %f\n", avgErr/trainingData.size());
         //printf("\n");
     }
 }

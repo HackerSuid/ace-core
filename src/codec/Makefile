@@ -18,7 +18,7 @@ endif
 endif
 
 CC       = g++
-CFLAGS   = -g -Wall -O2 -I$(HTMHEADERS)
+CFLAGS   = -g -Wall -O2 -I$(HTMHEADERS) -std=c++11
 
 LIBS = -lelf
 

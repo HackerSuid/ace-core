@@ -347,13 +347,13 @@ bool ElfCodec::Init(
                 func_name = elf_strptr(
                     e, strtab_ndx, sym.st_name
                 );
-                std::vector<unsigned int> locFunc;
+                std::vector<unsigned int> locFuncSym;
                 if (sym.st_size > 0) {
                     printf("%s at 0x%08x\n", func_name, sym.st_value);
-                    locFunc.push_back(sym.st_value);
-                    locFunc.push_back(sym.st_size);
-                    localFuncAddrs.push_back(locFunc);
-                    locFunc.clear();
+                    locFuncSym.push_back(sym.st_value);
+                    locFuncSym.push_back(sym.st_size);
+                    localFuncMap[(unsigned char *)func_name] = locFuncSym;
+                    locFuncSym.clear();
                 }
                 if (!strncmp("main", func_name, 4))
                     main_addr = sym.st_value;
@@ -371,6 +371,7 @@ bool ElfCodec::Init(
         // find the relocation table entry for the open and read
         // function symbols and save the relocation offset (virtual
         // memory address)
+        std::vector<unsigned int> dynFuncRelocGotAddrs;
         for (unsigned int i=0; i<reloc_num; i++) {
             gelf_getrel(reloc_data, i, &reloc);
             std::vector<unsigned char>::iterator itBeg =
@@ -448,6 +449,8 @@ char* ElfCodec::ptype_str(size_t pt)
  */
 bool ElfCodec::LoadTarget()
 {
+    std::vector< std::vector<unsigned char> > fcnMachCode;
+
     printf("[*] Forking/Execing target executable %s\n", targetPath);
     // in order to make it easier to obtain dynamically linked
     // function machine code, tell the dynamic linker to resolve
@@ -473,20 +476,27 @@ bool ElfCodec::LoadTarget()
                 printf("[*] Encoding motor commands from function API.\n");
                 // obtain machine code from local functions.
                 std::vector<unsigned char> machCode;
-                for (unsigned int i=0; i<localFuncAddrs.size(); i++) {
-                    printf("%d bytes at 0x%08x\n",
-                        localFuncAddrs[i][1],
-                        localFuncAddrs[i][0]);
-                    for (unsigned int j=0; j<localFuncAddrs[i][1]; j++) {
+                std::vector<unsigned char> *testCode;
+                for (auto i : localFuncMap) {
+                    printf("%s: %d bytes at 0x%08x\n",
+                        i.first, i.second[1], i.second[0]
+                    );
+                    for (unsigned int j=0; j<i.second[1]; j++) {
                         machCode.push_back(ptrace(
-                            PTRACE_PEEKTEXT,
-                            child_pid,
-                            localFuncAddrs[i][0]+j,
-                            0
+                            PTRACE_PEEKTEXT, child_pid,
+                            i.second[0]+j, 0
                         ));
                         //printf("%02x ", machCode[j]);
                     }
-                    fcnMachCode.push_back(machCode);
+                    //if (machCode.size()<=4) {
+                        //printf("\tadding to list\n");
+                    if (i.second[0] == 0x08048476) {
+                        printf("\tskipping\n");
+                        testCode = new std::vector<unsigned char>(machCode);
+                        continue;
+                    }
+                        fcnMachCode.push_back(machCode);
+                    //}
                     machCode.clear();
                     //printf("\n");
                 }
@@ -496,13 +506,13 @@ bool ElfCodec::LoadTarget()
                 printf("looping through plt to trace got addresses\n");
                 typedef std::map<unsigned int, unsigned int>::iterator mapIt_t;
                 for (mapIt_t iter=pltToGotMap.begin(); iter!=pltToGotMap.end(); iter++) {
-                    printf("\ttracing 0x%08x\n", iter->second);
+                    printf("tracing 0x%08x => ", iter->second);
                     unsigned int c=0;
                     unsigned int relocGotAddr = ptrace(
                         PTRACE_PEEKTEXT, child_pid,
                         iter->second, 0
                     );
-                    //printf("\t\t0x%08x\n", relocGotAddr);
+                    printf("0x%08x : ", relocGotAddr);
                     do {
                         machCode.push_back(ptrace(
                             PTRACE_PEEKTEXT, child_pid,
@@ -511,13 +521,17 @@ bool ElfCodec::LoadTarget()
                         c++;
                         //printf("%02x ", machCode.back());
                     } while (machCode.back() != RET_OPCODE);
-                    printf("\n\t\t%u bytes\n", machCode.size());
-                    fcnMachCode.push_back(machCode);
+                    printf("%u bytes\n", machCode.size());
+                    //if (machCode.size()<=4) {
+                        //printf("\tadding to list\n");
+                        fcnMachCode.push_back(machCode);
+                    //}
                     machCode.clear();
                 }
                 ae = new Autoencoder(fcnMachCode);
-                ae->Train(1001);
+                ae->Train(10);
                 printf("AE trained.\n");
+                ae->Classify(*testCode);
             }
             // Otherwise, continue; make the child execute another
             // instruction.
