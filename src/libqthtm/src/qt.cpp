@@ -122,18 +122,17 @@ void QtFront::CreateTrainingWidget()
     TrainingWindow->setObjectName("MainWidget");
     TrainingLayout = new QGridLayout();
 
-    TrainingLayout->setColumnStretch(0, 2);
-    TrainingLayout->setColumnStretch(1, 8);
-    TrainingLayout->setRowStretch(0, 2);
-    TrainingLayout->setRowStretch(1, 8);
-    TrainingLayout->setRowStretch(2, 8);
-    TrainingLayout->setRowStretch(3, 1);
+    // groupbox for sensory input.
+    sensoryGroup = new QGroupBox("sensory input");
+    sensoryGroup->setObjectName("RegionId");
+    QGridLayout *sensoryGrid = CurrentInput->SensoryUnitGrid();
+    sensoryGroup->setLayout(sensoryGrid);
 
-    // groupbox for input region.
-    inputGroup = new QGroupBox("input");
-    inputGroup->setObjectName("RegionId");
-    QGridLayout *inputGrid = CurrentInput->UnitGrid();
-    inputGroup->setLayout(inputGrid);
+    // groupbox for motor input.
+    motorGroup = new QGroupBox("motor input");
+    motorGroup->setObjectName("RegionId");
+    QGridLayout *motorGrid = CurrentInput->MotorUnitGrid();
+    motorGroup->setLayout(motorGrid);
 
     // Interactive controls
     QWidget *controls = new QWidget;
@@ -161,35 +160,37 @@ void QtFront::CreateTrainingWidget()
     predCompWindowVal->setFont(QFont("Arial", 14, QFont::Bold));
     predSpecWindowVal->setFont(QFont("Arial", 14, QFont::Bold));
 
+/*
     controlsLayout->addWidget(predCompWindowLab, 0, 0);
     controlsLayout->addWidget(predCompWindowVal, 0, 1);
     controlsLayout->addWidget(predSpecWindowLab, 1, 0);
     controlsLayout->addWidget(predSpecWindowVal, 1, 1);
+*/
 
-    controlsLayout->setRowStretch(2, 4);
+    //controlsLayout->setRowStretch(2, 4);
 
     QLabel *singPattLab = new QLabel("Single pattern");
     TrainSingPattButton = new QPushButton("consume");
     TrainSingPattButton->setStyleSheet("color: black;");
-    controlsLayout->addWidget(singPattLab, 3, 0);
-    controlsLayout->addWidget(TrainSingPattButton, 3, 1);
+    controlsLayout->addWidget(singPattLab, 0, 0);
+    controlsLayout->addWidget(TrainSingPattButton, 0, 1);
 
     QLabel *singProgLab = new QLabel("Single program");
     TrainSingProgButton = new QPushButton("execute");
     TrainSingProgButton->setStyleSheet("color: black;");
-    controlsLayout->addWidget(singProgLab, 4, 0);
-    controlsLayout->addWidget(TrainSingProgButton, 4, 1);
+    controlsLayout->addWidget(singProgLab, 1, 0);
+    controlsLayout->addWidget(TrainSingProgButton, 1, 1);
 
     QLabel *VarLab = new QLabel("Variable program: ");
     VarEdit = new QLineEdit();
     VarEdit->setStyleSheet("color: black");
     TrainVarButton = new QPushButton("initiate");
     TrainVarButton->setStyleSheet("color: black;");
-    controlsLayout->addWidget(VarLab, 5, 0);
-    controlsLayout->addWidget(VarEdit, 5, 1);
-    controlsLayout->addWidget(TrainVarButton, 6, 1);
+    controlsLayout->addWidget(VarLab, 2, 0);
+    controlsLayout->addWidget(VarEdit, 2, 1);
+    controlsLayout->addWidget(TrainVarButton, 3, 1);
 
-    controlsLayout->setRowStretch(7, 4);
+    controlsLayout->setRowStretch(4, 4);
     controls->setLayout(controlsLayout);
 
     // groupbox for htm object details.
@@ -204,10 +205,18 @@ void QtFront::CreateTrainingWidget()
     //HtmDisplay->SetQtSynapses(inputGrid);
     htmGroup->setLayout(htmGrid);
 
-    TrainingLayout->addWidget(inputGroup, 0, 0, 1, 1);
-    TrainingLayout->addWidget(objHtm, 1, 0, 1, 1);
-    TrainingLayout->addWidget(controls, 2, 0, 1, 1);
-    TrainingLayout->addWidget(htmGroup, 0, 1, 3, 1);
+    TrainingLayout->addWidget(sensoryGroup, 0, 0, 1, 1);
+    TrainingLayout->addWidget(motorGroup, 1, 0, 1, 1);
+    //TrainingLayout->addWidget(objHtm, 1, 0, 1, 1);
+    //TrainingLayout->addWidget(controls, 2, 0, 1, 1);
+    TrainingLayout->addWidget(htmGroup, 0, 1, 2, 1);
+
+    TrainingLayout->setColumnStretch(0, 30);
+    TrainingLayout->setColumnStretch(1, 100);
+    TrainingLayout->setRowStretch(0, 2);
+    TrainingLayout->setRowStretch(1, 8);
+    TrainingLayout->setRowStretch(2, 8);
+    //TrainingLayout->setRowStretch(3, 1);
 
     TrainingWindow->setLayout(TrainingLayout);
 /*    QTabWidget *tab = new QTabWidget();
@@ -285,8 +294,8 @@ void QtFront::UpdateQtDisplay()
  */
 void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
 {
-    QGridLayout *currGrid = (QGridLayout *)inputGroup->layout();
-    QGridLayout *newInputGrid = CurrentInput->UnitGrid();
+    QGridLayout *currGrid = (QGridLayout *)sensoryGroup->layout();
+    QGridLayout *newInputGrid = CurrentInput->SensoryUnitGrid();
     int w = newPattern->GetWidth();
     int h = newPattern->GetHeight();
     int r, g, b;

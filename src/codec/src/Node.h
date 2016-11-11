@@ -14,7 +14,7 @@ class Node
 public:
     Node(Layer *inputLayer, bool isBiasNode);
     ~Node();
-    void ComputeActivation();
+    void ComputeActivation(bool debugPrint);
     void BackPropagateDelta();
     // output node delta
     void ComputeNodeDelta(float totalError);

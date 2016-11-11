@@ -24,12 +24,12 @@ Layer::~Layer()
 {
 }
 
-void Layer::ForwardPropagationOverNodes()
+void Layer::ForwardPropagationOverNodes(bool debugPrint)
 {
     unsigned int numNodes = nodes->size();
 
     for (unsigned int i=0; i<numNodes; i++) {
-        ((*nodes)[i])->ComputeActivation();
+        ((*nodes)[i])->ComputeActivation(debugPrint);
     }
 }
 

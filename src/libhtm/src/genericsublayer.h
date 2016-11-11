@@ -11,7 +11,7 @@ class SensoryRegion;
  * 1. an HtmSublayer can't tell if its afferent connection originate from a
  *    codec or another sublayer, so a generic structure can represent
  *    either.
- * 2. both columns and codec units share many function that can be
+ * 2. both columns and codec units share many functions that can be
  *    deduplicated in a generic base class, GenericInput, which is contained
  *    within this generic base class.
  */

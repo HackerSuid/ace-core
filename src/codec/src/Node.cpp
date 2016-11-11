@@ -30,7 +30,7 @@ Node::~Node()
 {
 }
 
-void Node::ComputeActivation()
+void Node::ComputeActivation(bool debugPrint)
 {
     // activation of bias nodes remains at the initialized constant
     // of 1.
@@ -41,18 +41,22 @@ void Node::ComputeActivation()
     unsigned int numInNodes = inNodes->size();
     linearWeightedSummation = 0;
 
-    //printf("\tweighted sum: logistic(");
+    //if (debugPrint) printf("\tweighted sum: logistic(\n");
     for (unsigned int i=0; i<numInNodes; i++) {
-        //printf("%f*%f%s", (*inNodes)[i]->GetActivationVal(),
-        //                  synapseLinks[(*inNodes)[i]],
-        //                  i==numInNodes-1?"":"+"
-        //);
+        /*if (debugPrint) {
+            if (i<20) {
+                printf("[%u] %f*%f%s\n", i, (*inNodes)[i]->GetActivationVal(),
+                                  synapseLinks[(*inNodes)[i]],
+                                  i==numInNodes-1?"":"+"
+                );
+            }
+        }*/
         linearWeightedSummation +=
             (*inNodes)[i]->GetActivationVal() *
             synapseLinks[(*inNodes)[i]];
     }
     activationVal = logistic(linearWeightedSummation);
-    //printf(")=%f\n", activationVal);
+    if (debugPrint) fprintf(stderr, " ... )=%f\n", activationVal);
 }
 
 void Node::BackPropagateDelta()

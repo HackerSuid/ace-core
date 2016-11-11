@@ -57,7 +57,7 @@ private:
     // training window widgets
     QWidget *TrainingWindow;
     QGridLayout *TrainingLayout;
-    QGroupBox *inputGroup, *htmGroup, *objHtm;
+    QGroupBox *sensoryGroup, *motorGroup, *htmGroup, *objHtm;
     QLabel *predCompWindowVal, *predSpecWindowVal;
     QPushButton *TrainSingPattButton, *TrainSingProgButton, *TrainVarButton;
     QLineEdit *VarEdit;
@@ -106,11 +106,12 @@ Q_OBJECT
 private:
     QWidget *parent;
     SensoryRegion *pattern;
-    QGridLayout *unitGrid;
+    QGridLayout *sensoryUnitGrid, *motorUnitGrid;
 public:
     QtSensoryRegion(QWidget *parent, SensoryRegion *patt);
     ~QtSensoryRegion();
-    QGridLayout* UnitGrid();
+    QGridLayout* SensoryUnitGrid();
+    QGridLayout* MotorUnitGrid();
     SensoryRegion* GetPattern();
 };
 
@@ -121,7 +122,8 @@ Q_OBJECT
 private:
     QWidget *parent;
     Htm *htm;
-    QGridLayout *unitGrid;
+    QGridLayout *sensoryUnitGrid;
+    QGridLayout *motorUnitGrid;
 
     float SlidingWindowAvg(std::list<float> window);
 public:
@@ -149,6 +151,8 @@ public:
     QSize sizeHint() const;
     void setBrushColor(const QColor &newColor);
     QColor getBrushColor() const;
+    void SaveBrushColor() { prevBrushColor = brushColor; }
+    void RestoreBrushColor() { brushColor = prevBrushColor; }
     QGridLayout* GetCellGrid();
     void SetClickable(bool flag);
     bool IsClickable();
@@ -162,7 +166,7 @@ private:
     QAction *showConnections, *hideConnections;
     // cell layout members
     QGridLayout *CellGrid;
-    QColor brushColor;
+    QColor brushColor, prevBrushColor;
     int sizeW, sizeH;
     int cells;
     GenericInput *node;

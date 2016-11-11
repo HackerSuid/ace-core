@@ -13,16 +13,16 @@ class Layer;
 class Autoencoder
 {
 public:
-    Autoencoder(std::vector< std::vector<unsigned char> > trainingData);
+    Autoencoder(std::map<unsigned char *, std::vector<unsigned char> > trainingPatterns);
     ~Autoencoder();
     unsigned int ComputeByteDimension();
     void Train(unsigned int numEpochs);
-    void Classify(std::vector<unsigned char> pattern);
+    void Classify(std::map<unsigned char *, std::vector<unsigned char> > pattern);
     void ExportNetwork();
     void ImportNetwork();
 private:
     Layer *inputLayer, *hiddenLayer, *outputLayer;
-    std::vector< std::vector<unsigned char> > trainingData;
+    std::map<unsigned char *, std::vector<unsigned char> > trainingPatterns;
 };
 
 #endif

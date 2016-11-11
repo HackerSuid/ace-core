@@ -86,13 +86,18 @@ void QtUnit::_ToggleConnections(bool flag)
     std::vector<Synapse *> prox_syns = segment->GetSynapses();
     int rfs = col->GetRecFieldSz();
 
+    //printf("rfs = %d\n", rfs);
     for (int i=0; i<rfs; i++) {
         QtUnit *src = (QtUnit *)(inputGrid->itemAtPosition(
             prox_syns[i]->GetY(), prox_syns[i]->GetX())->widget());
-        src->setBrushColor(QColor(0xff, 0xaa, 0x33));
-        //printf("(%d, %d)\n", prox_syns[i]->GetX(), prox_syns[i]->GetY());
+        if (flag) {
+            src->SaveBrushColor();
+            src->setBrushColor(QColor(0xff, 0xaa, 0x33));
+        } else
+            src->RestoreBrushColor();
+        //printf("\t[%d] (%d, %d)\n",
+            //i, prox_syns[i]->GetX(), prox_syns[i]->GetY());
     }
-    //printf("repainting\n");
     ((QtSensoryRegion *)(inputGrid->parentWidget()))->repaint();
 }
 
@@ -193,6 +198,7 @@ void QtUnit::mousePressEvent(QMouseEvent *event)
     Column *col = (Column *)node;
     DendriteSegment *segment = col->GetProximalDendriteSegment();
     std::vector<Synapse *> syns  = segment->GetSynapses();
+
     for (int i=0; i<col->GetRecFieldSz(); i++) {
         char synCoordStr[32];
         memset(synCoordStr, 0, sizeof(synCoordStr));

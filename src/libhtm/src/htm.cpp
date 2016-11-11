@@ -37,10 +37,7 @@ void Htm::InitHtm(const char *config_file_path)
     if (!(codec = Codec::Instantiate()))
         abort();
     // initialization of the codec.
-    unsigned int layerH = sublayers[0]->GetHeight();
-    unsigned int layerW = sublayers[0]->GetWidth();
-    float layerLocalActivity = sublayers[0]->GetLocalActivity();
-    if (!codec->Init(target_path, layerH, layerW, layerLocalActivity))
+    if (!codec->Init(target_path, sublayers[0]))
         abort();
     // initialization and linkage of the regions.
     printf("[*] Connecting cortical sublayers to sensory stream.\n");

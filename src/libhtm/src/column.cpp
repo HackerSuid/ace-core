@@ -77,7 +77,41 @@ void Column::InitializeProximalDendrite(
 
     memset(syn_pos, 0, sizeof(syn_pos));
     ProximalDendriteSegment = new DendriteSegment(false);
-    int rec_fld_rad = rec_field_sz/4;
+
+    // compute the maximum distance from the center for each
+    // 2d vector component. aka the radius of the receptive
+    // field.
+    int rec_fld_rad =
+        (int)pow((int)sqrt(rec_field_sz), 2) < rec_field_sz ?
+            sqrt(rec_field_sz)+1 : sqrt(rec_field_sz);
+    rec_fld_rad /= 2;
+    if ((int)pow(rec_fld_rad*2, 2) < rec_field_sz)
+        rec_fld_rad++;
+
+    // adjust the receptive field size of columns with limited
+    // receptive fields from being on the field boundaries.
+    int maxx, maxy, minx, miny;
+    maxx = x_center+rec_fld_rad;
+    maxy = y_center+rec_fld_rad;
+    minx = x_center-rec_fld_rad;
+    miny = y_center-rec_fld_rad;
+    if (maxx > w) maxx = w;
+    if (maxy > h) maxy = h;
+    if (minx < 0) minx = 0;
+    if (miny < 0) miny = 0;
+    rec_field_sz = (maxx-minx) * (maxy-miny);
+
+    for (int x_idx=minx; x_idx<maxx; x_idx++) {
+        for (int y_idx=miny; y_idx<maxy; y_idx++) {
+            ProximalDendriteSegment->NewSynapse(
+                new Synapse(
+                    inputs[y_idx][x_idx], x_idx, y_idx, false
+                )
+            );
+        }
+    }
+
+/*
     for (int i=0; i<rec_field_sz; i++) {
         do {
             int rnd_rad_x = rand()%rec_fld_rad;
@@ -92,8 +126,11 @@ void Column::InitializeProximalDendrite(
         } while (!UniqueIdx(x_idx, y_idx, (int *)syn_pos, i));
         syn_pos[i][0] = x_idx;
         syn_pos[i][1] = y_idx;
-        ProximalDendriteSegment->NewSynapse(new Synapse(inputs[y_idx][x_idx], x_idx, y_idx, false));
+        ProximalDendriteSegment->NewSynapse(
+            new Synapse(inputs[y_idx][x_idx], x_idx, y_idx, false)
+        );
     }
+*/
 }
 
 void Column::RefreshNewPattern(GenericSublayer *NewPattern)

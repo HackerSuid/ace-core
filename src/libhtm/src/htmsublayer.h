@@ -44,7 +44,7 @@ class HtmSublayer : public GenericSublayer
 private:
     GenericSublayer *lower, *higher;
     int rec_field_sz, inhibitionRadius;
-    float localActivity, columnComplexity;
+    float rfsz, localActivity, columnComplexity;
     std::vector<SegmentUpdate *> segmentUpdateList;
     int numActiveColumns[2];
     Htm *htmPtr;
@@ -98,6 +98,8 @@ public:
     {
         return predSpecWindow;
     }
+    float GetRecFieldSz() { return rfsz; }
+    float GetColComplexity() { return columnComplexity; }
     float GetLocalActivity() { return localActivity; }
     Htm* GetHtmPtr() { return htmPtr; }
 };

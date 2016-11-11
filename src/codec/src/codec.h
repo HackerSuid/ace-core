@@ -119,6 +119,7 @@ private:
     std::map<const char *, SensoryCodec *, strcmpr> CodecCtorMap;
 };
 
+class HtmSublayer;
 class Autoencoder;
 
 class ElfCodec : public Codec
@@ -127,12 +128,7 @@ public:
     ElfCodec();
     ~ElfCodec();
 
-    bool Init(
-        char *target_path,
-        unsigned int height,
-        unsigned int width,
-        float localActivity
-    );
+    bool Init(char *target_path, HtmSublayer *sensoryLayer);
     bool LoadTarget();
     unsigned int ExecuteToCall(
         std::vector<unsigned int>,
@@ -141,6 +137,7 @@ public:
     SensoryRegion* GetPattern(bool Learning);
     SensoryCodecBinding HandlePureSensory(struct user_regs_struct *regs);
     void AddNewMotorEncoding(unsigned int motorCallAddr);
+    SensoryRegion* GenerateSparseMotorRep(std::vector<unsigned char> machCode);
     int GetRewardSignal();
     bool FirstPattern();
     bool Reset();
@@ -148,6 +145,13 @@ public:
 private:
     // private functions
     char* ptype_str(size_t pt);
+    unsigned int FindFcnLargestSz();
+    void NormalizeFcnMachCodeMap(unsigned int numBytes);
+    void TranslateOpcodeArrayToSensoryInput(
+        unsigned int width,
+        unsigned int height,
+        unsigned int leftover
+    );
 
     // private data
     SensoryCodecFactory sensoryCodecFactory;
@@ -158,7 +162,7 @@ private:
     char *child_dir;
     int wait_status;
     unsigned codecHeight, codecWidth;
-    float codecActiveRatio;
+    float codecRfSz, codecActiveRatio, codecColComplexity;
 
     // deprecated encoder technique
     unsigned int read_plt, open_plt, main_addr;
@@ -171,6 +175,8 @@ private:
 
     // latest encoder technique
 
+    HtmSublayer *sensoryLayer;
+
     // local functions have their size pre-computed and stored in
     // .symtab as st_size
     std::map<unsigned char *, std::vector<unsigned int> > localFuncMap;
@@ -179,11 +185,28 @@ private:
     // from the GOT.
     std::vector<unsigned int> dynFuncPltAddrs;
     // remember which GOT address is called by each PLT entry.
-    std::map<unsigned int, unsigned int> pltToGotMap;
-    // store a lookup table from PLT call to function encoding.
-    std::map<unsigned int, SensoryRegion *> pltToMotorEncodingMap;
+    std::map<unsigned char *, std::vector<unsigned int> > pltToGotMap;
+
+    std::map<
+        unsigned int,
+        std::map<
+            unsigned char *,
+            std::vector<unsigned char>
+        >
+    > fcnMachCodeMap;
+
+    // store a lookup table from function call address to encoded
+    // motor command representation.
+    std::map<
+        unsigned int,
+        std::map<
+            unsigned char *,
+            SensoryRegion *
+        >
+    > motorEncodingMap;
 
     Autoencoder *ae;
+    HtmSublayer *motorLayer;
 };
 
 #endif

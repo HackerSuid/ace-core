@@ -10,7 +10,7 @@ QtHtm::QtHtm(QWidget *parent, Htm *htm)
     : QWidget(parent)
 {
     this->htm = htm;
-    unitGrid = NULL;
+    sensoryUnitGrid = NULL;
 }
 
 QtHtm::~QtHtm()
@@ -24,12 +24,12 @@ QtHtm::~QtHtm()
  */
 QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
 {
-    if (unitGrid)
-        return unitGrid;
+    if (sensoryUnitGrid)
+        return sensoryUnitGrid;
 
-    unitGrid = new QGridLayout();
-    unitGrid->setSpacing(0);
-    unitGrid->setAlignment(Qt::AlignCenter);
+    sensoryUnitGrid = new QGridLayout();
+    sensoryUnitGrid->setSpacing(0);
+    sensoryUnitGrid->setAlignment(Qt::AlignCenter);
     HtmSublayer **sublayers = htm->GetSublayers();
     int w = sublayers[0]->GetWidth();
     int h = sublayers[0]->GetHeight();
@@ -38,18 +38,18 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
 
     QtSensoryRegion *qtinput =
         ((QtFront *)parentWidget())->GetCurrentInputDisplay();
-    QGridLayout *inputGrid = qtinput->UnitGrid();
+    QGridLayout *inputGrid = qtinput->SensoryUnitGrid();
     for (int i=0; i<h; i++) {
         for (int j=0; j<w; j++) {
             QtUnit *unit = new QtUnit(cols[i][j], objHtm, inputGrid, c);
             unit->SetClickable(true);
             if (cols[i][j]->IsActive())
                 unit->setBrushColor(ACTIVE_COLOR);
-            unitGrid->addWidget(unit, i, j, 1, 1);
+            sensoryUnitGrid->addWidget(unit, i, j, 1, 1);
         }
     }
 
-    return unitGrid;
+    return sensoryUnitGrid;
 }
 
 float QtHtm::SlidingWindowAvg(std::list<float> window)

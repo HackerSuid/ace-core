@@ -41,7 +41,9 @@ void HtmSublayer::AllocateColumns(
     bool highTier,
     int activityCycleWindow)
 {
+    this->rfsz = rfsz;
     rec_field_sz = height*width*rfsz;
+    printf("Allocating columns with %d sz rfsz\n", rec_field_sz);
     this->localActivity = localActivity;
     input = (GenericInput ***)malloc(sizeof(GenericInput **) * height);
     for (unsigned int i=0; i<height; i++) {

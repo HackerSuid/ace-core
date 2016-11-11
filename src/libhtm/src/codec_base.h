@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 class SensoryRegion;
+class HtmSublayer;
 
 // an abstract base class for different types of polymorphic Codec classes
 class Codec
@@ -29,10 +30,7 @@ public:
 
     virtual bool Init(
         char *target_path,
-        unsigned int height,
-        unsigned int width,
-        float localActivity
-    ) = 0;
+        HtmSublayer *sensoryLayer) = 0;
     virtual SensoryRegion* GetPattern(bool Learning) = 0;
     virtual bool FirstPattern() = 0;
     virtual bool Reset() = 0;

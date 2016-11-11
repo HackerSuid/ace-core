@@ -21,7 +21,7 @@
 
 // libhtm headers
 #include "codec.h"
-#include "htmregion.h"
+#include "htmsublayer.h"
 #include "sensoryregion.h"
 #include "sensoryinput.h"
 
@@ -29,7 +29,7 @@
 //#include "sensory_codec_factory.h"
 
 // autoencoder headers
-#include "Autoencoder.h"
+//#include "Autoencoder.h"
 
 // Register with the base Codec class.
 bool const ElfCodec::registered = Codec::Register<ElfCodec>();
@@ -46,6 +46,8 @@ ElfCodec::ElfCodec()
     firstPattern = true;
 
     sensoryCodecFactory.Register((char *)".bmp", new BitmapCodec());
+
+    motorLayer = NULL;
 }
 
 ElfCodec::~ElfCodec()
@@ -54,11 +56,7 @@ ElfCodec::~ElfCodec()
     if (codecName) free(codecName);
 }
 
-bool ElfCodec::Init(
-    char *target_path,
-    unsigned int height,
-    unsigned int width,
-    float localActivity)
+bool ElfCodec::Init(char *target_path, HtmSublayer *sensoryLayer)
 {
     Elf *e;
     GElf_Ehdr ehdr;
@@ -83,11 +81,13 @@ bool ElfCodec::Init(
     unsigned int plt_addr;
     unsigned int read_got_offset, open_got_offset;
 
-    std::vector<unsigned char> dynSymsIdx;
+    this->sensoryLayer = sensoryLayer;
 
-    codecHeight = height;
-    codecWidth = width;
-    codecActiveRatio = localActivity;
+    std::map<unsigned char, unsigned char *> dynSymsIdxMap;
+
+    codecHeight = 144;//sensoryLayer->GetHeight();
+    codecWidth = 144;//sensoryLayer->GetWidth();
+    codecActiveRatio = sensoryLayer->GetLocalActivity();
 
     masterMotorEncoding = (SensoryInput ***)malloc(
         sizeof(SensoryInput **) * codecHeight
@@ -295,7 +295,8 @@ bool ElfCodec::Init(
                     */
                     if (GELF_ST_TYPE(sym.st_info)==STT_FUNC) {
                         func_name = elf_strptr(e, shdr.sh_link, sym.st_name);
-                        dynSymsIdx.push_back((unsigned char)i);
+                        dynSymsIdxMap[(unsigned char)i] =
+                            (unsigned char *)func_name;
                         if (!strcmp("read", func_name))
                             read_sym_ndx = (unsigned char)i;
                         if (!strcmp("open", func_name))
@@ -361,6 +362,7 @@ bool ElfCodec::Init(
                 if (sym.st_shndx == pure_sensory_ndx)
                     pureSensoryFunctions.push_back(sym.st_value);
                 if (sym.st_shndx == cpg_ndx) {
+                    printf("0x%08x is cpg\n", sym.st_value);
                     cpgFunctions.push_back(sym.st_value);
                     AddNewMotorEncoding(sym.st_value);
                 }
@@ -370,34 +372,39 @@ bool ElfCodec::Init(
         }
         // find the relocation table entry for the open and read
         // function symbols and save the relocation offset (virtual
-        // memory address)
-        std::vector<unsigned int> dynFuncRelocGotAddrs;
+        // memory address), then find their plt entries.
+        std::map<unsigned char, unsigned char *>::iterator dSymsIdxMapIt;
+        std::map<unsigned int, unsigned char *> dynFuncRelocGotAddrs;
+        std::map<unsigned int, unsigned char *>::iterator
+            dFuncRelGotAddrsIt;
         for (unsigned int i=0; i<reloc_num; i++) {
             gelf_getrel(reloc_data, i, &reloc);
-            std::vector<unsigned char>::iterator itBeg =
-                dynSymsIdx.begin();
-            std::vector<unsigned char>::iterator itEnd =
-                dynSymsIdx.end();
-            if (find(itBeg, itEnd, (unsigned char)(reloc.r_info>>32)) != itEnd)
-                dynFuncRelocGotAddrs.push_back(reloc.r_offset);
+            dSymsIdxMapIt = dynSymsIdxMap.find(
+                (unsigned char)(reloc.r_info>>32)
+            );
+            if (dSymsIdxMapIt != dynSymsIdxMap.end())
+                dynFuncRelocGotAddrs[reloc.r_offset] = dSymsIdxMapIt->second;
             if ((unsigned char)(reloc.r_info>>32) == open_sym_ndx)
                 open_got_offset = reloc.r_offset;
             if ((unsigned char)(reloc.r_info>>32) == read_sym_ndx)
                 read_got_offset = reloc.r_offset;
         }
-        // find the read@plt and open@plt entries in the plt by
-        // finding the above jmp offsets.
-        for (int i=0; i<plt_num; i++) {
+        for (unsigned int i=0; i<plt_num; i++) {
             void *pltent = plt_data->d_buf;
             unsigned int jmp_offset = 0x2+0x10*i;
             unsigned int jmp_instr =
                 *(unsigned int *)((unsigned int)pltent+jmp_offset);
-            std::vector<unsigned int>::iterator itBeg =
-                dynFuncRelocGotAddrs.begin();
-            std::vector<unsigned int>::iterator itEnd =
-                dynFuncRelocGotAddrs.end();
-            if (find(itBeg, itEnd, jmp_instr) != itEnd)
-                pltToGotMap[plt_addr+jmp_offset-0x2] = jmp_instr;
+            //if (find(itBeg, itEnd, jmp_instr) != itEnd)
+            dFuncRelGotAddrsIt = dynFuncRelocGotAddrs.find(
+                jmp_instr
+            );
+            if (dFuncRelGotAddrsIt != dynFuncRelocGotAddrs.end()) {
+                std::vector<unsigned int> pltGotVect;
+                pltGotVect.push_back(plt_addr+jmp_offset-0x2);
+                pltGotVect.push_back(jmp_instr);
+                pltToGotMap[dFuncRelGotAddrsIt->second] =
+                    pltGotVect;
+            }
             if (jmp_instr == open_got_offset)
                 open_plt = plt_addr+jmp_offset-0x2;
             if (jmp_instr == read_got_offset)
@@ -449,8 +456,6 @@ char* ElfCodec::ptype_str(size_t pt)
  */
 bool ElfCodec::LoadTarget()
 {
-    std::vector< std::vector<unsigned char> > fcnMachCode;
-
     printf("[*] Forking/Execing target executable %s\n", targetPath);
     // in order to make it easier to obtain dynamically linked
     // function machine code, tell the dynamic linker to resolve
@@ -469,14 +474,15 @@ bool ElfCodec::LoadTarget()
         printf("[*] Running executable to main() entry.\n");
         while (WIFSTOPPED(wait_status)) {
             struct user_regs_struct regs;
+            std::vector<unsigned char> machCode;
+            std::map<unsigned char *, std::vector<unsigned char> > classifyMap;
+            std::map<unsigned char *, std::vector<unsigned char> > fcnStrCodeMap;
             // get the current register values
             ptrace(PTRACE_GETREGS, child_pid, 0, &regs);
             // break on main().
             if ((unsigned int)regs.eip == main_addr) {
                 printf("[*] Encoding motor commands from function API.\n");
                 // obtain machine code from local functions.
-                std::vector<unsigned char> machCode;
-                std::vector<unsigned char> *testCode;
                 for (auto i : localFuncMap) {
                     printf("%s: %d bytes at 0x%08x\n",
                         i.first, i.second[1], i.second[0]
@@ -488,31 +494,35 @@ bool ElfCodec::LoadTarget()
                         ));
                         //printf("%02x ", machCode[j]);
                     }
-                    //if (machCode.size()<=4) {
-                        //printf("\tadding to list\n");
-                    if (i.second[0] == 0x08048476) {
-                        printf("\tskipping\n");
-                        testCode = new std::vector<unsigned char>(machCode);
-                        continue;
-                    }
-                        fcnMachCode.push_back(machCode);
+                    //if (machCode.size()>=0&&machCode.size()<=93) {
+                    //if (i.second[0] == 0x080484a0) {
+                        //printf("\tskipping\n");
+                    classifyMap[(unsigned char *)strdup(
+                        (const char *)i.first)] = machCode;
+                        //machCode.clear();
+                        //continue;
                     //}
+                    fcnStrCodeMap[(unsigned char *)strdup(
+                        (const char *)i.first)] =  machCode;
+                    //}
+                    fcnMachCodeMap[i.second[0]] = fcnStrCodeMap;
                     machCode.clear();
+                    fcnStrCodeMap.clear();
                     //printf("\n");
                 }
                 // obtain machine code of dynamically linked functions
                 // referenced in the GOT and called indirectly from the
                 // PLT.
                 printf("looping through plt to trace got addresses\n");
-                typedef std::map<unsigned int, unsigned int>::iterator mapIt_t;
-                for (mapIt_t iter=pltToGotMap.begin(); iter!=pltToGotMap.end(); iter++) {
-                    printf("tracing 0x%08x => ", iter->second);
+                for (auto iter : pltToGotMap) {
+                    printf("%s: ",iter.first);
                     unsigned int c=0;
                     unsigned int relocGotAddr = ptrace(
                         PTRACE_PEEKTEXT, child_pid,
-                        iter->second, 0
+                        iter.second[1], 0
                     );
-                    printf("0x%08x : ", relocGotAddr);
+                    printf("0x%08x -> 0x%08x : ", iter.second[0],
+                        relocGotAddr);
                     do {
                         machCode.push_back(ptrace(
                             PTRACE_PEEKTEXT, child_pid,
@@ -521,17 +531,95 @@ bool ElfCodec::LoadTarget()
                         c++;
                         //printf("%02x ", machCode.back());
                     } while (machCode.back() != RET_OPCODE);
+                    //printf("\n");
                     printf("%u bytes\n", machCode.size());
-                    //if (machCode.size()<=4) {
-                        //printf("\tadding to list\n");
-                        fcnMachCode.push_back(machCode);
+                    //if (machCode.size()>=0&&machCode.size()<=93) {
+                    classifyMap[(unsigned char *)strdup(
+                        (const char *)iter.first)] = machCode;
+                    fcnStrCodeMap[(unsigned char *)strdup(
+                        (const char *)iter.first)] = machCode;
                     //}
+                    fcnMachCodeMap[iter.second[0]] = fcnStrCodeMap;
                     machCode.clear();
+                    fcnStrCodeMap.clear();
                 }
-                ae = new Autoencoder(fcnMachCode);
-                ae->Train(10);
+
+                /*
+                 * normalize function machine code definitions by
+                 * injecting NOPs into every function smaller than the
+                 * largest. this is needed because of how the proximal
+                 * dendrite is initialized in the spatial pooler.
+                 */
+                printf("normalizing function sizes\n");
+                unsigned int targetDimension = FindFcnLargestSz();
+                NormalizeFcnMachCodeMap(targetDimension);
+                /*
+                 * create mapping from motor function memory address
+                 * to SensoryRegion of input bits using the
+                 * normalized opcode array.
+                 */
+                printf("translating opcodes to region\n");
+                unsigned int totalBits = targetDimension*8;
+                codecHeight = (unsigned int)sqrt(totalBits);
+                codecWidth = (unsigned int)sqrt(totalBits);
+                unsigned int leftover =
+                    totalBits - (codecHeight * codecWidth);
+                //TranslateOpcodeArrayToSensoryInput(
+                //    codecWidth,
+                //    codecHeight,
+                //    leftover
+                //);
+
+                // initialize the spatial pooling motor layer of
+                // columns
+                codecRfSz = sensoryLayer->GetRecFieldSz();
+                codecActiveRatio = sensoryLayer->GetLocalActivity();
+                codecColComplexity = sensoryLayer->GetColComplexity();
+
+                printf("Allocating motor layer\n");
+                motorLayer = new HtmSublayer(
+                    codecHeight,
+                    codecWidth,
+                    1, NULL, false
+                );
+                motorLayer->AllocateColumns(
+                    codecRfSz,
+                    codecActiveRatio,
+                    codecColComplexity,
+                    true,
+                    100
+                );
+                // initialize an "empty" set of sensory input bits
+                SensoryInput ***initbits = (SensoryInput ***)malloc(
+                    sizeof(SensoryInput **) * codecHeight
+                );
+                for (unsigned int h=0; h<codecHeight; h++) {
+                    initbits[h] = (SensoryInput **)malloc(
+                        sizeof(SensoryInput *) * codecWidth
+                    );
+                    for (unsigned int w=0; w<codecWidth; w++)
+                        initbits[h][w] = new SensoryInput(w, h);
+                }
+                // initialize an "empty" motor input region based
+                // on empty set of input bits.
+                SensoryRegion *initPatt = new SensoryRegion(
+                    initbits, 0, codecWidth, codecHeight, 0, NULL
+                );
+                motorLayer->setlower(initPatt);
+                motorLayer->InitializeProximalDendrites();
+
+/*
+                ae = new Autoencoder(fcnMachCodeMap);
+                ae->Train(1);
                 printf("AE trained.\n");
-                ae->Classify(*testCode);
+                for (auto p : classifyMap) {
+                    std::map<unsigned char *, std::vector<unsigned char> > classifyEntry;
+                    classifyEntry[p.first] = p.second;
+                    ae->Classify(classifyEntry);
+                    classifyEntry.clear();
+                }
+*/
+                break;
             }
             // Otherwise, continue; make the child execute another
             // instruction.
@@ -548,6 +636,80 @@ bool ElfCodec::LoadTarget()
     }
     printf("[*] Target ready!\n");
     return true;
+}
+
+unsigned int ElfCodec::FindFcnLargestSz()
+{
+    unsigned int highestSz = 0;
+ 
+    for (auto f : fcnMachCodeMap)
+        for (auto s : f.second)
+            if (s.second.size() > highestSz)
+                highestSz = s.second.size();
+ 
+    return highestSz;
+}
+
+void ElfCodec::NormalizeFcnMachCodeMap(unsigned int numBytes)
+{
+    unsigned int bytePos, normBytePos, opCode;
+    std::map<unsigned char *, std::vector<unsigned char> > normFcnMap;
+    std::vector<unsigned char> normFcnVect;
+
+    for (auto m=fcnMachCodeMap.begin(); m!=fcnMachCodeMap.end(); ++m) {
+        bytePos = 0, normBytePos = 0;
+        for (auto f : m->second) {
+            while (normBytePos < numBytes) {
+                if (f.second[bytePos]==RET_OPCODE&&normBytePos<numBytes-1)
+                    opCode = NOP_OPCODE;
+                else
+                    opCode = f.second[bytePos++];
+                normFcnVect.push_back(opCode);
+                normBytePos++;
+            }
+            // replace the non-normalized vector with the new,
+            // normalized one.
+            normFcnMap[f.first] = normFcnVect;
+            m->second = normFcnMap;
+            normFcnMap.clear();
+            normFcnVect.clear();
+        }
+    }
+}
+
+void ElfCodec::TranslateOpcodeArrayToSensoryInput(
+    unsigned int width,
+    unsigned int height,
+    unsigned int leftover)
+{
+    std::map<unsigned char *, SensoryRegion *> sensoryMap;
+    SensoryInput ***motorInputs = (SensoryInput ***)malloc(
+        sizeof(SensoryInput **) * height
+    );
+    unsigned int numActiveInputs;
+
+    for (auto fcnAddr : fcnMachCodeMap) {
+        for (auto fcnStr : fcnAddr.second) {
+            // adjust width and height with leftover?
+            for (unsigned int h=0; h<height; h++) {
+                for (unsigned int w=0; w<width; w++) {
+                    for (int i=0; i<8; i++) {
+                    }
+                }
+            }
+            // account for leftover next?
+
+            //sensoryMap[fcnStr.first] = new SensoryRegion(
+            //    motorInputs,
+            //    numActiveInputs,
+            //    width, height,
+            //    0, NULL
+            //);
+            //motorEncodingMap[fcnAddr.first] = sensoryMap;
+            sensoryMap.clear();
+            // clear motorInputs
+        }
+    }
 }
 
 bool ElfCodec::Reset()
@@ -615,7 +777,7 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
 {
     long int fd = -1;
     struct user_regs_struct regs;
-    unsigned int cpgAddr;
+    unsigned int senseAddr, cpgAddr;
     SensoryCodecBinding binding;
 
     std::vector<unsigned int> allFunctions = pureSensoryFunctions;
@@ -641,24 +803,40 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         sensorimotorFunctions.end();
     SensoryRegion *inputpattern = NULL;
     if (std::find(pure_b, pure_e, call_addr) != pure_e) {
-        //printf("pure sensory function\n");
+        printf("pure sensory function\n");
         binding = HandlePureSensory(&regs);
         inputpattern = binding.codec->GetPattern(
             binding.fd, Learning
         );
     } else if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
-        //printf("cpg function\n");
+        printf("cpg function\n");
     } else if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
-        //printf("sensorimotor function.\n");
+        printf("sensorimotor function.\n");
+        // step through code until motor function call.
         cpgAddr = ExecuteToCall(cpgFunctions, &regs);
-        call_addr = ExecuteToCall(pureSensoryFunctions, &regs);
+
+        // step through code until sensory function call.
+        senseAddr = ExecuteToCall(pureSensoryFunctions, &regs);
+
+        // duplicate open fd and determine corresponding sensory
+        // codec with which to obtain sensory pattern.
         binding = HandlePureSensory(&regs);
         inputpattern = binding.codec->GetPattern(
             binding.fd, Learning
         );
+
+        // obtain the associated motor command pattern.
+        // ~~ deprecated method ~~
         inputpattern->SetMotorPattern(
             motorCommandEncodings[cpgAddr]
         );
+        // ~~ SP method ~~
+        //SensoryRegion *motorPattern =
+        //    motorEncodingMap[cpgAddr].begin()->second;
+        //motorLayer->setlower(motorPattern);
+
+        // Learning=true, AllowBoosting=true
+        //motorLayer->SpatialPooler(true, true);
     } else {
         // this shouldn't be able to happen.
         fprintf(stderr, "[X] Error: 0x%08x not marked as an ACE" \
@@ -745,6 +923,11 @@ void ElfCodec::AddNewMotorEncoding(unsigned int motorCallAddr)
     motorCommandEncodings[motorCallAddr] = new SensoryRegion(
         motorInputs, numActiveMotorInputs, codecWidth, codecHeight, 0, NULL
     );
+}
+
+SensoryRegion* ElfCodec::GenerateSparseMotorRep(
+    std::vector<unsigned char> machCode)
+{
 }
 
 int ElfCodec::GetRewardSignal()
