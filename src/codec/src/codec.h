@@ -121,6 +121,8 @@ private:
 
 class HtmSublayer;
 class Autoencoder;
+class SensoryRegion;
+class Column;
 
 class ElfCodec : public Codec
 {
@@ -137,7 +139,7 @@ public:
     SensoryRegion* GetPattern(bool Learning);
     SensoryCodecBinding HandlePureSensory(struct user_regs_struct *regs);
     void AddNewMotorEncoding(unsigned int motorCallAddr);
-    SensoryRegion* GenerateSparseMotorRep(std::vector<unsigned char> machCode);
+    SensoryRegion* GenerateSparseMotorRep(Column ***cols, int width, int height);
     int GetRewardSignal();
     bool FirstPattern();
     bool Reset();
