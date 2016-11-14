@@ -184,6 +184,8 @@ int Column::GetRecFieldSz()
 
 int Column::GetMinOverlap()
 {
+    //printf("%d*%f=%d ", rec_field_sz, columnComplexity,
+        //rec_field_sz * columnComplexity);
     return rec_field_sz * columnComplexity;
 }
 

@@ -873,6 +873,7 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         SensoryRegion *motorPattern =
             motorEncodingMap[cpgAddr].begin()->second;
         motorLayer->setlower(motorPattern);
+        motorLayer->RefreshLowerSynapses();
 
         // Learning=true, AllowBoosting=true
         motorLayer->SpatialPooler(true, true);
@@ -986,8 +987,10 @@ SensoryRegion* ElfCodec::GenerateSparseMotorRep(
         );
         for (unsigned int w=0; w<width; w++) {
             motorInputs[h][w] = new SensoryInput(w, h);
+            printf("%d", cols[h][w]->IsActive());
             motorInputs[h][w]->SetActive(cols[h][w]->IsActive());
         }
+        printf("\n");
     }
 
     motorPattern = new SensoryRegion(
