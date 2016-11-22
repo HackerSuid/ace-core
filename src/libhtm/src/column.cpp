@@ -383,7 +383,7 @@ Cell* Column::GetBestMatchingCell(
     bool FirstPattern)
 {
     if (FirstPattern) {
-        printf("\t\tcell 0 chosen for learning [first pattern]\n");
+        //printf("\t\tcell 0 chosen for learning [first pattern]\n");
         return cells[0];
     }
 
@@ -396,10 +396,13 @@ Cell* Column::GetBestMatchingCell(
     Cell *fewestSegCell = NULL;
     int cellNumSegments, fewestSegs = -1, fewestSegCellIdx = -1;
 
-    // segment will be NULL if no segments are found.
+    /* segment will be NULL if no segments are found. */
     *segment = bestSeg;
     for (int i=0; i<numCells; i++) {
-        // track the cell with the fewest number of segments.
+        /*
+         * track the cell with the fewest number of segments in
+         * case none of them match the input's context.
+         */
         cellNumSegments = cells[i]->GetNumSegments();
         if ((fewestSegs < 0) || (fewestSegs >= 0 && cellNumSegments < fewestSegs)) {
             fewestSegs = cellNumSegments;
@@ -407,15 +410,17 @@ Cell* Column::GetBestMatchingCell(
             fewestSegCellIdx = i;
         }
 
-        // for cell i, get the segment with the most active synapses in the
-        // previous timestep.
-        printf("\t\tchecking segments for cell %d\n", i);
+        /*
+         * for cell i, get the segment with the most active synapses in the
+         * previous timestep.
+         */
+        //printf("\t\tchecking segments for cell %d\n", i);
         bestSeg = cells[i]->GetBestMatchingSegment(
             &bestSegIdx,
             sublayer
         );
-        printf("\t\t\tbestSeg 0x%08x (not null then best)\n",
-            (unsigned int)bestSeg);
+        //printf("\t\t\tbestSeg 0x%08x (not null then best)\n",
+            //(unsigned int)bestSeg);
         //if (i>0 && cellNumSegments>0 && bestSeg)
 //        printf("\t\tchecking best seg (%d tot) on c %d.\n",
 //            cellNumSegments, i);
@@ -449,7 +454,7 @@ Cell* Column::GetBestMatchingCell(
         bestCellIdx = fewestSegCellIdx;
     }
 
-    printf("\t\tcell %d chosen for learning\n", bestCellIdx);
+    //printf("\t\tcell %d chosen for learning\n", bestCellIdx);
 
     return BestCell;
 }

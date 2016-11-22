@@ -44,22 +44,13 @@ bool Cell::WasPredicted()
  * for sensory pattern prediction that depends on what kind of
  * context the pattern is in.
  *
- * 1. For cells in L2/3, distal segments only synapse with
- *    other L2/3 cells, so synapses are only created with
- *    nearby cells in the same sublayer (although, in real
+ * 1. For L2/3 sublayers, distal segments only synapse with
+ *    lateral cells within the same layer (although, in real
  *    brains, axons from L2/3 of the contralateral cortical
  *    hemisphere are also used).
- * 2. For cells in L4, distal dendrite segments synapse with
-      two sources of input. Lateral connections are formed
-      like in L2/3. Additionally, synapses are formed with
-      input bits from the motor pattern.
-
-search through all the cells within the sublayer for cells that were
- * previously active and learning a pattern in context, and create a new
- * segment with connections to a subset of these cells.
- *
- * biologically, each cell only receives axons from other cells nearby,
- * not globally
+ * 2. For L4 sublayers, distal dendrite segments synapse with
+ *    two sources of input: feed-forward sensory patterns, and
+ *    feed-forward motor patterns.
  */
 DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
 {
@@ -67,29 +58,33 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
     bool synsFound = false;
 
     /*
-     * For sensorimotor sublayers, the first pattern will only
-     * be in motor-context. For purely sensory sublayers, the
-     * pattern will have no context.
+     * For first pattern there will be no sensorimotor context.
      */
-
-    if (!FirstPattern) {
-        //printf("\tAdding synapses to distal dendrite from sensory pattern.\n");
-        synsFound = AddSynapsesFromSublayer(sublayer, sublayer, false, newSeg);
+    if (FirstPattern) {
+        newSeg->SetNoTemporalContext();
+        DistalDendriteSegments.push_back(newSeg);
+        return NULL;
     }
 
     if (sublayer->IsSensorimotor()) {
+        printf("Sublayer is sensorimotor.\n");
         SensoryRegion *mp = sublayer->GetLower()->GetMotorPattern();
         //sublayer->GetHtmPtr()->PrintPattern(mp);
         if (mp) {
-            //printf("\tAdding synapses to distal dendrite from motor pattern.\n");
+            printf("\t"
+                "Adding synapses to distal dendrite from motor pattern."
+            "\n");
             synsFound = AddSynapsesFromSublayer(
-                sublayer, (GenericSublayer *)mp, true, newSeg
+                sublayer, (GenericSublayer *)mp, MOTOR_DISTAL, newSeg
             );
-            //newSeg->SetNoTemporalContext();
-            //DistalDendriteSegments.push_back(newSeg);
-            //return NULL;
-            DistalDendriteSegments.push_back(newSeg);
-            return newSeg;
+            printf(
+                "\t" \
+                "Adding synapses to distal dendrite from sensory " \
+                "pattern." \
+            "\n");
+            synsFound += AddSynapsesFromSublayer(
+                sublayer, sublayer->GetLower(), SENSORY_DISTAL, newSeg
+            );
         } else {
             printf("\tNo motor pattern found.\n");
             newSeg->SetNoTemporalContext();
@@ -97,23 +92,27 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
             return NULL;
         }
     } else {
-        printf("\tSublayer is not sensorimotor-capable.\n");
-        newSeg->SetNoTemporalContext();
-        DistalDendriteSegments.push_back(newSeg);
-        return NULL;
+        printf("\tSublayer is high-order.\n");
+        printf(
+            "\tAdding synapses on distal dendrite to lateral cells.\n"
+        );
+        synsFound = AddSynapsesFromSublayer(
+            sublayer, sublayer, LATERAL_DISTAL, newSeg
+        );
     }
 
-    // if zero synapses were formed, then there was no previous activity
-    // in the sequence so skip adding a new segment.
+    /*
+     * if zero synapses were formed, then there was no previous activity
+     * in the sequence so skip adding a new segment.
+     */
     if (synsFound) {
         //printf("\t\tfound %d cells\n", synsFound);
         DistalDendriteSegments.push_back(newSeg);
     } else {
-        printf("\t\tDid not find any previous activity.\n");
+        //printf("\t\tDid not find any previous activity.\n");
         delete newSeg;
         newSeg = NULL;
     }
-
 
     return newSeg;
 }
@@ -121,7 +120,7 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
 bool Cell::AddSynapsesFromSublayer(
     HtmSublayer *thisSublayer,
     GenericSublayer *src,
-    bool motorSrc,
+    input_t inType,
     DendriteSegment *seg)
 {
     GenericInput ***inputBits = src->GetInput();
@@ -135,10 +134,24 @@ bool Cell::AddSynapsesFromSublayer(
 
     bool foundSampleSize = false;
     int synsFound = 0;
+
+    /*
+     * subsampling on distal dendrite segments in the temporal
+     * memory depends on the source of input bits.
+     *
+     * for lateral, intra-layer connections, it subsamples the
+     * number of active columns in the previous timestep.
+     *
+     * for connections to sensory or motor input, the dendrite
+     * segment subsamples the number of active input bits in the
+     * input pattern.
+     */
     int subsampleSz =
-        (motorSrc ? thisSublayer->CurrentActiveColumns() :
-                    thisSublayer->LastActiveColumns()) *
+        (inType==LATERAL_DISTAL ?
+            thisSublayer->LastActiveColumns() :
+            src->GetNumActiveInputs()) *
         DendriteSegment::GetSubsamplePercent();
+
     std::vector<GenericInput *> projections;
 
     auto il = { h-1-celly, celly, w-1-cellx, cellx };
@@ -192,8 +205,8 @@ bool Cell::AddSynapsesFromSublayer(
                      * have been able to predict this cell's activity.
                      */
                     bool activeflag =
-                        motorSrc ? projections[k]->IsActive() :
-                                   projections[k]->WasActive();
+                        inType==LATERAL_DISTAL ? projections[k]->WasActive() :
+                                                 projections[k]->IsActive();
                     if (projections[k]->WasLearning() && activeflag) {
                         //printf("\t\t\t(col %d,%d, c %d)\n", x, y, k);
                         Synapse *newSyn = new Synapse(
@@ -273,9 +286,9 @@ DendriteSegment* Cell::GetBestMatchingSegment(
     int x=0;
     for (std::vector<DendriteSegment *>::iterator i = beg; i != end; i++, x++) {
         synCount = (*i)->GetNumIsNearActiveSynapses();
-        printf("\t\t\tsegment has %d near active, %d sensory syns\n",
-            synCount, (*i)->GetNumSensorySyns());
-        printf("\t\t\tthreshold %d\n", minThreshold);
+        //printf("\t\t\tsegment has %d near active, %d sensory syns\n",
+            //synCount, (*i)->GetNumSensorySyns());
+        //printf("\t\t\tthreshold %d\n", minThreshold);
         if (synCount >= minThreshold)
             if (synCount > mostSynCount) {
                 mostSynCount = synCount;

@@ -21,6 +21,7 @@
 
 // libhtm headers
 #include "codec.h"
+#include "htm.h"
 #include "htmsublayer.h"
 #include "column.h"
 #include "sensoryregion.h"
@@ -351,7 +352,7 @@ bool ElfCodec::Init(char *target_path, HtmSublayer *sensoryLayer)
                 );
                 std::vector<unsigned int> locFuncSym;
                 if (sym.st_size > 0) {
-                    printf("%s at 0x%08x\n", func_name, sym.st_value);
+                    //printf("%s at 0x%08x\n", func_name, sym.st_value);
                     locFuncSym.push_back(sym.st_value);
                     locFuncSym.push_back(sym.st_size);
                     localFuncMap[(unsigned char *)func_name] = locFuncSym;
@@ -363,7 +364,6 @@ bool ElfCodec::Init(char *target_path, HtmSublayer *sensoryLayer)
                 if (sym.st_shndx == pure_sensory_ndx)
                     pureSensoryFunctions.push_back(sym.st_value);
                 if (sym.st_shndx == cpg_ndx) {
-                    printf("0x%08x is cpg\n", sym.st_value);
                     cpgFunctions.push_back(sym.st_value);
                     AddNewMotorEncoding(sym.st_value);
                 }
@@ -495,9 +495,9 @@ bool ElfCodec::LoadTarget()
                 printf("[*] Encoding motor commands from function API.\n");
                 /* obtain machine code of local functions. */
                 for (auto i : localFuncMap) {
-                    printf("%s: %d bytes at 0x%08x\n",
-                        i.first, i.second[1], i.second[0]
-                    );
+                    //printf("%s: %d bytes at 0x%08x\n",
+                        //i.first, i.second[1], i.second[0]
+                    //);
                     for (unsigned int j=0; j<i.second[1]; j++) {
                         machCode.push_back(ptrace(
                             PTRACE_PEEKTEXT, child_pid,
@@ -528,14 +528,14 @@ bool ElfCodec::LoadTarget()
                  */
                 //printf("looping through plt to trace got addresses\n");
                 for (auto iter : pltToGotMap) {
-                    printf("%s: ",iter.first);
+                    //printf("%s: ",iter.first);
                     unsigned int c=0;
                     unsigned int relocGotAddr = ptrace(
                         PTRACE_PEEKTEXT, child_pid,
                         iter.second[1], 0
                     );
-                    printf("0x%08x -> 0x%08x : ", iter.second[0],
-                        relocGotAddr);
+                    //printf("0x%08x -> 0x%08x : ", iter.second[0],
+                        //relocGotAddr);
                     do {
                         machCode.push_back(ptrace(
                             PTRACE_PEEKTEXT, child_pid,
@@ -545,7 +545,7 @@ bool ElfCodec::LoadTarget()
                         //printf("%02x ", machCode.back());
                     } while (machCode.back() != RET_OPCODE);
                     //printf("\n");
-                    printf("%u bytes\n", machCode.size());
+                    //printf("%u bytes\n", machCode.size());
                     //if (machCode.size()>=0&&machCode.size()<=93) {
                     //classifyMap[(unsigned char *)strdup(
                         //(const char *)iter.first)] = machCode;
@@ -596,7 +596,7 @@ bool ElfCodec::LoadTarget()
                     codecRfSz,
                     codecActiveRatio,
                     codecColComplexity,
-                    true,
+                    false,
                     100
                 );
                 // initialize an "empty" set of sensory input bits
@@ -702,8 +702,6 @@ void ElfCodec::TranslateOpcodeArrayToSensoryInput(
         std::vector<unsigned char> opcodeArray =
             fcn.second.begin()->second;
         unsigned int totalBits = opcodeArray.size()*8;
-        printf("Function %s is %u bytes\n", fcn.second.begin()->first,
-            opcodeArray.size());
         // adjust width and height with leftover?
         unsigned int bitPos = 0, bytePos = 0;
         for (unsigned int h=0; h<height; h++) {
@@ -842,15 +840,15 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         sensorimotorFunctions.end();
     SensoryRegion *inputpattern = NULL;
     if (std::find(pure_b, pure_e, call_addr) != pure_e) {
-        printf("pure sensory function\n");
+        //printf("\t\tpure sensory function\n");
         binding = HandlePureSensory(&regs);
         inputpattern = binding.codec->GetPattern(
             binding.fd, Learning
         );
     } else if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
-        printf("cpg function\n");
+        //printf("\t\tcpg function\n");
     } else if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
-        printf("sensorimotor function.\n");
+        //printf("\t\tsensorimotor function.\n");
         // step through code until motor function call.
         cpgAddr = ExecuteToCall(cpgFunctions, &regs);
 
@@ -875,8 +873,14 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         motorLayer->setlower(motorPattern);
         motorLayer->RefreshLowerSynapses();
 
-        // Learning=true, AllowBoosting=true
-        motorLayer->SpatialPooler(true, true);
+        /*
+         * Disable learning and boosting. I don't want the motor
+         * pattern spatial pooler to modify its synapses or ever
+         * alter its representation.
+         *
+         * Learning=false, AllowBoosting=false
+         */
+        motorLayer->SpatialPooler(false, false);
         SensoryRegion *sparseMotorPattern = GenerateSparseMotorRep(
             motorLayer->GetInput(),
             motorLayer->GetWidth(),
@@ -884,9 +888,6 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         );
         inputpattern->SetMotorPattern(sparseMotorPattern);
     } else {
-        // this shouldn't be able to happen.
-        // well, now it will since i will be deprecating the custom
-        // sections.
         fprintf(stderr, "[X] Error: 0x%08x not marked as an ACE" \
                 " function\n", call_addr);
         return NULL;
@@ -976,6 +977,7 @@ void ElfCodec::AddNewMotorEncoding(unsigned int motorCallAddr)
 SensoryRegion* ElfCodec::GenerateSparseMotorRep(
     Column ***cols, int width, int height)
 {
+    int numActive = 0;
     SensoryRegion *motorPattern = NULL;
     SensoryInput ***motorInputs = (SensoryInput ***)malloc(
         sizeof(SensoryInput **) * height
@@ -987,14 +989,13 @@ SensoryRegion* ElfCodec::GenerateSparseMotorRep(
         );
         for (unsigned int w=0; w<width; w++) {
             motorInputs[h][w] = new SensoryInput(w, h);
-            printf("%d", cols[h][w]->IsActive());
+            numActive += (int)cols[h][w]->IsActive();
             motorInputs[h][w]->SetActive(cols[h][w]->IsActive());
         }
-        printf("\n");
     }
 
     motorPattern = new SensoryRegion(
-        motorInputs, 0, width, height, 0, NULL
+        motorInputs, numActive, width, height, 0, NULL
     );
 
     return motorPattern;

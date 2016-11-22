@@ -28,7 +28,7 @@ Htm::~Htm()
 
 void Htm::InitHtm(const char *config_file_path)
 {
-    printf("Loading config: %s\n", config_file_path);
+    printf("[*] Loading HTM configuration: %s\n", config_file_path);
     // initialization of Htm regions and columns.
     if (!LoadXmlConfig(config_file_path))
         abort();
@@ -151,8 +151,9 @@ void Htm::ConnectSubcorticalInput(bool refresh)
         return;
 
     sublayers[0]->setlower(NewPattern);
-    if (refresh)
+    if (refresh) {
         sublayers[0]->RefreshLowerSynapses();
+    }
 }
 
 // Return most recently seen pattern.

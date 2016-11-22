@@ -5,6 +5,8 @@
 #include "htmsublayer.h"
 #include "sensoryregion.h"
 
+#include <ctime>
+
 QtFront::QtFront(Htm *htm)
 {
     this->htm = htm;
@@ -178,17 +180,17 @@ void QtFront::CreateTrainingWidget()
     QLabel *singProgLab = new QLabel("Single program");
     TrainSingProgButton = new QPushButton("execute");
     TrainSingProgButton->setStyleSheet("color: black;");
-    controlsLayout->addWidget(singProgLab, 1, 0);
-    controlsLayout->addWidget(TrainSingProgButton, 1, 1);
+    //controlsLayout->addWidget(singProgLab, 1, 0);
+    //controlsLayout->addWidget(TrainSingProgButton, 1, 1);
 
     QLabel *VarLab = new QLabel("Variable program: ");
     VarEdit = new QLineEdit();
     VarEdit->setStyleSheet("color: black");
     TrainVarButton = new QPushButton("initiate");
     TrainVarButton->setStyleSheet("color: black;");
-    controlsLayout->addWidget(VarLab, 2, 0);
-    controlsLayout->addWidget(VarEdit, 2, 1);
-    controlsLayout->addWidget(TrainVarButton, 3, 1);
+    controlsLayout->addWidget(VarLab, 1, 0);
+    controlsLayout->addWidget(VarEdit, 1, 1);
+    controlsLayout->addWidget(TrainVarButton, 2, 1);
 
     controlsLayout->setRowStretch(4, 4);
     controls->setLayout(controlsLayout);
@@ -208,8 +210,8 @@ void QtFront::CreateTrainingWidget()
     TrainingLayout->addWidget(sensoryGroup, 0, 0, 1, 1);
     TrainingLayout->addWidget(motorGroup, 1, 0, 1, 1);
     //TrainingLayout->addWidget(objHtm, 1, 0, 1, 1);
-    //TrainingLayout->addWidget(controls, 2, 0, 1, 1);
-    TrainingLayout->addWidget(htmGroup, 0, 1, 2, 1);
+    TrainingLayout->addWidget(controls, 2, 0, 1, 1);
+    TrainingLayout->addWidget(htmGroup, 0, 1, 3, 1);
 
     TrainingLayout->setColumnStretch(0, 30);
     TrainingLayout->setColumnStretch(1, 100);
@@ -266,13 +268,8 @@ void QtFront::ShowTrainingWidget()
 
 void QtFront::UpdateQtDisplay()
 {
-    printf("[*] Updating Qt4 display\n");
-    printf("[*]\tUpdating sensory input display\n");
     UpdateInputDisplay(CurrentInput->GetPattern());
-    printf("[*]\tSensory input display updated!\n");
-    printf("[*]\tUpdating Htm display\n");
     UpdateHtmDisplay();
-    printf("[*]\tHtm display updated!\n");
     predCompWindowVal->setText(
         QString::number(
             HtmDisplay->PredictionComprehensionMetric(),
@@ -302,14 +299,31 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
     QColor rgb;
     QtUnit *qtunit = NULL;
 
+/*
+ The old way of updating the sensory input unit grid. This had very,
+ very poor performance, so I am leaving the code here as a reminder.
+
     for (int i=0; i<h; i++) {
         for (int j=0; j<w; j++) {
+            // getting the qlayout item with itemAtPosition has very
+            // poor performance.
             qtunit = (QtUnit *)newInputGrid->itemAtPosition(i, j)->widget();
             rgb = qtunit->getBrushColor();
             rgb.getRgb(&r, &g, &b);
             qtunit = (QtUnit *)currGrid->itemAtPosition(i, j)->widget();
             qtunit->setBrushColor(QColor(r, g, b));
         }
+    }
+*/
+
+    for (int i=0; i<newInputGrid->count(); i++) {
+        int row, col, rs, cs;
+        newInputGrid->getItemPosition(i, &row, &col, &rs, &cs);
+        qtunit = (QtUnit *)newInputGrid->itemAt(i)->widget();
+        rgb = qtunit->getBrushColor();
+        rgb.getRgb(&r, &g, &b);
+        qtunit = (QtUnit *)currGrid->itemAt(i)->widget();
+        qtunit->setBrushColor(QColor(r, g, b));
     }
 }
 

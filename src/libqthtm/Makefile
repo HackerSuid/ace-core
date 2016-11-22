@@ -11,8 +11,8 @@
 CC            = gcc
 CXX           = g++
 DEFINES       = -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED
-CFLAGS        = -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES)
-CXXFLAGS      = -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES)
+CFLAGS        = -g -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES)
+CXXFLAGS      = -g -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES)
 INCPATH       = -I/opt/qt-4.8.7/mkspecs/linux-g++ -I. -I/opt/qt4/include -I. -Isrc -I. -I$(HTMDIR)/src
 LINK          = g++
 LFLAGS        = -fPIC -shared -Wl,-soname,libqthtm.so -Wl,-O1# -Wl,-rpath,/opt/qt4/lib

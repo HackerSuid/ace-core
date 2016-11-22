@@ -21,7 +21,7 @@
 #define CPG_SECTION __attribute__((section (".cpg")))
 #define SENSORIMOTOR_SECTION __attribute__((section (".sensorimotor")))
 // number of bits composing a sensory pattern
-#define PATTERN_SZ      10854
+#define PATTERN_SZ      62262 // 144 x 144 + bmp hdr
 // environmental factors for future reinforcement learning.
 #define HEALTH_BASE     100
 #define HEALTH_DECAY    5
@@ -51,9 +51,10 @@ int consume_pattern(char *cwd, char *filename)
         perror("could not open world pattern");
         return 0;
     }
+    //printf("[sensory] read(%s)\n", path);
     read(patt_fd, pattern, PATTERN_SZ);
     if (pattern[PATTERN_SZ-1] == 1) {
-        printf("\tfound reward pattern: %s\n", filename);
+        //printf("\tfound reward pattern: %s\n", filename);
         health_status += HEALTH_REGEN;
     }
     close(patt_fd);
@@ -67,7 +68,7 @@ DIR* enter_room(char *dir, char *cwd, int cwdsize)
 {
     DIR *dirp=NULL;
 
-    //printf("opendir(%s)\n", dir);
+    //printf("[cpg] opendir(%s)\n", dir);
     if ((dirp=opendir(dir)) == NULL) {
         perror("opendir() failed");
         return 0;
@@ -88,7 +89,7 @@ DIR* scan_room(char *dir, char *cwd, int cwdsize)
     DIR *dirp = NULL;
     struct dirent *de;
 
-//    printf("entering room %s\n", dir);
+    //printf("[sm] entering room %s\n", dir);
     if ((dirp = enter_room(dir, cwd, cwdsize)) == NULL)
         return NULL;
 

@@ -21,6 +21,7 @@ protected:
     unsigned int height, width, depth;
     //std::vector <std::vector <GenericInput *> > input;
     GenericInput ***input;
+    int numActiveInputs;
     SensoryRegion *motorPattern;
     bool sensorimotorLayer;
 public:
@@ -32,6 +33,10 @@ public:
     unsigned int GetDepth();
     //std::vector <std::vector <GenericInput*> > GetInput();
     GenericInput*** GetInput();
+    int GetNumActiveInputs()
+    {
+        return numActiveInputs;
+    }
     SensoryRegion* GetMotorPattern() { return motorPattern; }
 };
 

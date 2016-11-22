@@ -4,6 +4,12 @@
 #include <vector>
 #include "genericinput.h"
 
+typedef enum {
+    SENSORY_DISTAL,
+    MOTOR_DISTAL,
+    LATERAL_DISTAL
+} input_t;
+
 class GenericSublayer;
 class HtmSublayer;
 class Column;
@@ -22,7 +28,7 @@ public:
     bool AddSynapsesFromSublayer(
         HtmSublayer *thisSublayer,
         GenericSublayer *src,
-        bool smotorSrc,
+        input_t inType,
         DendriteSegment *seg
     );
     void RemoveSegment(int segidx);

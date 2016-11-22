@@ -176,7 +176,10 @@ void HtmSublayer::SpatialPooler(bool Learning, bool allowBoosting)
                 if (_EligibleToFire(columns[i][j])) {
                     columns[i][j]->SetActive(true, Learning);
                     numActiveColumns[0]++;
-                    // modify synapses of active columns to reinforce learning the patterns.
+                    /*
+                     * modify synapses of active columns to reinforce learning
+                     * the patterns.
+                     */
                     if (Learning)
                         columns[i][j]->ModifySynapses();
                 } else
@@ -343,7 +346,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                  *
                  */
                 if (!learnCellChosen) {
-                    printf("\tchoosing learning cell\n");
+                    //printf("\tchoosing learning cell\n");
                     DendriteSegment *segment = NULL;
                     int segidx;
                     Cell *BestCell = columns[i][j]->GetBestMatchingCell(
@@ -466,8 +469,14 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                  * If a cell is being predicted for the next timestep, set it
                  * into the predictive state (depolarize it). Otherwise leave
                  * it at its resting potential.
+                 *
+                 * Queue updates to any segment on the cell that
+                 * is predicting its activity. The cell could be
+                 * participating in the context of many temporal
+                 * sequences.
                  */
-                std::vector<DendriteSegment *> segments = cells[k]->GetSegments();
+                std::vector<DendriteSegment *> segments =
+                    cells[k]->GetSegments();
                 unsigned int numSegs = cells[k]->GetNumSegments();
                 bool predflag = false;
                 for (unsigned int s=0; s<numSegs; s++) {
@@ -478,7 +487,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                     bool segactive =
                         Learning ? segments[s]->IsActiveFromLearning() :
                                    segments[s]->IsActive();
-                    if (segactive and !predflag) {
+                    if (segactive) {
 //                        printf("\tcol (%d, %d) cell %d [0x%08x] is predicting\n", j, i, k, cells[k]);
                         //std::vector<Synapse*> syns = segments[s]->GetIsActiveSynapses();
                         //int n = segments[s]->GetNumIsActiveSynapses();
@@ -486,8 +495,10 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
 //                        for (int f=0; f<n; f++) {
 //                            printf("[%d,%d] ", syns[f]->GetX(), syns[f]->GetY());
 //                        printf("\n");
-                        cells[k]->SetPredicted(true);
-                        predflag = true;
+                        if (!predFlag) {
+                            cells[k]->SetPredicted(true);
+                            predflag = true;
+                        }
                         _EnqueueSegmentUpdate(cells[k], s, segments[s], true);
                     }
                 }
