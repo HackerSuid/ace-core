@@ -65,10 +65,11 @@ private:
     QWidget *activeWindow;
 
     QMenuBar *menuBar;
-    QMenu *fileMenu, *configMenu, *execMenu, *debugMenu;
+    QMenu *fileMenu, *configMenu, *execMenu, *analysisMenu;
     QAction *openAction, *saveAction, *exitAction;
     QAction *showConfAction;
     QAction *trainAction;
+    QAction *plotPredCompAction;
 
     // Qt classes to display Htm features
     QtSensoryRegion *CurrentInput;
@@ -80,6 +81,7 @@ private slots:
     void RunSingleProgram();
     void RunVariableProgram();
     int Run();
+    void PlotPredCompGraph();
 protected:
     // override virtual methods from QWidget
     void paintEvent(QPaintEvent *e);

@@ -95,8 +95,8 @@ void Column::InitializeProximalDendrite(
     maxy = y_center+rec_fld_rad;
     minx = x_center-rec_fld_rad;
     miny = y_center-rec_fld_rad;
-    if (maxx > w) maxx = w;
-    if (maxy > h) maxy = h;
+    if (maxx > (int)w) maxx = (int)w;
+    if (maxy > (int)h) maxy = (int)h;
     if (minx < 0) minx = 0;
     if (miny < 0) miny = 0;
     rec_field_sz = (maxx-minx) * (maxy-miny);
@@ -105,7 +105,8 @@ void Column::InitializeProximalDendrite(
         for (int y_idx=miny; y_idx<maxy; y_idx++) {
             ProximalDendriteSegment->NewSynapse(
                 new Synapse(
-                    inputs[y_idx][x_idx], x_idx, y_idx, false
+                    inputs[y_idx][x_idx], x_idx, y_idx,
+                    SENSORY_PROXIMAL
                 )
             );
         }

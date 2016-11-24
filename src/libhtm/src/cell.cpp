@@ -10,7 +10,6 @@
 #include "htm.h"
 #include "column.h"
 #include "cell.h"
-#include "dendritesegment.h"
 #include "synapse.h"
 
 Cell::Cell(Column *col)
@@ -58,7 +57,8 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
     bool synsFound = false;
 
     /*
-     * For first pattern there will be no sensorimotor context.
+     * The first pattern will never be within a sensorimotor
+     * context.
      */
     if (FirstPattern) {
         newSeg->SetNoTemporalContext();
@@ -67,23 +67,25 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
     }
 
     if (sublayer->IsSensorimotor()) {
-        printf("Sublayer is sensorimotor.\n");
-        SensoryRegion *mp = sublayer->GetLower()->GetMotorPattern();
+        //printf("Sublayer is sensorimotor.\n");
+        GenericSublayer *sp = sublayer->GetPreviousInputPattern();
+        GenericSublayer *mp = sp->GetMotorPattern();
         //sublayer->GetHtmPtr()->PrintPattern(mp);
         if (mp) {
-            printf("\t"
-                "Adding synapses to distal dendrite from motor pattern."
-            "\n");
+            /*printf("\t"
+                "Adding synapses to distal dendrite from previous "
+                "motor pattern."
+            "\n");*/
             synsFound = AddSynapsesFromSublayer(
-                sublayer, (GenericSublayer *)mp, MOTOR_DISTAL, newSeg
+                sublayer, mp, MOTOR_DISTAL, newSeg
             );
-            printf(
+            /*printf(
                 "\t" \
-                "Adding synapses to distal dendrite from sensory " \
-                "pattern." \
-            "\n");
+                "Adding synapses to distal dendrite from previous "
+                "sensory pattern."
+            "\n");*/
             synsFound += AddSynapsesFromSublayer(
-                sublayer, sublayer->GetLower(), SENSORY_DISTAL, newSeg
+                sublayer, sp, SENSORY_DISTAL, newSeg
             );
         } else {
             printf("\tNo motor pattern found.\n");
@@ -210,7 +212,7 @@ bool Cell::AddSynapsesFromSublayer(
                     if (projections[k]->WasLearning() && activeflag) {
                         //printf("\t\t\t(col %d,%d, c %d)\n", x, y, k);
                         Synapse *newSyn = new Synapse(
-                            projections[k], x, y, motorSrc
+                            projections[k], x, y, inType
                         );
                         //printf("\t\tnew synapse 0x%08x\n", newSyn);
                         seg->NewSynapse(newSyn);

@@ -495,7 +495,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
 //                        for (int f=0; f<n; f++) {
 //                            printf("[%d,%d] ", syns[f]->GetX(), syns[f]->GetY());
 //                        printf("\n");
-                        if (!predFlag) {
+                        if (!predflag) {
                             cells[k]->SetPredicted(true);
                             predflag = true;
                         }
@@ -775,6 +775,8 @@ Column*** HtmSublayer::GetInput()
 
 void HtmSublayer::setlower(GenericSublayer *reg)
 {
+    if (lower)
+        previousInputPattern = lower;
     lower = reg;
 }
 

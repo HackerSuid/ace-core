@@ -43,6 +43,7 @@ class HtmSublayer : public GenericSublayer
 {
 private:
     GenericSublayer *lower, *higher;
+    GenericSublayer *previousInputPattern;
     int rec_field_sz, inhibitionRadius;
     float rfsz, localActivity, columnComplexity;
     std::vector<SegmentUpdate *> segmentUpdateList;
@@ -90,6 +91,10 @@ public:
     void sethigher(GenericSublayer *reg);
     GenericSublayer* GetLower() { return this->lower; }
     GenericSublayer* GetHigher() { return this->higher; }
+    GenericSublayer* GetPreviousInputPattern()
+    {
+        return previousInputPattern;
+    }
     std::list<float> GetPredictionComprehensionWindow()
     {
         return predCompWindow;

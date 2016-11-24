@@ -291,10 +291,19 @@ void QtFront::UpdateQtDisplay()
  */
 void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
 {
-    QGridLayout *currGrid = (QGridLayout *)sensoryGroup->layout();
-    QGridLayout *newInputGrid = CurrentInput->SensoryUnitGrid();
+    QGridLayout *currSensoryGrid =
+        (QGridLayout *)sensoryGroup->layout();
+    QGridLayout *newSensoryGrid =
+        CurrentInput->SensoryUnitGrid();
     int w = newPattern->GetWidth();
     int h = newPattern->GetHeight();
+   
+    SensoryRegion *mp = newPattern->GetMotorPattern();
+    QGridLayout *currMotorGrid =
+        (QGridLayout *)motorGroup->layout();
+    QGridLayout *newMotorGrid =
+        CurrentInput->MotorUnitGrid();
+
     int r, g, b;
     QColor rgb;
     QtUnit *qtunit = NULL;
@@ -307,24 +316,36 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
         for (int j=0; j<w; j++) {
             // getting the qlayout item with itemAtPosition has very
             // poor performance.
-            qtunit = (QtUnit *)newInputGrid->itemAtPosition(i, j)->widget();
+            qtunit = (QtUnit *)newSensoryGrid->itemAtPosition(i, j)->widget();
             rgb = qtunit->getBrushColor();
             rgb.getRgb(&r, &g, &b);
-            qtunit = (QtUnit *)currGrid->itemAtPosition(i, j)->widget();
+            qtunit = (QtUnit *)currSensoryGrid->itemAtPosition(i, j)->widget();
             qtunit->setBrushColor(QColor(r, g, b));
         }
     }
 */
 
-    for (int i=0; i<newInputGrid->count(); i++) {
+    /* sensory input display grid */
+    for (int i=0; i<newSensoryGrid->count(); i++) {
         int row, col, rs, cs;
-        newInputGrid->getItemPosition(i, &row, &col, &rs, &cs);
-        qtunit = (QtUnit *)newInputGrid->itemAt(i)->widget();
+        newSensoryGrid->getItemPosition(i, &row, &col, &rs, &cs);
+        qtunit = (QtUnit *)newSensoryGrid->itemAt(i)->widget();
         rgb = qtunit->getBrushColor();
         rgb.getRgb(&r, &g, &b);
-        qtunit = (QtUnit *)currGrid->itemAt(i)->widget();
+        qtunit = (QtUnit *)currSensoryGrid->itemAt(i)->widget();
         qtunit->setBrushColor(QColor(r, g, b));
     }
+    /* motor input display grid */
+    for (int i=0; i<newMotorGrid->count(); i++) {
+        int row, col, rs, cs;
+        newMotorGrid->getItemPosition(i, &row, &col, &rs, &cs);
+        qtunit = (QtUnit *)newMotorGrid->itemAt(i)->widget();
+        rgb = qtunit->getBrushColor();
+        rgb.getRgb(&r, &g, &b);
+        qtunit = (QtUnit *)currMotorGrid->itemAt(i)->widget();
+        qtunit->setBrushColor(QColor(r, g, b));
+    }
+    
 }
 
 /*
@@ -358,9 +379,7 @@ void QtFront::CreateActions()
 {
     // Menu actions
     openAction = new QAction("Open", this);
-
     saveAction = new QAction("Save", this);
-
     exitAction = new QAction("Exit", this);
 
     showConfAction = new QAction("Show config", this);
@@ -375,6 +394,15 @@ void QtFront::CreateActions()
     connect(TrainSingPattButton, SIGNAL(clicked()), this, SLOT(RunSinglePattern()));
     connect(TrainSingProgButton, SIGNAL(clicked()), this, SLOT(RunSingleProgram()));
     connect(TrainVarButton, SIGNAL(clicked()), this, SLOT(RunVariableProgram()));
+
+    // Analysis actions (gnuplot)
+    plotPredCompAction = new QAction("Plot prediction comprehension", this);
+    connect(
+        plotPredCompAction,
+        SIGNAL(triggered()),
+        this,
+        SLOT(PlotPredCompGraph())
+    );
 }
 
 void QtFront::CreateMenuBar()
@@ -392,7 +420,8 @@ void QtFront::CreateMenuBar()
     execMenu = menuBar->addMenu("Execute");
     execMenu->addAction(trainAction);
 
-    debugMenu = menuBar->addMenu("Debug");
+    analysisMenu = menuBar->addMenu("Analysis");
+    analysisMenu->addAction(plotPredCompAction);
 }
 
 void QtFront::SetActiveWindow(QWidget *w)
@@ -453,6 +482,11 @@ int QtFront::Run()
     CurrentInput = new QtSensoryRegion(this, pattern);
     HtmDisplay = new QtHtm(this, htm);
     return 1;
+}
+
+void QtFront::PlotPredCompGraph()
+{
+    htm->GeneratePredCompX11Gnuplot();
 }
 
 // END QT SLOTS

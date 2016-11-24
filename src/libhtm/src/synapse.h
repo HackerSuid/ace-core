@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "dendritesegment.h"
+
 #define CONNECTED_PERM  0.200
 #define PERM_INC        0.150
 #define PERM_DEC        0.100
@@ -16,11 +18,11 @@ class Synapse
 {
 private:
     GenericInput *source;
-    bool motorSyn;
+    input_t type;
     int srcx, srcy;
     float perm;
 public:
-    Synapse(GenericInput *src, int x, int y, bool motorSrc);
+    Synapse(GenericInput *src, int x, int y, input_t synType);
     ~Synapse();
     void RefreshSynapse(GenericSublayer *NewPattern);
     bool IsFiring();
@@ -29,7 +31,7 @@ public:
     bool WasLearning();
     bool IsConnected();
     bool IsNearConnected();
-    bool IsMotor() { return motorSyn; }
+    bool IsMotor() { return type==MOTOR_DISTAL; }
     float GetPerm();
     void IncPerm(float factor=1.0);
     void DecPerm(float factor=1.0);

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <rapidxml/rapidxml.hpp>
@@ -166,6 +167,7 @@ SensoryRegion* Htm::CurrentPattern()
 SensoryRegion* Htm::ConsumePattern()
 {
     currentPattern = codec->GetPattern(Learning);
+
     return currentPattern;
 }
 
@@ -215,35 +217,81 @@ void Htm::PushNextClaInput()
         sublayers[i]->CLA(Learning, allowBoosting);
     ConnectSubcorticalInput(true);
 }
-
-void Htm::GenerateGnuplotGraph()
+/*
+ * Generates a gnuplot data file containing the data points for
+ * prediction comprehension from each timestep for the length of
+ * the sliding average window.
+ * The data file is then input to a generated gnuplot command file
+ * that contains the plotting commands.
+ */
+void Htm::GeneratePredCompX11Gnuplot()
 {
+    printf(
+        "[*] Generating gnuplot graph for "
+        "prediction comprehension\n"
+    );
     std::list<float> predCompWindow =
         sublayers[0]->GetPredictionComprehensionWindow();
-    int cmdfd = open("/tmp/htm_gnuplot_cmd", O_RDWR, O_CREAT);
-    int datfd = open("/tmp/htm_gnuplot_dat", O_RDWR, O_CREAT);
+    int cmdfd = open("/tmp/htm_gnuplot_cmd", O_RDWR|O_CREAT|O_TRUNC);
+    int datfd = open("/tmp/htm_gnuplot_dat", O_RDWR|O_CREAT|O_TRUNC);
 
-    // create the file of data points.
-    char numstr[16];
+    if (cmdfd < 0) {
+        perror("\t[*] Failed to open command file: ");
+        return;
+    }
+
+    if (datfd < 0) {
+        perror("\t[*] Failed to open data file: ");
+        return;
+    }
+
+    /* create the data file. */
+    char data[16];
     std::list<float>::iterator it;
     int i;
     for (it=predCompWindow.begin(),i=0; it!=predCompWindow.end(); it++,i++) {
-        memset(numstr, 0, sizeof(numstr));
-        snprintf(numstr, sizeof(numstr), "%d", i);
-        write(datfd, numstr, strlen(numstr));
+        /* # id value */
+        memset(data, 0, sizeof(data));
+        snprintf(data, sizeof(data), "%d", i);
+        write(datfd, data, strlen(data));
         write(datfd, " ", 1);
-        memset(numstr, 0, sizeof(numstr));
-        snprintf(numstr, sizeof(numstr), "%2.2f", (float)(*it));
-        write(datfd, numstr, strlen(numstr));
+        memset(data, 0, sizeof(data));
+        snprintf(data, sizeof(data), "%2.2f", (float)(*it));
+        write(datfd, data, strlen(data));
         write(datfd, "\n", 1);
     }
-    // create the script of gnuplot commands
-    char *gnuplotscript =
-        (char *)"#!/usr/local/bin/gnuplot\n" \
+    close(datfd);
+
+    /* create the script of gnuplot commands */
+    unsigned char *gnuplotscript =
+        (unsigned char *)"#!/usr/local/bin/gnuplot\n" \
         "set terminal x11\n" \
         "set style line 1 lc rgb '#0060ad' lt 1 lw 2\n" \
-        "plot 'plotdata.dat' with linespoints ls 1\n";
-    write(cmdfd, gnuplotscript, strlen(gnuplotscript)); 
+        "set yrange [0.000:1.2]\n" \
+        "set title 'Prediction Comprehension'\n" \
+        "set xlabel 'timestep'\n" \
+        "set ylabel 'comp. %'\n" \
+        "plot '/tmp/htm_gnuplot_dat' with linespoints ls 1\n";
+    write(cmdfd, (void *)gnuplotscript, strlen((const char *)gnuplotscript)); 
+    close(cmdfd);
+
+    system("gnuplot -p /tmp/htm_gnuplot_cmd");
+/*
+    pid_t child;
+    int status = 0;
+
+    if ((child=fork()) == 0) {
+        printf("child: executing gnuplot\n");
+        execl("gnuplot", "-p", "/tmp/htm_gnuplot_cmd", 0);
+    } else if (child > 0)
+        wait(&status);
+        if (WIFEXITED(status)) {
+            printf("child terminated normally\n");
+        }
+    else {
+        perror("fork()");
+    }
+*/
 }
 
 // accessors

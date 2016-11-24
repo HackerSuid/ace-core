@@ -16,6 +16,13 @@
 #define SUBSAMPLE_PATTERN_NUM   4
 #define SUBSAMPLE_THRESHOLD     SUBSAMPLE_PERCENT
 
+typedef enum {
+    SENSORY_DISTAL,
+    MOTOR_DISTAL,
+    LATERAL_DISTAL,
+    SENSORY_PROXIMAL
+} input_t;
+
 class Synapse;
 class GenericSublayer;
 

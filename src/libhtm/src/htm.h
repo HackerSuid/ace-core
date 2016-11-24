@@ -35,7 +35,10 @@ public:
     void ConnectHeirarchy();
     void ConnectSubcorticalInput(bool refresh);
     void PushNextClaInput();
-    void GenerateGnuplotGraph();
+
+    void GeneratePredCompX11Gnuplot();
+    void GeneratePredSpecX11Gnuplot();
+
     // accessors
     unsigned int GetWindowHeight();
     unsigned int GetWindowWidth();

@@ -3,12 +3,7 @@
 
 #include <vector>
 #include "genericinput.h"
-
-typedef enum {
-    SENSORY_DISTAL,
-    MOTOR_DISTAL,
-    LATERAL_DISTAL
-} input_t;
+#include "dendritesegment.h"
 
 class GenericSublayer;
 class HtmSublayer;
