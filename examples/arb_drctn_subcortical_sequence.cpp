@@ -92,48 +92,128 @@ DIR* turn(char *dir, char *direction, char *cwd, int cwdsize)
 CPG_SECTION
 DIR* turn_n(char *dir, char *cwd, int cwdsize)
 {
+    char str[8];
+    str[0] = 0x41;
+    str[1] = 0x41;
+    str[2] = 0x41;
+    str[3] = 0x41;
+    str[4] = 0x41;
+    str[5] = 0x41;
+    str[6] = 0x41;
+    str[7] = 0x41;
+
     return turn(dir, (char *)"N/", cwd, cwdsize);
 }
 
 CPG_SECTION
 DIR* turn_ne(char *dir, char *cwd, int cwdsize)
 {
+    char str[8];
+    str[0] = 0x51;
+    str[1] = 0x51;
+    str[2] = 0x51;
+    str[3] = 0x51;
+    str[4] = 0x51;
+    str[5] = 0x51;
+    str[6] = 0x51;
+    str[7] = 0x51;
+
     return turn(dir, (char *)"NE/", cwd, cwdsize);
 }
 
 CPG_SECTION
 DIR* turn_e(char *dir, char *cwd, int cwdsize)
 {
+    char str[8];
+    str[0] = 0x61;
+    str[1] = 0x61;
+    str[2] = 0x61;
+    str[3] = 0x61;
+    str[4] = 0x61;
+    str[5] = 0x61;
+    str[6] = 0x61;
+    str[7] = 0x61;
+
     return turn(dir, (char *)"E/", cwd, cwdsize);
 }
 
 CPG_SECTION
 DIR* turn_se(char *dir, char *cwd, int cwdsize)
 {
+    char str[8];
+    str[0] = 0x71;
+    str[1] = 0x71;
+    str[2] = 0x71;
+    str[3] = 0x71;
+    str[4] = 0x71;
+    str[5] = 0x71;
+    str[6] = 0x71;
+    str[7] = 0x71;
+
     return turn(dir, (char *)"SE/", cwd, cwdsize);
 }
 
 CPG_SECTION
 DIR* turn_s(char *dir, char *cwd, int cwdsize)
 {
+    char str[8];
+    str[0] = 0x81;
+    str[1] = 0x81;
+    str[2] = 0x81;
+    str[3] = 0x81;
+    str[4] = 0x81;
+    str[5] = 0x81;
+    str[6] = 0x81;
+    str[7] = 0x81;
+
     return turn(dir, (char *)"S/", cwd, cwdsize);
 }
 
 CPG_SECTION
 DIR* turn_sw(char *dir, char *cwd, int cwdsize)
 {
+    char str[8];
+    str[0] = 0x91;
+    str[1] = 0x91;
+    str[2] = 0x91;
+    str[3] = 0x91;
+    str[4] = 0x91;
+    str[5] = 0x91;
+    str[6] = 0x91;
+    str[7] = 0x91;
+
     return turn(dir, (char *)"SW/", cwd, cwdsize);
 }
 
 CPG_SECTION
 DIR* turn_w(char *dir, char *cwd, int cwdsize)
 {
+    char str[8];
+    str[0] = 0xa1;
+    str[1] = 0xa1;
+    str[2] = 0xa1;
+    str[3] = 0xa1;
+    str[4] = 0xa1;
+    str[5] = 0xa1;
+    str[6] = 0xa1;
+    str[7] = 0xa1;
+
     return turn(dir, (char *)"W/", cwd, cwdsize);
 }
 
 CPG_SECTION
 DIR* turn_nw(char *dir, char *cwd, int cwdsize)
 {
+    char str[8];
+    str[0] = 0xb1;
+    str[1] = 0xb1;
+    str[2] = 0xb1;
+    str[3] = 0xb1;
+    str[4] = 0xb1;
+    str[5] = 0xb1;
+    str[6] = 0xb1;
+    str[7] = 0xb1;
+
     return turn(dir, (char *)"NW/", cwd, cwdsize);
 }
 

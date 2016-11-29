@@ -275,14 +275,17 @@ void Htm::GeneratePredCompX11Gnuplot()
     write(cmdfd, (void *)gnuplotscript, strlen((const char *)gnuplotscript)); 
     close(cmdfd);
 
-    system("gnuplot -p /tmp/htm_gnuplot_cmd");
+    system("$(which gnuplot) -p /tmp/htm_gnuplot_cmd");
+
 /*
     pid_t child;
     int status = 0;
 
+    char *argv[] = { "gnuplot", "-p", "/tmp/htm_gnuplot_cmd", 0 };
+
     if ((child=fork()) == 0) {
         printf("child: executing gnuplot\n");
-        execl("gnuplot", "-p", "/tmp/htm_gnuplot_cmd", 0);
+        execve(argv[0], &argv[0], NULL);
     } else if (child > 0)
         wait(&status);
         if (WIFEXITED(status)) {

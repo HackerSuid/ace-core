@@ -901,6 +901,16 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
     return inputpattern;
 }
 
+/*
+ * Find the call to open@plt. Parse the stack using the stack
+ * pointer (esp) to find the arguments the open(). The first is
+ * the path to the file and the second is the mode of the file
+ * descriptor to open it.
+ *
+ * With this information, open a duplicate file descriptor to this
+ * file in the same mode, then run the code up to the next call to
+ * read@plt.
+ */
 SensoryCodecBinding ElfCodec::HandlePureSensory(
     struct user_regs_struct *regs
 ) {
