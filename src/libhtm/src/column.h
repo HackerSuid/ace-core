@@ -21,6 +21,7 @@ struct ActivityLogEntry
 class Column : public GenericInput
 {
 private:
+    HtmSublayer *parentLayer;
     // 2 dimensional position of columns natural center with the input space.
     int x_center, y_center;
     // parameters to implement columnar and synaptic boosting.
@@ -50,6 +51,7 @@ private:
     );
 public:
     Column(
+        HtmSublayer *sublayer,
         int x, int y,
         unsigned int numCells,
         int rfsz,

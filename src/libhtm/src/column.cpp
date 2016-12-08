@@ -12,6 +12,7 @@
 #include "cell.h"
 
 Column::Column(
+    HtmSublayer *sublayer,
     int x, int y,
     unsigned int numCells,
     int rfsz,
@@ -38,6 +39,7 @@ Column::Column(
     timeStep = 0;
     this->sensorimotorColumn = sensorimotorColumn;
 
+    parentLayer = sublayer;
     this->x = x;
     this->y = y;
     this->numCells = numCells;
@@ -384,7 +386,7 @@ Cell* Column::GetBestMatchingCell(
     bool FirstPattern)
 {
     if (FirstPattern) {
-        //printf("\t\tcell 0 chosen for learning [first pattern]\n");
+        //printf("\t\t[column] cell 0 chosen for learning [first pattern]\n");
         return cells[0];
     }
 
@@ -455,7 +457,7 @@ Cell* Column::GetBestMatchingCell(
         bestCellIdx = fewestSegCellIdx;
     }
 
-    //printf("\t\tcell %d chosen for learning\n", bestCellIdx);
+    //printf("\t\t[column] cell %d chosen for learning\n", bestCellIdx);
 
     return BestCell;
 }

@@ -297,7 +297,7 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
         CurrentInput->SensoryUnitGrid();
     int w = newPattern->GetWidth();
     int h = newPattern->GetHeight();
-   
+
     SensoryRegion *mp = newPattern->GetMotorPattern();
     QGridLayout *currMotorGrid =
         (QGridLayout *)motorGroup->layout();
@@ -345,7 +345,6 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
         qtunit = (QtUnit *)currMotorGrid->itemAt(i)->widget();
         qtunit->setBrushColor(QColor(r, g, b));
     }
-    
 }
 
 /*

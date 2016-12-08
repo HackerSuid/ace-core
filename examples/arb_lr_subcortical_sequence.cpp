@@ -32,7 +32,7 @@ long long int health_status = HEALTH_BASE;
 
 // open and read from the fd, and parse it for a reward signal.
 PURESENSORY_SECTION
-int consume_pattern(char *cwd, char *filename)
+int consume_pattern(char *pathto, char *filename)
 {
     int patt_fd;
     char pattern[PATTERN_SZ];
@@ -41,10 +41,10 @@ int consume_pattern(char *cwd, char *filename)
     memset(pattern, 0, PATTERN_SZ);
     memset(path, 0, sizeof(path));
 
-    strncpy(path, cwd, sizeof(path)-1);
-    strncpy(path+strlen(cwd), "/", 1);
-    strncpy(path+strlen(cwd)+1, filename, sizeof(path)-strlen(cwd)-1);
-    path[strlen(cwd)+strlen(filename)+1] = 0;
+    strncpy(path, pathto, sizeof(path)-1);
+    strncpy(path+strlen(pathto), "/", 1);
+    strncpy(path+strlen(pathto)+1, filename, sizeof(path)-strlen(pathto)-1);
+    path[strlen(pathto)+strlen(filename)+1] = 0;
 
     if ((patt_fd = open(path, O_RDONLY)) < 0) {
         perror("could not open world pattern");
@@ -55,6 +55,7 @@ int consume_pattern(char *cwd, char *filename)
         printf("\tfound reward pattern: %s\n", filename);
         health_status += HEALTH_REGEN;
     }
+    printf("\tConsuming pattern %s\n", filename);
     close(patt_fd);
     return 1;
 }
@@ -91,7 +92,7 @@ DIR* turn(char *dir, char *direction, char *cwd, int cwdsize)
 CPG_SECTION
 DIR* turn_left(char *dir, char *cwd, int cwdsize)
 {
-    printf("TURNING LEFT\n");
+    printf("\t[*] Turning left\n");
     char str[96];
     str[0]=0x10; str[1]=0x10; str[2]=0x10; str[3]=0x10; str[4]=0x10;
     str[5]=0x10; str[6]=0x10; str[7]=0x10; str[8]=0x10; str[9]=0x10;
@@ -111,13 +112,13 @@ DIR* turn_left(char *dir, char *cwd, int cwdsize)
     str[75]=0x10; str[76]=0x10; str[77]=0x10; str[78]=0x10; str[79]=0x10;
     str[80]=0x10; str[81]=0x10;
 
-    return turn(dir, (char *)"L/", cwd, cwdsize);
+    return turn(dir, (char *)"L", cwd, cwdsize);
 }
 
 CPG_SECTION
 DIR* turn_right(char *dir, char *cwd, int cwdsize)
 {
-    printf("TURNING RIGHT\n");
+    printf("\t[*] Turning right\n");
     char str[32];
     str[0]=0x0F; str[1]=0x0F; str[2]=0x0F; str[3]=0x0F; str[4]=0x0F;
     str[5]=0x0F; str[6]=0x0F; str[7]=0x0F; str[8]=0x0F; str[9]=0x0F;
@@ -127,37 +128,51 @@ DIR* turn_right(char *dir, char *cwd, int cwdsize)
     str[25]=0x0F; str[26]=0x0F; str[27]=0x0F; str[28]=0x0F; str[29]=0x0F;
     str[30]=0x0F; str[31]=0x0F;
 
-    return turn(dir, (char *)"R/", cwd, cwdsize);
+    return turn(dir, (char *)"R", cwd, cwdsize);
 }
 
 // enter a directory room and scan for the resident sensory pattern.
 SENSORIMOTOR_SECTION
-int scan_room(char *dir, char *cwd, int cwdsize)
+int scan_room(DIR *curdirp, char *dir, char *cwd, int cwdsize)
 {
-    DIR *dirp = NULL;
-    struct dirent *de;
+    struct dirent *de=NULL;
+    DIR *nextdirp=NULL;
 
-    // somewhat favor left to avoid 50/50 oscillating.
-    if (rand()/(float)RAND_MAX < 0.65) {
-        if ((dirp=turn_left(dir, cwd, cwdsize))==NULL)
-            return 0;
-    } else {
-        if ((dirp=turn_right(dir, cwd, cwdsize))==NULL)
-            return 0;
-    }
- 
-    health_status -= HEALTH_DECAY;
-
-    while ((de = readdir(dirp)) != NULL) {
+    printf("[*] sensorimotor function scan_room(%s)\n", dir);
+    /*
+     * Get the next sensory input pattern.
+     */
+    printf("\t[*] calling sensory function\n");
+    while ((de = readdir(curdirp)) != NULL) {
         if (de->d_type == DT_REG) {
-            if (consume_pattern(cwd, de->d_name) == 0) {
-                //printf("\tfound pattern %s\n", de->d_name);
+            if (consume_pattern(dir, de->d_name) == 0) {
+                //printf("[*] found pattern %s\n", de->d_name);
                 return 0;
             }
         }
     }
 
-    closedir(dirp);
+    /*
+     * Execute the next motor command. Somewhat favor left to
+     * avoid 50/50 oscillating.
+     */
+/*
+    if (rand()/(float)RAND_MAX < 0.65) {
+        if ((nextdirp=turn_left(dir, cwd, cwdsize))==NULL)
+            return 0;
+    } else {
+        if ((nextdirp=turn_right(dir, cwd, cwdsize))==NULL)
+            return 0;
+    }
+*/
+    printf("\t[*] calling motor function\n");
+    if ((nextdirp=turn_left(dir, cwd, cwdsize))==NULL)
+        return 0;
+ 
+    health_status -= HEALTH_DECAY;
+
+    closedir(nextdirp);
+
     return 1;
 }
 
@@ -166,9 +181,13 @@ int scan_room(char *dir, char *cwd, int cwdsize)
 int explore_world(char *dir)
 {
     char cwd[512];
+    DIR *curdirp = NULL;
 
     memset(cwd, 0, sizeof(cwd));
-    if (scan_room(dir, cwd, sizeof(cwd)) == 0)
+    getcwd(cwd, sizeof(cwd));
+    curdirp = opendir(dir);
+
+    if (scan_room(curdirp, dir, cwd, sizeof(cwd)) == 0)
         return 0;
 
     if (health_status <= 0) {
@@ -176,6 +195,7 @@ int explore_world(char *dir)
         return 0;
     }
 
+    closedir(curdirp);
     if (explore_world(cwd) == 0)
         return 0;
 
@@ -184,9 +204,9 @@ int explore_world(char *dir)
 
 int main(int argc, char **argv)
 {
-    DIR *dirp=NULL;
-    struct dirent *de=NULL;
-    char *root=(char *)"/mnt/lfs/root/ace/examples/LR_world/";
+    //DIR *dirp=NULL;
+    //struct dirent *de=NULL;
+    char *root=(char *)"/mnt/lfs/root/ace-core/examples/abcdxbcy_world/";
 
     srand(time(NULL)+getpid());
 
@@ -205,7 +225,11 @@ int main(int argc, char **argv)
         }
     }
 */
-
+    printf("[*] Changing to root dir %s\n", root);
+    if (chdir(root) < 0) {
+        perror("chdir() failed");
+        return 0;
+    }
     if (!explore_world(root))
         exit(-1);
 

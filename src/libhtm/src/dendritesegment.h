@@ -33,6 +33,7 @@ public:
     ~DendriteSegment();
     bool IsActive();
     bool IsActiveFromLearning();
+    bool IsSensorimotor() { return sensorimotorSegment; }
     void NewSynapse(Synapse *newSyn);
     std::vector<Synapse *> GetSynapses();
     int GetNumSynapses();

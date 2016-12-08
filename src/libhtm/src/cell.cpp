@@ -85,7 +85,7 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
                 "sensory pattern."
             "\n");*/
             synsFound += AddSynapsesFromSublayer(
-                sublayer, sp, SENSORY_DISTAL, newSeg
+                sublayer, sublayer, SENSORY_DISTAL, newSeg
             );
         } else {
             printf("\tNo motor pattern found.\n");
@@ -94,10 +94,10 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
             return NULL;
         }
     } else {
-        printf("\tSublayer is high-order.\n");
-        printf(
+        //printf("\tSublayer is high-order.\n");
+        /*printf(
             "\tAdding synapses on distal dendrite to lateral cells.\n"
-        );
+        );*/
         synsFound = AddSynapsesFromSublayer(
             sublayer, sublayer, LATERAL_DISTAL, newSeg
         );
@@ -149,7 +149,7 @@ bool Cell::AddSynapsesFromSublayer(
      * input pattern.
      */
     int subsampleSz =
-        (inType==LATERAL_DISTAL ?
+        (inType!=MOTOR_DISTAL ?
             thisSublayer->LastActiveColumns() :
             src->GetNumActiveInputs()) *
         DendriteSegment::GetSubsamplePercent();
@@ -158,12 +158,12 @@ bool Cell::AddSynapsesFromSublayer(
 
     auto il = { h-1-celly, celly, w-1-cellx, cellx };
 
-    //printf("\tcreating %d synapses for cell in column (%d,%d)\n",
-            //subsampleSz, cellx, celly);
-    //printf("subsampleSz = %d * %f = %d\n",
-    //        thisSublayer->CurrentActiveColumns(),
-    //        DendriteSegment::GetSubsamplePercent(), subsampleSz
-    //);
+    /*printf("\t\tsubsampleSz = %d * %f = %d\n",
+            inType!=MOTOR_DISTAL ?
+                thisSublayer->LastActiveColumns() :
+                src->GetNumActiveInputs(),
+            DendriteSegment::GetSubsamplePercent(), subsampleSz
+    );*/
     for (int distance=1; distance<std::max(il); distance++) {
         for (int yd=-distance; yd<=distance&&!foundSampleSize; yd++) {
             for (int xd=-distance; xd<=distance&&!foundSampleSize; xd++) {
@@ -188,8 +188,7 @@ bool Cell::AddSynapsesFromSublayer(
                  * learning cell in inputBits[y][x].
                  */
                 projections.clear();
-                if (d > 0) {
-                    /* src is a set of columns */
+                if (inType == LATERAL_DISTAL) {
                     std::vector<Cell *> cVect =
                         ((Column *)inputBits[y][x])->GetCells();
                     projections.insert(
@@ -200,16 +199,20 @@ bool Cell::AddSynapsesFromSublayer(
                 } else {
                     projections.push_back(inputBits[y][x]);
                 }
-                //printf("\t\tchecking input projections...\n");
+                //printf("\t\tchecking %u input projections...\n", projections.size());
                 for (unsigned k=0; k<projections.size() && !foundSampleSize; k++) {
                     /*
                      * The cla wants to form new synapses with cells that would
                      * have been able to predict this cell's activity.
                      */
                     bool activeflag =
-                        inType==LATERAL_DISTAL ? projections[k]->WasActive() :
-                                                 projections[k]->IsActive();
-                    if (projections[k]->WasLearning() && activeflag) {
+                        inType != MOTOR_DISTAL ?
+                            projections[k]->WasActive() :
+                            projections[k]->IsActive();
+                    if (activeflag) {
+                        if (inType == LATERAL_DISTAL)
+                            if (!projections[k]->WasLearning())
+                                continue;
                         //printf("\t\t\t(col %d,%d, c %d)\n", x, y, k);
                         Synapse *newSyn = new Synapse(
                             projections[k], x, y, inType
@@ -217,7 +220,10 @@ bool Cell::AddSynapsesFromSublayer(
                         //printf("\t\tnew synapse 0x%08x\n", newSyn);
                         seg->NewSynapse(newSyn);
                         //printf("\t\tsynapse added to segment\n");
-                        // check if we have found the subset sample size.
+                        /*
+                         * check if we have found the subset
+                         * sample size.
+                         */
                         if ((++synsFound) >= subsampleSz)
                             foundSampleSize = true;
                     }
@@ -299,7 +305,7 @@ DendriteSegment* Cell::GetBestMatchingSegment(
             }
     }
 
-//    printf("segment %d\n", x);
+    //printf("segment %d\n", x);
     return bestSeg;
 }
 

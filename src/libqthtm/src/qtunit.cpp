@@ -9,7 +9,9 @@
 QtUnit::QtUnit(
     GenericInput *GridNode,
     QGroupBox *objHtm,
-    QGridLayout *inputGrid,
+    QGridLayout *htmGrid,
+    QGridLayout *sensoryGrid,
+    QGridLayout *motorGrid,
     int c, int w, int h)
 {
     // don't resize on repaint.
@@ -26,19 +28,21 @@ QtUnit::QtUnit(
     sizeH = h;
     node = GridNode;
     objDetail = objHtm;
-    this->inputGrid = inputGrid;
+    this->htmGrid = htmGrid;
+    this->sensoryGrid = sensoryGrid;
+    this->motorGrid = motorGrid;
 
     cells = c;
     if (cells) {
-        //CellGrid = new QGridLayout();
-        //CellGrid->setAlignment(Qt::AlignCenter);
-        //CellGrid->setSpacing(0);
-        //CellGrid->setMargin(0);
         std::vector<Cell *> HtmCells = ((Column *)node)->GetCells();
         for (int i=0; i<sqrt(cells); i++) {
             for (int j=0; j<sqrt(cells); j++) {
                 QtCell *cell = new QtCell(
-                    this, HtmCells[(int)(j+(i*sqrt(cells)))]
+                    this,
+                    HtmCells[(int)(j+(i*sqrt(cells)))],
+                    htmGrid,
+                    sensoryGrid,
+                    motorGrid
                 );
                 //CellGrid->addWidget(cell, i, j);
                 cell->setGeometry(
@@ -58,25 +62,37 @@ QtUnit::~QtUnit()
 
 void QtUnit::CreateActions()
 {
-    showConnections = new QAction("Show connections", this);
-    connect(showConnections, SIGNAL(triggered()), this, SLOT(ShowConnections()));
-    hideConnections = new QAction("Hide connections", this);
-    connect(hideConnections, SIGNAL(triggered()), this, SLOT(HideConnections()));
+    showProximalConnections =
+        new QAction("Show proximal connections", this);
+    connect(
+        showProximalConnections,
+        SIGNAL(triggered()),
+        this,
+        SLOT(ShowProximalConnections())
+    );
+    hideProximalConnections =
+        new QAction("Hide proximal connections", this);
+    connect(
+        hideProximalConnections,
+        SIGNAL(triggered()),
+        this,
+        SLOT(HideProximalConnections())
+    );
 }
 
-void QtUnit::ShowConnections()
+void QtUnit::ShowProximalConnections()
 {
-    _ToggleConnections(true);
+    _ToggleProximalConnections(true);
 }
 
-void QtUnit::HideConnections()
+void QtUnit::HideProximalConnections()
 {
-    _ToggleConnections(false);
+    _ToggleProximalConnections(false);
 }
 
-void QtUnit::_ToggleConnections(bool flag)
+void QtUnit::_ToggleProximalConnections(bool flag)
 {
-    if (inputGrid == NULL)
+    if (sensoryGrid == NULL)
         return;
     if (toggled == flag)
         return;
@@ -88,17 +104,17 @@ void QtUnit::_ToggleConnections(bool flag)
 
     //printf("rfs = %d\n", rfs);
     for (int i=0; i<rfs; i++) {
-        QtUnit *src = (QtUnit *)(inputGrid->itemAtPosition(
+        QtUnit *src = (QtUnit *)(sensoryGrid->itemAtPosition(
             prox_syns[i]->GetY(), prox_syns[i]->GetX())->widget());
         if (flag) {
             src->SaveBrushColor();
-            src->setBrushColor(QColor(0xff, 0xaa, 0x33));
+            src->setBrushColor(HIGHLIGHT_COLOR);
         } else
             src->RestoreBrushColor();
         //printf("\t[%d] (%d, %d)\n",
             //i, prox_syns[i]->GetX(), prox_syns[i]->GetY());
     }
-    ((QtSensoryRegion *)(inputGrid->parentWidget()))->repaint();
+    ((QtSensoryRegion *)(sensoryGrid->parentWidget()))->repaint();
 }
 
 void QtUnit::SetClickable(bool flag)
@@ -224,13 +240,11 @@ void QtUnit::mousePressEvent(QMouseEvent *event)
 
 void QtUnit::contextMenuEvent(QContextMenuEvent *event)
 {
-    printf("checking if can create context menu\n");
     if (!this->IsClickable())
         return;
-    printf("creating context menu\n");
     QMenu menu(this);
-    menu.addAction(showConnections);
-    menu.addAction(hideConnections);
+    menu.addAction(showProximalConnections);
+    menu.addAction(hideProximalConnections);
     menu.exec(event->globalPos());
 }
 

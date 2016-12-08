@@ -32,6 +32,9 @@ public:
     bool IsConnected();
     bool IsNearConnected();
     bool IsMotor() { return type==MOTOR_DISTAL; }
+    bool IsLateral() { return type==LATERAL_DISTAL; }
+    bool IsSensory() { return type==SENSORY_DISTAL; }
+    input_t GetType() { return type; }
     float GetPerm();
     void IncPerm(float factor=1.0);
     void DecPerm(float factor=1.0);

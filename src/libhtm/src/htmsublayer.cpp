@@ -50,6 +50,7 @@ void HtmSublayer::AllocateColumns(
         input[i] = (GenericInput **)malloc(sizeof(GenericInput *) * width);
         for (unsigned int j=0; j<width; j++)
             input[i][j] = new Column(
+                this,
                 j, i,
                 this->depth,
                 rec_field_sz,
@@ -253,7 +254,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
      *    context. The algorithm is working on the set of active columns after
      *    the spatial pooling phase.
      */
-//    printf("Computing active states\n");
+    printf("Computing active states\n");
     for (unsigned int i=0; i<height; i++) {
         for (unsigned int j=0; j<width; j++) {
             int nc = columns[i][j]->GetNumCells();
@@ -459,7 +460,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
      *
      * I'm not decided on which version is more useful.
      */
-//    printf("Computing predictions\n");
+    printf("Computing predictions\n");
     for (unsigned int i=0; i<height; i++) {
         for (unsigned int j=0; j<width; j++) {
             std::vector<Cell *> cells = columns[i][j]->GetCells();

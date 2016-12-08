@@ -10,7 +10,7 @@ QtHtm::QtHtm(QWidget *parent, Htm *htm)
     : QWidget(parent)
 {
     this->htm = htm;
-    sensoryUnitGrid = NULL;
+    htmUnitGrid = NULL;
 }
 
 QtHtm::~QtHtm()
@@ -24,12 +24,12 @@ QtHtm::~QtHtm()
  */
 QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
 {
-    if (sensoryUnitGrid)
-        return sensoryUnitGrid;
+    if (htmUnitGrid)
+        return htmUnitGrid;
 
-    sensoryUnitGrid = new QGridLayout();
-    sensoryUnitGrid->setSpacing(0);
-    sensoryUnitGrid->setAlignment(Qt::AlignCenter);
+    htmUnitGrid = new QGridLayout();
+    htmUnitGrid->setSpacing(0);
+    htmUnitGrid->setAlignment(Qt::AlignCenter);
     HtmSublayer **sublayers = htm->GetSublayers();
     int w = sublayers[0]->GetWidth();
     int h = sublayers[0]->GetHeight();
@@ -38,18 +38,26 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
 
     QtSensoryRegion *qtinput =
         ((QtFront *)parentWidget())->GetCurrentInputDisplay();
-    QGridLayout *inputGrid = qtinput->SensoryUnitGrid();
+    QGridLayout *sensoryGrid = qtinput->SensoryUnitGrid();
+    QGridLayout *motorGrid = qtinput->MotorUnitGrid();
     for (int i=0; i<h; i++) {
         for (int j=0; j<w; j++) {
-            QtUnit *unit = new QtUnit(cols[i][j], objHtm, inputGrid, c);
+            QtUnit *unit = new QtUnit(
+                cols[i][j],
+                objHtm,
+                htmUnitGrid,
+                sensoryGrid,
+                motorGrid,
+                c
+            );
             unit->SetClickable(true);
             if (cols[i][j]->IsActive())
                 unit->setBrushColor(ACTIVE_COLOR);
-            sensoryUnitGrid->addWidget(unit, i, j, 1, 1);
+            htmUnitGrid->addWidget(unit, i, j, 1, 1);
         }
     }
 
-    return sensoryUnitGrid;
+    return htmUnitGrid;
 }
 
 float QtHtm::SlidingWindowAvg(std::list<float> window)

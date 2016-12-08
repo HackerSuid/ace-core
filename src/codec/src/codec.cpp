@@ -848,19 +848,23 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
     } else if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
         //printf("\t\tcpg function\n");
     } else if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
-        //printf("\t\tsensorimotor function.\n");
-        // step through code until motor function call.
-        cpgAddr = ExecuteToCall(cpgFunctions, &regs);
-
-        // step through code until sensory function call.
+        printf("[codec] sensorimotor function.\n");
+        /* step through code until sensory function call. */
+        printf("[codec] executing to sensory call\n");
         senseAddr = ExecuteToCall(pureSensoryFunctions, &regs);
 
-        // duplicate open fd and determine corresponding sensory
-        // codec with which to obtain sensory pattern.
+        /*
+         * duplicate open fd and determine corresponding sensory
+         * codec with which to obtain sensory pattern.
+         */
         binding = HandlePureSensory(&regs);
         inputpattern = binding.codec->GetPattern(
             binding.fd, Learning
         );
+
+        /* step through code until motor function call. */
+        printf("[codec] executing to cpg/motor call\n");
+        cpgAddr = ExecuteToCall(cpgFunctions, &regs);
 
         // obtain the associated motor command pattern.
         // ~~ deprecated method ~~

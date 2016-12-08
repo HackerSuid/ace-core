@@ -35,11 +35,14 @@ class QtHtm;
 class QtSensoryRegion;
 class QtUnit;
 
+/* dark white/very light grey */
 const QColor ACTIVE_COLOR = QColor(180, 180, 180);
-const QColor ACTIVE_COLOR_SHOW = QColor(110, 180, 110);
+/* medium grey */
 const QColor INACTIVE_COLOR = QColor(90, 90, 90);
-const QColor INACTIVE_COLOR_SHOW = QColor(90, 90, 170);
+/* bright yellow */
 const QColor PREDICTED_COLOR = QColor(255, 255, 102);
+/* some sort of red */
+const QColor HIGHLIGHT_COLOR = QColor(0xFF, 0xAA, 0x33);
 
 extern QApplication *app;
 
@@ -124,8 +127,7 @@ Q_OBJECT
 private:
     QWidget *parent;
     Htm *htm;
-    QGridLayout *sensoryUnitGrid;
-    QGridLayout *motorUnitGrid;
+    QGridLayout *htmUnitGrid;
 
     float SlidingWindowAvg(std::list<float> window);
 public:
@@ -145,7 +147,9 @@ public:
     QtUnit(
         GenericInput *GridNode,
         QGroupBox *objHtm,
-        QGridLayout *inputGrid,
+        QGridLayout *htmGrid,
+        QGridLayout *sensoryGrid,
+        QGridLayout *motorGrid,
         int c, int w=DEF_UNIT_W, int h=DEF_UNIT_H
     );
     ~QtUnit();
@@ -163,9 +167,9 @@ protected:
     void contextMenuEvent(QContextMenuEvent *event);
     void paintEvent(QPaintEvent *event);
 private:
-    QGridLayout *inputGrid;
+    QGridLayout *htmGrid, *sensoryGrid, *motorGrid;
     // context menu members
-    QAction *showConnections, *hideConnections;
+    QAction *showProximalConnections, *hideProximalConnections;
     // cell layout members
     QGridLayout *CellGrid;
     QColor brushColor, prevBrushColor;
@@ -177,28 +181,46 @@ private:
     bool isClickable;
     bool toggled;
 
-    void _ToggleConnections(bool flag);
+    void _ToggleProximalConnections(bool flag);
 private slots:
-    void ShowConnections();
-    void HideConnections();
+    void ShowProximalConnections();
+    void HideProximalConnections();
 };
 
 class QtCell : public QWidget
 {
-//Q_OBJECT
+Q_OBJECT
 public:
-    QtCell(QWidget *parent, Cell *cell, int w=DEF_CELL_W, int h=DEF_CELL_H);
+    QtCell(
+        QWidget *parent,
+        Cell *cell,
+        QGridLayout *htmGrid,
+        QGridLayout *sensoryGrid,
+        QGridLayout *motorGrid,
+        int w=DEF_CELL_W,
+        int h=DEF_CELL_H
+    );
     ~QtCell();
+    void CreateActions();
     QSize sizeHint() const;
     void setBrushColor(const QColor &newColor);
     QColor getBrushColor() const;
 protected:
     void mousePressEvent(QMouseEvent *event);
+    void contextMenuEvent(QContextMenuEvent *event);
     void paintEvent(QPaintEvent *event);
 private:
+    QAction *showDistalConnections, *hideDistalConnections;
     QColor brushColor;
     int sizeW, sizeH;
     Cell *cell;
+    QGridLayout *htmGrid, *sensoryGrid, *motorGrid;
+    bool toggled;
+
+    void _ToggleDistalConnections(bool flag);
+private slots:
+    void ShowDistalConnections();
+    void HideDistalConnections();
 };
 
 #endif
