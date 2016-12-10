@@ -594,8 +594,8 @@ bool ElfCodec::LoadTarget()
                 );
                 motorLayer->AllocateColumns(
                     codecRfSz,
-                    codecActiveRatio,
-                    codecColComplexity,
+                    0.10,//codecActiveRatio,
+                    0.20,//codecColComplexity,
                     false,
                     100
                 );

@@ -357,19 +357,32 @@ void QtFront::UpdateHtmDisplay()
     HtmSublayer **sublayers = htm->GetSublayers();
     int h = sublayers[0]->GetHeight();
     int w = sublayers[0]->GetWidth();
+    int d = sublayers[0]->GetDepth();
     QtUnit *colUnit = NULL;
+    QList<QtCell *> qtCells;
     //QGridLayout *cellGrid = NULL;
-    QColor rgb;
-    int r, g, b;
+    QColor rgb[d+1];
+    int r[d+1], g[d+1], b[d+1];
 
     for (int i=0; i<h; i++) {
         for (int j=0; j<w; j++) {
             colUnit = (QtUnit *)newHtmGrid->itemAtPosition(i, j)->widget();
             //cellGrid = colUnit->GetCellGrid();
-            rgb = colUnit->getBrushColor();
-            rgb.getRgb(&r, &g, &b);
-            colUnit = (QtUnit *)currGrid->itemAtPosition(i, j)->widget();
-            colUnit->setBrushColor(QColor(r, g, b));
+            rgb[0] = colUnit->getBrushColor();
+            rgb[0].getRgb(&r[0], &g[0], &b[0]);
+            qtCells = colUnit->findChildren<QtCell *>();
+            for (unsigned int c=1; c<=d; c++) {
+                rgb[c] = qtCells.at(c-1)->getBrushColor();
+                rgb[c].getRgb(&r[c], &g[c], &b[c]);
+            }
+            colUnit =
+                (QtUnit *)currGrid->itemAtPosition(i, j)->widget();
+            colUnit->setBrushColor(QColor(r[0], g[0], b[0]));
+            qtCells = colUnit->findChildren<QtCell *>();
+            for (unsigned int c=1; c<=d; c++)
+                qtCells.at(c-1)->setBrushColor(
+                    QColor(r[c], g[c], b[c])
+                );
         }
     }
 }

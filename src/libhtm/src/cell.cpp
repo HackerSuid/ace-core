@@ -12,9 +12,10 @@
 #include "cell.h"
 #include "synapse.h"
 
-Cell::Cell(Column *col)
+Cell::Cell(Column *col, unsigned int idx)
 {
     parentColumn = col;
+    colIdx = idx;
     memset(&predicted[0], false, sizeof(bool)*2);
 }
 
@@ -178,9 +179,6 @@ bool Cell::AddSynapsesFromSublayer(
                 if ((x>=w) || (y>=h))
                     continue;
                 /*
-                 * depth indicates if inputBits are from a SensoryRegion or
-                 * HtmSublayer.
-                 *
                  * Synapses from HtmSublayer to SensoryRegion connect to
                  * inputBits[y][x].
                  *

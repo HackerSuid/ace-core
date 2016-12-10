@@ -44,7 +44,7 @@ Column::Column(
     this->y = y;
     this->numCells = numCells;
     for (unsigned int i=0; i<numCells; i++)
-        cells.push_back(new Cell(this));
+        cells.push_back(new Cell(this, i));
 }
 
 Column::~Column()

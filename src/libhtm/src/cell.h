@@ -14,7 +14,7 @@ class Synapse;
 class Cell : public GenericInput
 {
 public:
-    Cell(Column *col);
+    Cell(Column *col, unsigned int idx);
     ~Cell();
     bool IsPredicted();
     bool WasPredicted();
@@ -35,8 +35,10 @@ public:
     std::vector<DendriteSegment *> GetSegments();
     unsigned int GetNumSegments();
     Column* GetParentColumn() { return parentColumn; }
+    unsigned int GetColIdx() { return colIdx; }
 private:
     Column *parentColumn;
+    unsigned int colIdx;
     std::vector<DendriteSegment *> DistalDendriteSegments;
     int distalSegmentCount;
     bool predicted[2];

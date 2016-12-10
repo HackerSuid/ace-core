@@ -41,8 +41,9 @@ const QColor ACTIVE_COLOR = QColor(180, 180, 180);
 const QColor INACTIVE_COLOR = QColor(90, 90, 90);
 /* bright yellow */
 const QColor PREDICTED_COLOR = QColor(255, 255, 102);
-/* some sort of red */
+/* some sort of orange/red */
 const QColor HIGHLIGHT_COLOR = QColor(0xFF, 0xAA, 0x33);
+const QColor HOVER_COLOR = QColor(0x55, 0x79, 0xFF);
 
 extern QApplication *app;
 
@@ -166,6 +167,8 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
     void paintEvent(QPaintEvent *event);
+    void enterEvent(QEvent *event);
+    void leaveEvent(QEvent *event);
 private:
     QGridLayout *htmGrid, *sensoryGrid, *motorGrid;
     // context menu members
@@ -204,14 +207,18 @@ public:
     void CreateActions();
     QSize sizeHint() const;
     void setBrushColor(const QColor &newColor);
+    void SaveBrushColor() { prevBrushColor = brushColor; }
+    void RestoreBrushColor() { brushColor = prevBrushColor; }
     QColor getBrushColor() const;
 protected:
     void mousePressEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
     void paintEvent(QPaintEvent *event);
+    void enterEvent(QEvent *event);
+    void leaveEvent(QEvent *event);
 private:
     QAction *showDistalConnections, *hideDistalConnections;
-    QColor brushColor;
+    QColor brushColor, prevBrushColor;
     int sizeW, sizeH;
     Cell *cell;
     QGridLayout *htmGrid, *sensoryGrid, *motorGrid;

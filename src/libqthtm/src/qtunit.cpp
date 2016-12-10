@@ -14,8 +14,10 @@ QtUnit::QtUnit(
     QGridLayout *motorGrid,
     int c, int w, int h)
 {
-    // don't resize on repaint.
+    /* don't resize on repaint. */
     setAttribute(Qt::WA_StaticContents);
+    /* implement hover-over detection */
+    setMouseTracking(true);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
     brushColor = INACTIVE_COLOR;
@@ -37,19 +39,26 @@ QtUnit::QtUnit(
         std::vector<Cell *> HtmCells = ((Column *)node)->GetCells();
         for (int i=0; i<sqrt(cells); i++) {
             for (int j=0; j<sqrt(cells); j++) {
-                QtCell *cell = new QtCell(
+                Cell *cell = HtmCells[(int)(j+(i*sqrt(cells)))];
+                QtCell *qtcell = new QtCell(
                     this,
-                    HtmCells[(int)(j+(i*sqrt(cells)))],
+                    cell,
                     htmGrid,
                     sensoryGrid,
                     motorGrid
                 );
-                //CellGrid->addWidget(cell, i, j);
-                cell->setGeometry(
+                //CellGrid->addWidget(qtcell, i, j);
+                qtcell->setGeometry(
                     (j>0?DEF_CELL_W*1.25:DEF_CELL_W)/2*(j+1),
                     (i>0?DEF_CELL_H*1.25:DEF_CELL_H)/2*(i+1),
                     DEF_CELL_W, DEF_CELL_H
                 );
+                if (cell->IsActive())
+                    qtcell->setBrushColor(ACTIVE_COLOR);
+                else if (cell->IsPredicted())
+                    qtcell->setBrushColor(PREDICTED_COLOR);
+                else
+                    qtcell->setBrushColor(INACTIVE_COLOR);
             }
         }
         //this->setLayout(CellGrid);
@@ -246,5 +255,19 @@ void QtUnit::contextMenuEvent(QContextMenuEvent *event)
     menu.addAction(showProximalConnections);
     menu.addAction(hideProximalConnections);
     menu.exec(event->globalPos());
+}
+
+void QtUnit::enterEvent(QEvent *event)
+{
+
+    SaveBrushColor();
+    setBrushColor(HOVER_COLOR);
+    repaint();
+}
+
+void QtUnit::leaveEvent(QEvent *event)
+{
+    RestoreBrushColor();
+    repaint();
 }
 

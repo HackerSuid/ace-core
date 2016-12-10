@@ -15,8 +15,10 @@ QtCell::QtCell(
     int w, int h
 ) : QWidget(parent)
 {
-    // don't resize on repaint.
+    /* don't resize on repaint. */
     setAttribute(Qt::WA_StaticContents);
+    /* implement hover-over detection */
+    //setMouseTracking(true);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
     brushColor = INACTIVE_COLOR;
@@ -25,7 +27,17 @@ QtCell::QtCell(
     sizeH = h;
 
     toggled = false;
+
     this->cell = cell;
+/*
+    if (cell->IsActive())
+        setBrushColor(ACTIVE_COLOR);
+    else if (cell->IsPredicted())
+        setBrushColor(PREDICTED_COLOR);
+    else
+        setBrushColor(INACTIVE_COLOR);
+*/
+
     this->htmGrid = htmGrid;
     this->sensoryGrid = sensoryGrid;
     this->motorGrid = motorGrid;
@@ -82,29 +94,49 @@ void QtCell::_ToggleDistalConnections(bool flag)
         printf("\tseg %u has %u synapses\n", seg, distalSyns.size());
         for (unsigned int syn=0; syn<distalSyns.size(); syn++) {
             QGridLayout *srcLayout = NULL;
-            if (distalSyns[syn]->IsMotor())
-                srcLayout = motorGrid;
-            if (distalSyns[syn]->IsLateral())
+            if (distalSyns[syn]->IsLateral()) {
                 srcLayout = htmGrid;
-            if (distalSyns[syn]->IsSensory())
-                srcLayout = sensoryGrid;
 
-            QtUnit *srcWidget = (QtUnit *)srcLayout->itemAtPosition(
-                distalSyns[syn]->GetY(),
-                distalSyns[syn]->GetX()
-            )->widget();
+                QtUnit *colWidget = (QtUnit *)srcLayout->itemAtPosition(
+                    distalSyns[syn]->GetY(),
+                    distalSyns[syn]->GetX()
+                )->widget();
 
-            if (flag) {
-                srcWidget->SaveBrushColor();
-                srcWidget->setBrushColor(HIGHLIGHT_COLOR);
-            } else
-                srcWidget->RestoreBrushColor();
-            srcWidget->repaint();
+                Cell *srcCell =
+                    (Cell *)distalSyns[syn]->GetSource();
+                QList<QtCell *> childCells = 
+                    colWidget->findChildren<QtCell *>();
+                QtCell *srcWidget =
+                    childCells.at(srcCell->GetColIdx());
+
+                if (flag) {
+                    srcWidget->SaveBrushColor();
+                    srcWidget->setBrushColor(HIGHLIGHT_COLOR);
+                } else
+                    srcWidget->RestoreBrushColor();
+                srcWidget->repaint();
+            } else {
+                if (distalSyns[syn]->IsMotor())
+                    srcLayout = motorGrid;
+                if (distalSyns[syn]->IsSensory())
+                    srcLayout = sensoryGrid;
+
+                QtUnit *srcWidget = (QtUnit *)srcLayout->itemAtPosition(
+                    distalSyns[syn]->GetY(),
+                    distalSyns[syn]->GetX()
+                )->widget();
+
+                if (flag) {
+                    srcWidget->SaveBrushColor();
+                    srcWidget->setBrushColor(HIGHLIGHT_COLOR);
+                } else
+                    srcWidget->RestoreBrushColor();
+                srcWidget->repaint();
+            }
+
             //printf("\t[%d] (%d, %d)\n",
                 //i, prox_syns[i]->GetX(), prox_syns[i]->GetY());
         }
-        //((QtSensoryRegion *)(srcLayout->parentWidget()))->repaint();
-        //srcLayout->parentWidget()->repaint();
     }
 }
 
@@ -128,6 +160,8 @@ void QtCell::paintEvent(QPaintEvent *event)
 {
     QPainter p(this);
     QRect r(0, 0, sizeHint().width(), sizeHint().height());
+
+/*
     if (cell->IsActive())
         p.setBrush(ACTIVE_COLOR);
     else if (cell->IsPredicted()) {
@@ -135,6 +169,9 @@ void QtCell::paintEvent(QPaintEvent *event)
     }
     else
         p.setBrush(INACTIVE_COLOR);
+*/
+
+    p.setBrush(brushColor);
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setPen(QPen(Qt::black, 1, Qt::SolidLine, Qt::RoundCap));
     p.drawRoundedRect(r, 15.0, 15.0);
@@ -168,3 +205,17 @@ void QtCell::contextMenuEvent(QContextMenuEvent *event)
     menu.addAction(hideDistalConnections);
     menu.exec(event->globalPos());
 }
+
+void QtCell::enterEvent(QEvent *event)
+{
+    SaveBrushColor();
+    setBrushColor(HOVER_COLOR);
+    repaint();
+}
+
+void QtCell::leaveEvent(QEvent *event)
+{
+    RestoreBrushColor();
+    repaint();
+}
+
