@@ -306,7 +306,7 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
 
     int r, g, b;
     QColor rgb;
-    QtUnit *qtunit = NULL;
+    QtUnit *oldqtunit = NULL, *newqtunit = NULL;
 
 /*
  The old way of updating the sensory input unit grid. This had very,
@@ -329,21 +329,22 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
     for (int i=0; i<newSensoryGrid->count(); i++) {
         int row, col, rs, cs;
         newSensoryGrid->getItemPosition(i, &row, &col, &rs, &cs);
-        qtunit = (QtUnit *)newSensoryGrid->itemAt(i)->widget();
-        rgb = qtunit->getBrushColor();
+        newqtunit = (QtUnit *)newSensoryGrid->itemAt(i)->widget();
+        rgb = newqtunit->getBrushColor();
         rgb.getRgb(&r, &g, &b);
-        qtunit = (QtUnit *)currSensoryGrid->itemAt(i)->widget();
-        qtunit->setBrushColor(QColor(r, g, b));
+        oldqtunit = (QtUnit *)currSensoryGrid->itemAt(i)->widget();
+        oldqtunit->setBrushColor(QColor(r, g, b));
     }
     /* motor input display grid */
     for (int i=0; i<newMotorGrid->count(); i++) {
         int row, col, rs, cs;
         newMotorGrid->getItemPosition(i, &row, &col, &rs, &cs);
-        qtunit = (QtUnit *)newMotorGrid->itemAt(i)->widget();
-        rgb = qtunit->getBrushColor();
+        newqtunit = (QtUnit *)newMotorGrid->itemAt(i)->widget();
+        rgb = newqtunit->getBrushColor();
         rgb.getRgb(&r, &g, &b);
-        qtunit = (QtUnit *)currMotorGrid->itemAt(i)->widget();
-        qtunit->setBrushColor(QColor(r, g, b));
+        oldqtunit = (QtUnit *)currMotorGrid->itemAt(i)->widget();
+        oldqtunit->setBrushColor(QColor(r, g, b));
+        oldqtunit->SetActive(newqtunit->IsActive());
     }
 }
 

@@ -312,7 +312,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                          */
                         printf("\tchecking if segment is active from "
                                "learning cells\n");
-                        if (ActiveSegment->IsActiveFromLearning()) {
+                        if (ActiveSegment->WasActiveFromLearning()) {
                             printf("\tcell %d predicted and chosen for learning\n", k);
                             learningCells.push_back(cells[k]);
                             learnCellChosen = true;

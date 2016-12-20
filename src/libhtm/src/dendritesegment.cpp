@@ -43,13 +43,25 @@ bool DendriteSegment::IsActive()
 bool DendriteSegment::IsActiveFromLearning()
 {
     int activeLearnSyns = GetNumIsLearningSynapses();
-    int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
-    printf("\t\tof %u syns, need %d & have %d\n",
+    unsigned int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
+    printf("\t\tof %u syns, need %u & have %d\n",
         synapses.size(), threshold, activeLearnSyns);
     if (activeLearnSyns && (activeLearnSyns >= threshold))
         return true;
     return false;
 }
+
+bool DendriteSegment::WasActiveFromLearning()
+{
+    int activeLearnSyns = GetNumWasLearningSynapses();
+    unsigned int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
+    printf("\t\tof %u syns, need %u & have %d\n",
+        synapses.size(), threshold, activeLearnSyns);
+    if (activeLearnSyns && (activeLearnSyns >= threshold))
+        return true;
+    return false;
+}
+
 
 void DendriteSegment::NewSynapse(Synapse *newSyn)
 {
@@ -154,9 +166,26 @@ std::vector<Synapse*> DendriteSegment::GetIsLearningSynapses()
     return learnSyns;
 }
 
+std::vector<Synapse*> DendriteSegment::GetWasLearningSynapses()
+{
+    std::vector<Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<synapses.size(); i++) {
+        if (synapses[i]->WasFiring() && synapses[i]->WasLearning())
+            learnSyns.push_back(synapses[i]);
+    }
+
+    return learnSyns;
+}
+
 unsigned int DendriteSegment::GetNumIsLearningSynapses()
 {
     return GetIsLearningSynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumWasLearningSynapses()
+{
+    return GetWasLearningSynapses().size();
 }
 
 void DendriteSegment::SetNoTemporalContext()

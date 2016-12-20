@@ -161,6 +161,11 @@ public:
     void SaveBrushColor() { prevBrushColor = brushColor; }
     void RestoreBrushColor() { brushColor = prevBrushColor; }
     QGridLayout* GetCellGrid();
+
+    void SetActive(bool flag) { node->SetActive(flag); }
+    bool IsActive() { return node->IsActive(); }
+    bool WasActive() { return node->WasActive(); }
+
     void SetClickable(bool flag);
     bool IsClickable();
 protected:

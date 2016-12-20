@@ -33,6 +33,7 @@ public:
     ~DendriteSegment();
     bool IsActive();
     bool IsActiveFromLearning();
+    bool WasActiveFromLearning();
     bool IsSensorimotor() { return sensorimotorSegment; }
     void NewSynapse(Synapse *newSyn);
     std::vector<Synapse *> GetSynapses();
@@ -43,7 +44,9 @@ public:
     std::vector<Synapse*> GetWasNearActiveSynapses();
     int GetNumIsNearActiveSynapses();
     std::vector<Synapse*> GetIsLearningSynapses();
+    std::vector<Synapse*> GetWasLearningSynapses();
     unsigned int GetNumIsLearningSynapses();
+    unsigned int GetNumWasLearningSynapses();
     int GetNumSensorySyns() { return numSensorySyns; }
     int GetNumMotorSyns() { return numMotorSyns; }
     static float GetSubsamplePercent() { return SUBSAMPLE_PERCENT; }

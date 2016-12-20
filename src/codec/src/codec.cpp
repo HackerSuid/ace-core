@@ -599,21 +599,25 @@ bool ElfCodec::LoadTarget()
                     true,
                     100
                 );
-                // initialize an "empty" set of sensory input bits
-                SensoryInput ***initbits = (SensoryInput ***)malloc(
+                /*
+                 * initialize an "empty" set of sensory input bits
+                 */
+                SensoryInput ***motorInputs = (SensoryInput ***)malloc(
                     sizeof(SensoryInput **) * codecHeight
                 );
                 for (unsigned int h=0; h<codecHeight; h++) {
-                    initbits[h] = (SensoryInput **)malloc(
+                    motorInputs[h] = (SensoryInput **)malloc(
                         sizeof(SensoryInput *) * codecWidth
                     );
                     for (unsigned int w=0; w<codecWidth; w++)
-                        initbits[h][w] = new SensoryInput(w, h);
+                        motorInputs[h][w] = new SensoryInput(w, h);
                 }
-                // initialize an "empty" motor input region based
-                // on empty set of input bits.
+                /*
+                 * initialize an "empty" motor input region based
+                 * on empty set of input bits.
+                 */
                 SensoryRegion *initPatt = new SensoryRegion(
-                    initbits, 0, codecWidth, codecHeight, 0, NULL
+                    motorInputs, 0, codecWidth, codecHeight, 0, NULL
                 );
                 motorLayer->setlower(initPatt);
                 motorLayer->InitializeProximalDendrites();

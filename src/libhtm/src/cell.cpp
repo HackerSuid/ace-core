@@ -254,9 +254,9 @@ DendriteSegment* Cell::GetMostActiveSegment()
     int mostSynapseCount = -1;
     DendriteSegment *mostActiveSeg = NULL;
     // if no segments yet exist, then return NULL.
-    int numSegs = GetNumSegments();
+    unsigned int numSegs = GetNumSegments();
     printf("\t\tcell has %d segments\n", numSegs);
-    for (int i=0; i<numSegs; i++) {
+    for (unsigned int i=0; i<numSegs; i++) {
         int synCount = DistalDendriteSegments[i]->GetNumIsActiveSynapses();
         if (synCount > mostSynapseCount) {
             mostSynapseCount = synCount;
