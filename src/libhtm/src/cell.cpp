@@ -17,6 +17,7 @@ Cell::Cell(Column *col, unsigned int idx)
     parentColumn = col;
     colIdx = idx;
     memset(&predicted[0], false, sizeof(bool)*2);
+    memset(&learning[0], false, sizeof(bool)*2);
 }
 
 Cell::~Cell()
@@ -62,6 +63,7 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
      * context.
      */
     if (FirstPattern) {
+        printf("\t\t[cell] first patt, not adding synapses.\n");
         newSeg->SetNoTemporalContext();
         DistalDendriteSegments.push_back(newSeg);
         return NULL;
@@ -212,6 +214,10 @@ bool Cell::AddSynapsesFromSublayer(
                             if (!projections[k]->WasLearning())
                                 continue;
                         //printf("\t\t\t(col %d,%d, c %d)\n", x, y, k);
+                        if ((unsigned int)projections[k]==0x3e4ccccd) {
+                            printf("SYNAPSE IS CORRUPT\n");
+                            abort();
+                        }
                         Synapse *newSyn = new Synapse(
                             projections[k], x, y, inType
                         );
@@ -239,15 +245,17 @@ void Cell::RemoveSegment(int segidx)
     DistalDendriteSegments.erase(DistalDendriteSegments.begin()+segidx);
 }
 
-// return the segment with the most active synapses in the current timestep.
-// the "current" timestep is determined by the context of the calling function.
-// returns NULL if there were no segments on this cell yet.
+/*
+ * return the segment with the most active synapses in the current timestep.
+ * returns NULL if there were no segments on this cell yet.
+ */
 DendriteSegment* Cell::GetMostActiveSegment()
 {
     int mostSynapseCount = -1;
     DendriteSegment *mostActiveSeg = NULL;
     // if no segments yet exist, then return NULL.
-    int numSegs = this->GetNumSegments();
+    int numSegs = GetNumSegments();
+    printf("\t\tcell has %d segments\n", numSegs);
     for (int i=0; i<numSegs; i++) {
         int synCount = DistalDendriteSegments[i]->GetNumIsActiveSynapses();
         if (synCount > mostSynapseCount) {
@@ -305,15 +313,5 @@ DendriteSegment* Cell::GetBestMatchingSegment(
 
     //printf("segment %d\n", x);
     return bestSeg;
-}
-
-std::vector<DendriteSegment *> Cell::GetSegments()
-{
-    return DistalDendriteSegments;
-}
-
-unsigned int Cell::GetNumSegments()
-{
-    return DistalDendriteSegments.size();
 }
 

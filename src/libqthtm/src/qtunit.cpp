@@ -171,8 +171,14 @@ void QtUnit::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton)
         return;
+    printf("[0x%08x] a=[%d,%d] p=[%d,%d] l=[%d,%d]\n",
+        node, node->WasActive(), node->IsActive(),
+        node->WasPredicted(), node->IsPredicted(),
+        node->WasLearning(), node->IsLearning()
+    );
     if (!this->IsClickable())
         return;
+
     QVBoxLayout *objGroupLayout = new QVBoxLayout();
     QScrollArea *objScroll = new QScrollArea(objDetail);
     objScroll->setStyleSheet("background-color: rgb(25, 25, 25);");

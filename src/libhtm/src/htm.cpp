@@ -65,6 +65,16 @@ bool Htm::LoadXmlConfig(const char *pathname)
     doc.parse<rapidxml::parse_no_data_nodes>((char *)conf_xml);
     // Load the HTM and pass parameters to the constructor.
     rapidxml::xml_node<> *HtmNode = doc.first_node("Htm");
+    char *logfile = NULL;
+    if ((logfile = HtmNode->first_attribute("output_log")->value())) {
+        if ((logfd = open(logfile, O_RDWR|O_CREAT|O_TRUNC)) < 0)
+            perror("open() failed: ");
+        if (dup2(logfd, STDOUT_FILENO) < 0)
+            perror("dup2() failed for STDOUT: ");
+        if (dup2(logfd, STDERR_FILENO) < 0)
+            perror("dup2() failed for STDERR: ");
+        printf("[*] HTM log initialized: %s\n", logfile);
+    }
     if (!(target_path = HtmNode->first_attribute("target")->value())) {
         fprintf(stderr, "target missing from configuration file.\n");
         return false;

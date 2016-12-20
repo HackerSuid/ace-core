@@ -44,6 +44,8 @@ bool DendriteSegment::IsActiveFromLearning()
 {
     int activeLearnSyns = GetNumIsLearningSynapses();
     int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
+    printf("\t\tof %u syns, need %d & have %d\n",
+        synapses.size(), threshold, activeLearnSyns);
     if (activeLearnSyns && (activeLearnSyns >= threshold))
         return true;
     return false;
@@ -101,9 +103,16 @@ std::vector<Synapse*> DendriteSegment::GetWasActiveSynapses()
 {
     std::vector<Synapse*> activeSyns;
 
-    for (unsigned int i=0; i<synapses.size(); i++)
+    printf("\tchecking WasFiring() on %u syns\n", synapses.size());
+    for (unsigned int i=0; i<synapses.size(); i++) {
+        printf("\t\tsyn %u %d:%d:%d [0x%08x]\n",
+            i, synapses[i]->IsLateral(),
+            synapses[i]->IsSensory(),
+            synapses[i]->IsMotor(),
+            synapses[i]);
         if (synapses[i]->WasFiring())
             activeSyns.push_back(synapses[i]);
+    }
 
     return activeSyns;
 }

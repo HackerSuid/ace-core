@@ -32,8 +32,14 @@ public:
         int *bestSegIdx,
         HtmSublayer *sublayer
     );
-    std::vector<DendriteSegment *> GetSegments();
-    unsigned int GetNumSegments();
+    std::vector<DendriteSegment *> GetSegments()
+    {
+        return DistalDendriteSegments;
+    }
+    unsigned int GetNumSegments()
+    {
+        return DistalDendriteSegments.size();
+    }
     Column* GetParentColumn() { return parentColumn; }
     unsigned int GetColIdx() { return colIdx; }
 private:

@@ -27,7 +27,6 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
     if (htmUnitGrid)
         return htmUnitGrid;
 
-    printf("Creating new HTM unit grid\n");
     htmUnitGrid = new QGridLayout();
     htmUnitGrid->setSpacing(0);
     htmUnitGrid->setAlignment(Qt::AlignCenter);

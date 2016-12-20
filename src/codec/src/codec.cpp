@@ -595,8 +595,8 @@ bool ElfCodec::LoadTarget()
                 motorLayer->AllocateColumns(
                     codecRfSz,
                     0.10,//codecActiveRatio,
-                    0.20,//codecColComplexity,
-                    false,
+                    0.40,//codecColComplexity,
+                    true,
                     100
                 );
                 // initialize an "empty" set of sensory input bits
@@ -878,10 +878,6 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         motorLayer->RefreshLowerSynapses();
 
         /*
-         * Disable learning and boosting. I don't want the motor
-         * pattern spatial pooler to modify its synapses or ever
-         * alter its representation.
-         *
          * Learning=false, AllowBoosting=false
          */
         motorLayer->SpatialPooler(false, false);
@@ -937,7 +933,6 @@ SensoryCodecBinding ElfCodec::HandlePureSensory(
     } while (c != 0x00);
     path_str[j] = 0;
     mode = ptrace(PTRACE_PEEKTEXT, child_pid, regs->esp+0x4);
-    //printf("open(%s, %d)\n", path_str, mode);
     fd = open(path_str, mode);
     bind.fd = fd;
     bind.codec = sensoryCodecFactory.Get(
@@ -1004,6 +999,7 @@ SensoryRegion* ElfCodec::GenerateSparseMotorRep(
         for (unsigned int w=0; w<width; w++) {
             motorInputs[h][w] = new SensoryInput(w, h);
             numActive += (int)cols[h][w]->IsActive();
+            motorInputs[h][w]->SetActive(cols[h][w]->WasActive());
             motorInputs[h][w]->SetActive(cols[h][w]->IsActive());
         }
     }

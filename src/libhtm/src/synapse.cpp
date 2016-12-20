@@ -35,6 +35,7 @@ bool Synapse::IsFiring()
 
 bool Synapse::WasFiring()
 {
+    printf("\t\t\tsource 0x%08x\n", source);
     if (source->WasActive() && perm >= CONNECTED_PERM)
         return true;
     return false;

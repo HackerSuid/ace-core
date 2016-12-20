@@ -10,6 +10,7 @@ class HtmSublayer;
 
 class Htm {
 private:
+    int logfd;
     char *target_path;
     unsigned int window_w, window_h;
     HtmRegion **regions;

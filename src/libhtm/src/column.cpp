@@ -375,9 +375,10 @@ int Column::GetLocalActivity()
 }
 
 /*
- * Return the cell with the best matching segment. If no cells have a good
- * enough match, then return the one with the fewest segments. If none of them
- * have any segments, then return the first one.
+ * Return the cell with the best matching dendrite segment, meaning
+ * it possesses the most (near) active synapses. If no cells have
+ * a good enough match, then return the one with the fewest segments.
+ * If none of them have any segments, then return the first one.
  */
 Cell* Column::GetBestMatchingCell(
     DendriteSegment **segment,
@@ -385,19 +386,26 @@ Cell* Column::GetBestMatchingCell(
     HtmSublayer *sublayer,
     bool FirstPattern)
 {
+    /*
+     * the first input pattern has no temporal context, so no
+     * segments would be active.
+     */
     if (FirstPattern) {
-        //printf("\t\t[column] cell 0 chosen for learning [first pattern]\n");
+        printf("\t\t[column] cell 0 chosen for learning (first patt)\n");
+        *segidx = 0;
         return cells[0];
     }
 
     Cell *BestCell = NULL;
     int bestCellIdx = -1;
     DendriteSegment *bestSeg = NULL;
-    int bestSegIdx;
+    int bestSegIdx = -1;
     int highestNumSyns = -1;
 
     Cell *fewestSegCell = NULL;
-    int cellNumSegments, fewestSegs = -1, fewestSegCellIdx = -1;
+    int fewestSegs = -1;
+    int fewestSegCellIdx = -1;
+    int cellNumSegments;
 
     /* segment will be NULL if no segments are found. */
     *segment = bestSeg;
@@ -411,53 +419,47 @@ Cell* Column::GetBestMatchingCell(
             fewestSegs = cellNumSegments;
             fewestSegCell = cells[i];
             fewestSegCellIdx = i;
+            bestSeg = NULL;
+            bestSegIdx = 0;
         }
-
         /*
          * for cell i, get the segment with the most active synapses in the
          * previous timestep.
          */
-        //printf("\t\tchecking segments for cell %d\n", i);
         bestSeg = cells[i]->GetBestMatchingSegment(
             &bestSegIdx,
             sublayer
         );
-        //printf("\t\t\tbestSeg 0x%08x (not null then best)\n",
-            //(unsigned int)bestSeg);
-        //if (i>0 && cellNumSegments>0 && bestSeg)
-//        printf("\t\tchecking best seg (%d tot) on c %d.\n",
-//            cellNumSegments, i);
-        // if a segment is returned, see if it had more synapses that could
-        // have predicted this activity than the highest so far.
+        /*
+         * if a segment is returned, see if it had more synapses
+         * that could have predicted this activity than the highest
+         * so far.
+         */
         if (bestSeg) {
             if (bestSeg->GetNumIsNearActiveSynapses() > highestNumSyns) {
-//                printf("\tcell %d has the most (near) active synapses [%d] on segment 0x%08x\n",
-//                    i, bestSeg->GetNumIsNearActiveSynapses(), (unsigned int)bestSeg);
-//                std::vector<Synapse *> theSyns = bestSeg->GetSynapses();
-//                printf("\t\t");
-//                for (int x=0; x<theSyns.size(); x++)
-//                    printf("%f ", theSyns[x]->GetPerm());
-//                printf("\n");
-//                if (i>0 && cellNumSegments>0)
-//                    printf("yep.\n");
                 highestNumSyns = bestSeg->GetNumIsActiveSynapses();
                 BestCell = cells[i];
                 *segment = bestSeg;
                 *segidx = bestSegIdx;
                 bestCellIdx = i;
-            } else {
-//                if (i>0 && cellNumSegments>0)
-//                    printf("nope.\n");
             }
         }
     }
 
+    /*
+     * BestCell is still NULL if no cells have a matching segment.
+     * In this case, take the cell with the fewers number of
+     * segments.
+     */
     if (!BestCell) {
         BestCell = fewestSegCell;
         bestCellIdx = fewestSegCellIdx;
+        *segment = bestSeg;
+        *segidx = bestSegIdx;
     }
 
-    //printf("\t\t[column] cell %d chosen for learning\n", bestCellIdx);
+    printf("\t\t[column] cell %d chosen for learning\n",
+        bestCellIdx);
 
     return BestCell;
 }

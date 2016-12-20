@@ -119,7 +119,7 @@ void QtCell::_ToggleDistalConnections(bool flag)
                 if (distalSyns[syn]->IsMotor())
                     srcLayout = motorGrid;
                 if (distalSyns[syn]->IsSensory())
-                    srcLayout = sensoryGrid;
+                    srcLayout = htmGrid;
 
                 QtUnit *srcWidget = (QtUnit *)srcLayout->itemAtPosition(
                     distalSyns[syn]->GetY(),
