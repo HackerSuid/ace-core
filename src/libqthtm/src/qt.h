@@ -42,7 +42,10 @@ const QColor INACTIVE_COLOR = QColor(90, 90, 90);
 /* bright yellow */
 const QColor PREDICTED_COLOR = QColor(255, 255, 102);
 /* some sort of orange/red */
-const QColor HIGHLIGHT_COLOR = QColor(0xFF, 0xAA, 0x33);
+const QColor HIGHLIGHT_INACTIVE = QColor(0xFF, 0xAA, 0x33);
+/* green */
+const QColor HIGHLIGHT_ACTIVE = QColor(0x3C, 0xC9, 0x34);
+/* kinda light blue */
 const QColor HOVER_COLOR = QColor(0x55, 0x79, 0xFF);
 
 extern QApplication *app;
@@ -215,6 +218,9 @@ public:
     void SaveBrushColor() { prevBrushColor = brushColor; }
     void RestoreBrushColor() { brushColor = prevBrushColor; }
     QColor getBrushColor() const;
+
+    bool IsActive() { return cell->IsActive(); }
+    bool WasActive() { return cell->WasActive(); }
 protected:
     void mousePressEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);

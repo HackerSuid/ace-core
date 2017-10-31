@@ -27,7 +27,7 @@
 #define HEALTH_DECAY    5
 #define HEALTH_REGEN    (2*HEALTH_DECAY)
 
-#define WORLD_ROOT  "/mnt/lfs/root/ace-core/examples/abcdxbcy_world/"
+#define WORLD_ROOT  "/root/ace-core/examples/abcdxbcy_world/"
 
 long long int health_status = HEALTH_BASE;
 

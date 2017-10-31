@@ -92,9 +92,12 @@ void QtCell::_ToggleDistalConnections(bool flag)
         std::vector<Synapse *> distalSyns =
             segments[seg]->GetSynapses();
         printf("\tseg %u has %u synapses\n", seg, distalSyns.size());
+        unsigned int numActiveLat=0, numActiveMot=0, numActiveSen=0;
         for (unsigned int syn=0; syn<distalSyns.size(); syn++) {
             QGridLayout *srcLayout = NULL;
             if (distalSyns[syn]->IsLateral()) {
+                if (distalSyns[syn]->IsFiring())
+                    numActiveLat++;
                 srcLayout = htmGrid;
 
                 QtUnit *colWidget = (QtUnit *)srcLayout->itemAtPosition(
@@ -111,15 +114,34 @@ void QtCell::_ToggleDistalConnections(bool flag)
 
                 if (flag) {
                     srcWidget->SaveBrushColor();
-                    srcWidget->setBrushColor(HIGHLIGHT_COLOR);
+                    srcWidget->setBrushColor(
+                        srcWidget->IsActive() ? HIGHLIGHT_ACTIVE :
+                                                HIGHLIGHT_INACTIVE
+                    );
                 } else
                     srcWidget->RestoreBrushColor();
                 srcWidget->repaint();
             } else {
-                if (distalSyns[syn]->IsMotor())
+                if (distalSyns[syn]->IsMotor()) {
+                    if (distalSyns[syn]->IsFiring()) {
+                        printf("[mot] (%d, %d) %d\n",
+                            distalSyns[syn]->GetX(),
+                            distalSyns[syn]->GetY(),
+                            distalSyns[syn]->IsFiring());
+                        numActiveMot++;
+                    }
                     srcLayout = motorGrid;
-                if (distalSyns[syn]->IsSensory())
+                }
+                if (distalSyns[syn]->IsSensory()) {
+                    if (distalSyns[syn]->IsFiring()) {
+                        printf("[sen] (%d, %d) %d\n",
+                            distalSyns[syn]->GetX(),
+                            distalSyns[syn]->GetY(),
+                            distalSyns[syn]->IsFiring());
+                        numActiveSen++;
+                    }
                     srcLayout = htmGrid;
+                }
 
                 QtUnit *srcWidget = (QtUnit *)srcLayout->itemAtPosition(
                     distalSyns[syn]->GetY(),
@@ -128,7 +150,10 @@ void QtCell::_ToggleDistalConnections(bool flag)
 
                 if (flag) {
                     srcWidget->SaveBrushColor();
-                    srcWidget->setBrushColor(HIGHLIGHT_COLOR);
+                    srcWidget->setBrushColor(
+                        srcWidget->IsActive() ? HIGHLIGHT_ACTIVE :
+                                                HIGHLIGHT_INACTIVE
+                    );
                 } else
                     srcWidget->RestoreBrushColor();
                 srcWidget->repaint();
@@ -137,6 +162,10 @@ void QtCell::_ToggleDistalConnections(bool flag)
             //printf("\t[%d] (%d, %d)\n",
                 //i, prox_syns[i]->GetX(), prox_syns[i]->GetY());
         }
+        printf("\t\t%u total: %u sen %u mot %u lat\n",
+            distalSyns.size(), numActiveSen, numActiveMot,
+            numActiveLat
+        );
     }
 }
 

@@ -51,7 +51,7 @@ bool Cell::WasPredicted()
  *    hemisphere are also used).
  * 2. For L4 sublayers, distal dendrite segments synapse with
  *    two sources of input: feed-forward sensory patterns, and
- *    feed-forward motor patterns.
+ *    feed-forward motor patterns (er, or allocentric signal?).
  */
 DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
 {
@@ -152,10 +152,12 @@ bool Cell::AddSynapsesFromSublayer(
      * input pattern.
      */
     int subsampleSz =
-        (inType!=MOTOR_DISTAL ?
+        (inType != MOTOR_DISTAL ?
             thisSublayer->LastActiveColumns() :
             src->GetNumActiveInputs()) *
         DendriteSegment::GetSubsamplePercent();
+    if (inType == SENSORY_DISTAL)
+        subsampleSz *= 0.50;
 
     std::vector<GenericInput *> projections;
 

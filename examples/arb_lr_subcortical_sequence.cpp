@@ -152,23 +152,20 @@ int scan_room(DIR *curdirp, char *dir, char *cwd, int cwdsize)
         }
     }
 
-    /*
-     * Execute the next motor command. Somewhat favor left to
-     * avoid 50/50 oscillating.
-     */
-/*
     printf("\t[*] calling motor function\n");
-    if (rand()/(float)RAND_MAX < 0.65) {
+///*
+    if (rand()/(float)RAND_MAX < 0.50) {
         if ((nextdirp=turn_left(dir, cwd, cwdsize))==NULL)
             return 0;
     } else {
         if ((nextdirp=turn_right(dir, cwd, cwdsize))==NULL)
             return 0;
     }
-*/
-
+//*/
+/*
     if ((nextdirp=turn_left(dir, cwd, cwdsize))==NULL)
         return 0;
+*/
  
     health_status -= HEALTH_DECAY;
 

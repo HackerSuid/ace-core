@@ -67,6 +67,7 @@ bool Htm::LoadXmlConfig(const char *pathname)
     rapidxml::xml_node<> *HtmNode = doc.first_node("Htm");
     char *logfile = NULL;
     if ((logfile = HtmNode->first_attribute("output_log")->value())) {
+        printf("Redirecting stdout and stderr to %s\n", logfile);
         if ((logfd = open(logfile, O_RDWR|O_CREAT|O_TRUNC)) < 0)
             perror("open() failed: ");
         if (dup2(logfd, STDOUT_FILENO) < 0)

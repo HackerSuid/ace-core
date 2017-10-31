@@ -96,9 +96,9 @@ void HtmSublayer::CLA(bool Learning, bool allowBoosting)
     /*
      * Spatial Pooler
      *
-     * Compute the prediction-assisted, inference of feedforward input (overlap
-     * score)  for each column. This is a linear summation of active,
-     * feedforward input bits plus a. The columns found to have the highest overlap with
+     * Compute the inference of feedforward input (overlap
+     * score) for each column. This is a linear summation of active,
+     * feedforward input bits plus a boost value. The columns found to have the highest overlap with
      * the input pattern perform an inhibition function to prevent neighboring
      * columns within a particular radius from becoming active. The columns
      * learn to map spatially similar input patterns to the same or a similar

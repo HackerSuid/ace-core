@@ -117,7 +117,10 @@ void QtUnit::_ToggleProximalConnections(bool flag)
             prox_syns[i]->GetY(), prox_syns[i]->GetX())->widget());
         if (flag) {
             src->SaveBrushColor();
-            src->setBrushColor(HIGHLIGHT_COLOR);
+            src->setBrushColor(
+                src->IsActive() ? HIGHLIGHT_ACTIVE :
+                                   HIGHLIGHT_INACTIVE
+            );
         } else
             src->RestoreBrushColor();
         //printf("\t[%d] (%d, %d)\n",

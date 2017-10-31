@@ -11,16 +11,33 @@ DendriteSegment::DendriteSegment(bool sensorimotorFlag)
     sensorimotorSegment = sensorimotorFlag;
     numSensorySyns = 0;
     numMotorSyns = 0;
-    // flag to indicate no temporal context as the first sequence
-    // pattern
+    numLateralSyns = 0;
+    /*
+     * flag to indicate no temporal context as the first sequence
+     * pattern
+     */
     noTemporalContext = false;
 }
 
 DendriteSegment::~DendriteSegment()
 {
     std::vector<Synapse *>::iterator it;
-    for (it=synapses.begin(); it<synapses.end(); it++)
+    for (it=sensorySyns.begin(); it<sensorySyns.end(); it++)
         delete (*it);
+    for (it=motorSyns.begin(); it<motorSyns.end(); it++)
+        delete (*it);
+    for (it=lateralSyns.begin(); it<lateralSyns.end(); it++)
+        delete (*it);
+}
+
+void DendriteSegment::NewSynapse(Synapse *newSyn)
+{
+    if (newSyn->IsSensory())
+        sensorySyns.push_back(newSyn);
+    else if (newSyn->IsMotor())
+        motorSyns.push_back(newSyn);
+    else
+        lateralSyns.push_back(newSyn);
 }
 
 /*
@@ -30,10 +47,24 @@ DendriteSegment::~DendriteSegment()
  */
 bool DendriteSegment::IsActive()
 {
-    int activeSyns = GetNumIsActiveSynapses();
-    int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
-    if (activeSyns && (activeSyns >= threshold))
-        return true;
+    unsigned int activeSen=0, activeMot=0, activeLat=0;
+    unsigned int senThreshold=0, motThreshold=0, latThreshold=0;
+
+    if (sensorimotorSegment) {
+        activeSen = GetNumIsActiveSensorySynapses();
+        activeMot = GetNumIsActiveMotorSynapses();
+        senThreshold = sensorySyns.size() * SUBSAMPLE_THRESHOLD;
+        motThreshold = motorSyns.size() * SUBSAMPLE_THRESHOLD;
+        if (activeSen && activeMot)
+            if (activeSen>=senThreshold&&activeMot>=motThreshold)
+                return true;
+    } else {
+        activeLat = GetNumIsActiveLateralSynapses();
+        latThreshold = lateralSyns.size()*SUBSAMPLE_THRESHOLD;
+        if (activeLat && activeLat >= latThreshold)
+            return true;
+    }
+
     return false;
 }
 
@@ -42,67 +73,48 @@ bool DendriteSegment::IsActive()
  */
 bool DendriteSegment::IsActiveFromLearning()
 {
-    int activeLearnSyns = GetNumIsLearningSynapses();
-    unsigned int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
-    printf("\t\tof %u syns, need %u & have %d\n",
-        synapses.size(), threshold, activeLearnSyns);
-    if (activeLearnSyns && (activeLearnSyns >= threshold))
-        return true;
+    unsigned int activeSen=0, activeMot=0, activeLat=0;
+    unsigned int senThreshold=0, motThreshold=0, latThreshold=0;
+
+    if (sensorimotorSegment) {
+        activeSen = GetNumIsLearningSensorySynapses();
+        activeMot =  GetNumIsLearningMotorSynapses();
+        senThreshold = sensorySyns.size() * SUBSAMPLE_THRESHOLD;
+        motThreshold = motorSyns.size() * SUBSAMPLE_THRESHOLD;
+        if (activeSen && activeMot)
+            if (activeSen>=senThreshold&&activeMot>=motThreshold)
+                return true;
+    } else {
+        activeLat = GetNumIsLearningLateralSynapses();
+        latThreshold = lateralSyns.size() * SUBSAMPLE_THRESHOLD;
+        if (activeLat && activeLat >= latThreshold)
+            return true;
+    }
+
     return false;
 }
 
 bool DendriteSegment::WasActiveFromLearning()
 {
-    int activeLearnSyns = GetNumWasLearningSynapses();
-    unsigned int threshold = synapses.size() * SUBSAMPLE_THRESHOLD;
-    printf("\t\tof %u syns, need %u & have %d\n",
-        synapses.size(), threshold, activeLearnSyns);
-    if (activeLearnSyns && (activeLearnSyns >= threshold))
-        return true;
+    unsigned int activeSen=0, activeMot=0, activeLat=0;
+    unsigned int senThreshold=0, motThreshold=0, latThreshold=0;
+
+    if (sensorimotorSegment) {
+        activeSen = GetNumWasLearningSensorySynapses();
+        activeMot =  GetNumWasLearningMotorSynapses();
+        senThreshold = sensorySyns.size() * SUBSAMPLE_THRESHOLD;
+        motThreshold = motorSyns.size() * SUBSAMPLE_THRESHOLD;
+        if (activeSen && activeMot)
+            if (activeSen>=senThreshold&&activeMot>=motThreshold)
+                return true;
+    } else {
+        activeLat = GetNumWasLearningLateralSynapses();
+        latThreshold = lateralSyns.size() * SUBSAMPLE_THRESHOLD;
+        if (activeLat && activeLat >= latThreshold)
+            return true;
+    }
+
     return false;
-}
-
-
-void DendriteSegment::NewSynapse(Synapse *newSyn)
-{
-    synapses.push_back(newSyn);
-
-    if (newSyn->IsMotor())
-        numMotorSyns++;
-    else
-        numSensorySyns++;
-}
-
-void DendriteSegment::RefreshSynapses(GenericSublayer *NewPattern)
-{
-    for (unsigned int i=0; i<synapses.size(); i++)
-        synapses[i]->RefreshSynapse(NewPattern);
-}
-
-std::vector<Synapse *> DendriteSegment::GetSynapses()
-{
-    return synapses;
-}
-
-int DendriteSegment::GetNumSynapses()
-{
-    return synapses.size();
-}
-
-/*
- * returns the synapses that are active on the dendrite segment during the
- * current timestep. the "current" timestep is determined by the context of
- * the calling function.
- */
-std::vector<Synapse*> DendriteSegment::GetIsActiveSynapses()
-{
-    std::vector<Synapse*> activeSyns;
-
-    for (unsigned int i=0; i<synapses.size(); i++)
-        if (synapses[i]->IsFiring())
-            activeSyns.push_back(synapses[i]);
-
-    return activeSyns;
 }
 
 unsigned int DendriteSegment::GetNumIsActiveSynapses()
@@ -110,32 +122,286 @@ unsigned int DendriteSegment::GetNumIsActiveSynapses()
     return GetIsActiveSynapses().size();
 }
 
-/* Same as above but for the previous timestep */
+std::vector<Synapse*> DendriteSegment::GetIsActiveSynapses()
+{
+    std::vector<Synapse*> activeSyns;
+
+    if (sensorimotorSegment) {
+        for (unsigned int i=0; i<sensorySyns.size(); i++) {
+            if (sensorySyns[i]->IsFiring())
+                activeSyns.push_back(sensorySyns[i]);
+        }
+        for (unsigned int i=0; i<motorSyns.size(); i++) {
+            if (motorSyns[i]->IsFiring())
+                activeSyns.push_back(motorSyns[i]);
+        }
+    } else {
+        for (unsigned int i=0; i<lateralSyns.size(); i++) {
+            if (lateralSyns[i]->IsFiring())
+                activeSyns.push_back(lateralSyns[i]);
+        }
+    }
+
+    return activeSyns;
+}
+
+unsigned int DendriteSegment::GetNumIsActiveSensorySynapses()
+{
+    return GetIsActiveSensorySynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumIsActiveMotorSynapses()
+{
+    return GetIsActiveMotorSynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumIsActiveLateralSynapses()
+{
+    return GetIsActiveLateralSynapses().size();
+}
+
+std::vector<Synapse*> DendriteSegment::GetIsActiveSensorySynapses()
+{
+    std::vector<Synapse *> activeSyns;
+
+    for (unsigned int i=0; i<sensorySyns.size(); i++)
+        if (sensorySyns[i]->IsFiring())
+            activeSyns.push_back(sensorySyns[i]);
+
+    return activeSyns;
+}
+
+std::vector<Synapse*> DendriteSegment::GetIsActiveMotorSynapses()
+{   
+    std::vector<Synapse *> activeSyns;
+
+    for (unsigned int i=0; i<motorSyns.size(); i++)
+        if (motorSyns[i]->IsFiring())
+            activeSyns.push_back(motorSyns[i]);
+
+    return activeSyns;
+}
+
+std::vector<Synapse*> DendriteSegment::GetIsActiveLateralSynapses()
+{
+    std::vector<Synapse *> activeSyns;
+
+    for (unsigned int i=0; i<lateralSyns.size(); i++)
+        if (lateralSyns[i]->IsFiring())
+            activeSyns.push_back(lateralSyns[i]);
+
+    return activeSyns;
+}
+
+unsigned int DendriteSegment::GetNumWasActiveSynapses()
+{
+    return GetWasActiveSynapses().size();
+}
+
 std::vector<Synapse*> DendriteSegment::GetWasActiveSynapses()
 {
     std::vector<Synapse*> activeSyns;
 
-    printf("\tchecking WasFiring() on %u syns\n", synapses.size());
-    for (unsigned int i=0; i<synapses.size(); i++) {
-        printf("\t\tsyn %u %d:%d:%d [0x%08x]\n",
-            i, synapses[i]->IsLateral(),
-            synapses[i]->IsSensory(),
-            synapses[i]->IsMotor(),
-            synapses[i]);
-        if (synapses[i]->WasFiring())
-            activeSyns.push_back(synapses[i]);
+    if (sensorimotorSegment) {
+        for (unsigned int i=0; i<sensorySyns.size(); i++) {
+            if (sensorySyns[i]->WasFiring())
+                activeSyns.push_back(sensorySyns[i]);
+        }
+        for (unsigned int i=0; i<motorSyns.size(); i++) {
+            if (motorSyns[i]->WasFiring())
+                activeSyns.push_back(motorSyns[i]);
+        }
+    } else {
+        for (unsigned int i=0; i<lateralSyns.size(); i++) {
+            if (lateralSyns[i]->WasFiring())
+                activeSyns.push_back(lateralSyns[i]);
+        }
     }
 
     return activeSyns;
+}
+
+unsigned int DendriteSegment::GetNumWasActiveSensorySynapses()
+{
+    return GetWasActiveSensorySynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumWasActiveMotorSynapses()
+{
+    return GetWasActiveMotorSynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumWasActiveLateralSynapses()
+{
+    return GetWasActiveLateralSynapses().size();
+}
+
+std::vector<Synapse*> DendriteSegment::GetWasActiveSensorySynapses()
+{
+    std::vector<Synapse *> activeSyns;
+
+    for (unsigned int i=0; i<sensorySyns.size(); i++)
+        if (sensorySyns[i]->WasFiring())
+            activeSyns.push_back(sensorySyns[i]);
+
+    return activeSyns;
+}
+
+std::vector<Synapse*> DendriteSegment::GetWasActiveMotorSynapses()
+{   
+    std::vector<Synapse *> activeSyns;
+
+    for (unsigned int i=0; i<motorSyns.size(); i++)
+        if (motorSyns[i]->WasFiring())
+            activeSyns.push_back(motorSyns[i]);
+
+    return activeSyns;
+}
+
+std::vector<Synapse*> DendriteSegment::GetWasActiveLateralSynapses()
+{
+    std::vector<Synapse *> activeSyns;
+
+    for (unsigned int i=0; i<lateralSyns.size(); i++)
+        if (lateralSyns[i]->WasFiring())
+            activeSyns.push_back(lateralSyns[i]);
+
+    return activeSyns;
+}
+
+unsigned int DendriteSegment::GetNumIsLearningSynapses()
+{
+    return (sensorimotorSegment ?
+        GetNumIsLearningSensorySynapses() +
+        GetNumIsLearningMotorSynapses() :
+        GetNumIsLearningLateralSynapses()
+    );
+}
+
+unsigned int DendriteSegment::GetNumIsLearningSensorySynapses()
+{
+    return GetIsLearningSensorySynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumIsLearningMotorSynapses()
+{
+    return GetIsLearningMotorSynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumIsLearningLateralSynapses()
+{
+    return GetIsLearningLateralSynapses().size();
+}
+
+std::vector<Synapse*> DendriteSegment::GetIsLearningSensorySynapses()
+{
+    std::vector<Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<sensorySyns.size(); i++) {
+        if (sensorySyns[i]->IsFiring() && sensorySyns[i]->IsLearning())
+            learnSyns.push_back(sensorySyns[i]);
+    }
+
+    return learnSyns;
+}
+
+std::vector<Synapse*> DendriteSegment::GetIsLearningMotorSynapses()
+{
+    std::vector<Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<motorSyns.size(); i++) {
+        if (motorSyns[i]->IsFiring() && motorSyns[i]->IsLearning())
+            learnSyns.push_back(motorSyns[i]);
+    }
+
+    return learnSyns;
+}
+
+std::vector<Synapse*> DendriteSegment::GetIsLearningLateralSynapses()
+{
+    std::vector<Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<lateralSyns.size(); i++) {
+        if (lateralSyns[i]->IsFiring() && lateralSyns[i]->IsLearning())
+            learnSyns.push_back(lateralSyns[i]);
+    }
+
+    return learnSyns;
+}
+
+unsigned int DendriteSegment::GetNumWasLearningSensorySynapses()
+{
+    return GetWasLearningSensorySynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumWasLearningMotorSynapses()
+{
+    return GetWasLearningMotorSynapses().size();
+}
+
+unsigned int DendriteSegment::GetNumWasLearningLateralSynapses()
+{
+    return GetWasLearningLateralSynapses().size();
+}
+
+std::vector<Synapse*> DendriteSegment::GetWasLearningSensorySynapses()
+{
+    std::vector<Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<sensorySyns.size(); i++) {
+        if (sensorySyns[i]->WasFiring() && sensorySyns[i]->WasLearning())
+            learnSyns.push_back(sensorySyns[i]);
+    }
+
+    return learnSyns;
+}
+
+std::vector<Synapse*> DendriteSegment::GetWasLearningMotorSynapses()
+{
+    std::vector<Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<motorSyns.size(); i++) {
+        if (motorSyns[i]->WasFiring() && motorSyns[i]->WasLearning())
+            learnSyns.push_back(motorSyns[i]);
+    }
+
+    return learnSyns;
+}
+
+std::vector<Synapse*> DendriteSegment::GetWasLearningLateralSynapses()
+{
+    std::vector<Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<lateralSyns.size(); i++) {
+        if (lateralSyns[i]->WasFiring() && lateralSyns[i]->WasLearning())
+            learnSyns.push_back(lateralSyns[i]);
+    }
+
+    return learnSyns;
 }
 
 std::vector<Synapse*> DendriteSegment::GetWasNearActiveSynapses()
 {
     std::vector<Synapse*> nearActiveSyns;
 
-    for (unsigned int i=0; i<synapses.size(); i++)
-        if (synapses[i]->IsNearConnected() && synapses[i]->GetSource()->WasActive())
-            nearActiveSyns.push_back(synapses[i]);
+    if (sensorimotorSegment) {
+        for (unsigned int i=0; i<sensorySyns.size(); i++) {
+            if (sensorySyns[i]->IsNearConnected() &&
+                sensorySyns[i]->GetSource()->WasActive())
+                nearActiveSyns.push_back(sensorySyns[i]);
+        }
+        for (unsigned int i=0; i<motorSyns.size(); i++) {
+            if (motorSyns[i]->IsNearConnected() &&
+                motorSyns[i]->GetSource()->WasActive())
+                nearActiveSyns.push_back(motorSyns[i]);
+        }
+    } else {
+        for (unsigned int i=0; i<lateralSyns.size(); i++) {
+            if (lateralSyns[i]->IsNearConnected() &&
+                lateralSyns[i]->GetSource()->WasActive())
+                nearActiveSyns.push_back(lateralSyns[i]);
+        }
+    }
 
     return nearActiveSyns;
 }
@@ -147,45 +413,53 @@ int DendriteSegment::GetNumIsNearActiveSynapses()
 {
     int nearActiveSyns = 0;
 
-    for (unsigned int i=0; i<synapses.size(); i++)
-        if (synapses[i]->IsNearConnected() && synapses[i]->GetSource()->IsActive())
-            nearActiveSyns++;
+    if (sensorimotorSegment) {
+        for (unsigned int i=0; i<sensorySyns.size(); i++) {
+            if (sensorySyns[i]->IsNearConnected() &&
+                sensorySyns[i]->GetSource()->IsActive())
+                nearActiveSyns++;
+        }
+        for (unsigned int i=0; i<motorSyns.size(); i++) {
+            if (motorSyns[i]->IsNearConnected() &&
+                motorSyns[i]->GetSource()->IsActive())
+                nearActiveSyns++;
+        }
+    } else {
+        for (unsigned int i=0; i<lateralSyns.size(); i++) {
+            if (lateralSyns[i]->IsNearConnected() &&
+                lateralSyns[i]->GetSource()->IsActive())
+                nearActiveSyns++;
+        }
+    }
 
     return nearActiveSyns;
 }
 
-std::vector<Synapse*> DendriteSegment::GetIsLearningSynapses()
+void DendriteSegment::RefreshSynapses(GenericSublayer *NewPattern)
 {
-    std::vector<Synapse *> learnSyns;
-
-    for (unsigned int i=0; i<synapses.size(); i++) {
-        if (synapses[i]->IsFiring() && synapses[i]->IsLearning())
-            learnSyns.push_back(synapses[i]);
+    if (sensorimotorSegment) {
+        for (unsigned int i=0; i<sensorySyns.size(); i++)
+            sensorySyns[i]->RefreshSynapse(NewPattern);
+        for (unsigned int i=0; i<motorSyns.size(); i++)
+            motorSyns[i]->RefreshSynapse(NewPattern);
+    } else {
+        for (unsigned int i=0; i<lateralSyns.size(); i++)
+            lateralSyns[i]->RefreshSynapse(NewPattern);
     }
-
-    return learnSyns;
 }
 
-std::vector<Synapse*> DendriteSegment::GetWasLearningSynapses()
+std::vector<Synapse *> DendriteSegment::GetSynapses()
 {
-    std::vector<Synapse *> learnSyns;
+    std::vector<Synapse *> synapses;
 
-    for (unsigned int i=0; i<synapses.size(); i++) {
-        if (synapses[i]->WasFiring() && synapses[i]->WasLearning())
-            learnSyns.push_back(synapses[i]);
-    }
+    for (unsigned int i=0; i<sensorySyns.size(); i++)
+        synapses.push_back(sensorySyns[i]);
+    for (unsigned int i=0; i<motorSyns.size(); i++)
+        synapses.push_back(motorSyns[i]);
+    for (unsigned int i=0; i<lateralSyns.size(); i++)
+        synapses.push_back(lateralSyns[i]);
 
-    return learnSyns;
-}
-
-unsigned int DendriteSegment::GetNumIsLearningSynapses()
-{
-    return GetIsLearningSynapses().size();
-}
-
-unsigned int DendriteSegment::GetNumWasLearningSynapses()
-{
-    return GetWasLearningSynapses().size();
+    return synapses;
 }
 
 void DendriteSegment::SetNoTemporalContext()

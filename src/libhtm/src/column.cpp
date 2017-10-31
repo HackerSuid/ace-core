@@ -130,7 +130,7 @@ void Column::InitializeProximalDendrite(
         syn_pos[i][0] = x_idx;
         syn_pos[i][1] = y_idx;
         ProximalDendriteSegment->NewSynapse(
-            new Synapse(inputs[y_idx][x_idx], x_idx, y_idx, false)
+            new Synapse(inputs[y_idx][x_idx], x_idx, y_idx, SENSORY_PROXIMAL)
         );
     }
 */

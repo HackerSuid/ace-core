@@ -31,32 +31,59 @@ class DendriteSegment
 public:
     DendriteSegment(bool sensorimotorFlag);
     ~DendriteSegment();
+    void NewSynapse(Synapse *newSyn);
     bool IsActive();
     bool IsActiveFromLearning();
     bool WasActiveFromLearning();
-    bool IsSensorimotor() { return sensorimotorSegment; }
-    void NewSynapse(Synapse *newSyn);
-    std::vector<Synapse *> GetSynapses();
-    int GetNumSynapses();
-    std::vector<Synapse*> GetIsActiveSynapses();
+
     unsigned int GetNumIsActiveSynapses();
+    std::vector<Synapse*> GetIsActiveSynapses();
+    unsigned int GetNumIsActiveSensorySynapses();
+    unsigned int GetNumIsActiveMotorSynapses();
+    unsigned int GetNumIsActiveLateralSynapses();
+    std::vector<Synapse*> GetIsActiveSensorySynapses();
+    std::vector<Synapse*> GetIsActiveMotorSynapses();
+    std::vector<Synapse*> GetIsActiveLateralSynapses();
+
+    unsigned int GetNumWasActiveSynapses();
     std::vector<Synapse*> GetWasActiveSynapses();
+    unsigned int GetNumWasActiveSensorySynapses();
+    unsigned int GetNumWasActiveMotorSynapses();
+    unsigned int GetNumWasActiveLateralSynapses();
+    std::vector<Synapse*> GetWasActiveSensorySynapses();
+    std::vector<Synapse*> GetWasActiveMotorSynapses();
+    std::vector<Synapse*> GetWasActiveLateralSynapses();
+
+    unsigned int GetNumIsLearningSynapses();
+    unsigned int GetNumIsLearningSensorySynapses();
+    unsigned int GetNumIsLearningMotorSynapses();
+    unsigned int GetNumIsLearningLateralSynapses();
+    std::vector<Synapse*> GetIsLearningSensorySynapses();
+    std::vector<Synapse*> GetIsLearningMotorSynapses();
+    std::vector<Synapse*> GetIsLearningLateralSynapses();
+
+    unsigned int GetNumWasLearningSensorySynapses();
+    unsigned int GetNumWasLearningMotorSynapses();
+    unsigned int GetNumWasLearningLateralSynapses();
+    std::vector<Synapse*> GetWasLearningSensorySynapses();
+    std::vector<Synapse*> GetWasLearningMotorSynapses();
+    std::vector<Synapse*> GetWasLearningLateralSynapses();
+
     std::vector<Synapse*> GetWasNearActiveSynapses();
     int GetNumIsNearActiveSynapses();
-    std::vector<Synapse*> GetIsLearningSynapses();
-    std::vector<Synapse*> GetWasLearningSynapses();
-    unsigned int GetNumIsLearningSynapses();
-    unsigned int GetNumWasLearningSynapses();
+
+    bool IsSensorimotor() { return sensorimotorSegment; }
     int GetNumSensorySyns() { return numSensorySyns; }
     int GetNumMotorSyns() { return numMotorSyns; }
     static float GetSubsamplePercent() { return SUBSAMPLE_PERCENT; }
     void RefreshSynapses(GenericSublayer *NewPattern);
+    std::vector<Synapse *> GetSynapses();
     void SetNoTemporalContext();
     bool GetNoTemporalContext();
 private:
     bool sensorimotorSegment;
-    int numSensorySyns, numMotorSyns;
-    std::vector<Synapse *> synapses;
+    unsigned int numSensorySyns, numMotorSyns, numLateralSyns;
+    std::vector<Synapse *> sensorySyns, motorSyns, lateralSyns;
     bool noTemporalContext;
 };
 
