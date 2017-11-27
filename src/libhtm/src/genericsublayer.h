@@ -22,7 +22,7 @@ protected:
     //std::vector <std::vector <GenericInput *> > input;
     GenericInput ***input;
     int numActiveInputs;
-    SensoryRegion *motorPattern;
+    SensoryRegion *motorPattern, *locationPattern;
     bool sensorimotorLayer;
 public:
     GenericSublayer();
@@ -38,6 +38,10 @@ public:
         return numActiveInputs;
     }
     SensoryRegion* GetMotorPattern() { return motorPattern; }
+    SensoryRegion* GetLocationPattern()
+    {
+        return locationPattern;
+    }
 };
 
 #endif

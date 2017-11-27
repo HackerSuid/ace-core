@@ -50,46 +50,45 @@ bool Cell::WasPredicted()
  *    brains, axons from L2/3 of the contralateral cortical
  *    hemisphere are also used).
  * 2. For L4 sublayers, distal dendrite segments synapse with
- *    two sources of input: feed-forward sensory patterns, and
- *    feed-forward motor patterns (er, or allocentric signal?).
+ *    motor patterns (er, or allocentric signal?).
  */
 DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
 {
-    DendriteSegment *newSeg = new DendriteSegment(sublayer->IsSensorimotor());
-    bool synsFound = false;
-
-    /*
-     * The first pattern will never be within a sensorimotor
-     * context.
-     */
-    if (FirstPattern) {
-        printf("\t\t[cell] first patt, not adding synapses.\n");
-        newSeg->SetNoTemporalContext();
-        DistalDendriteSegments.push_back(newSeg);
+    if (FirstPattern && !sublayer->IsSensorimotor()) {
+        printf("\t\t[cell] first patt & not smi, so not adding "
+               "segment.\n");
         return NULL;
     }
 
+    DendriteSegment *newSeg =
+        new DendriteSegment(sublayer->IsSensorimotor());
+    bool synsFound = false;
+
     if (sublayer->IsSensorimotor()) {
-        //printf("Sublayer is sensorimotor.\n");
-        GenericSublayer *sp = sublayer->GetPreviousInputPattern();
-        GenericSublayer *mp = sp->GetMotorPattern();
+        GenericSublayer *inputSignals = sublayer->GetLower();
+        GenericSublayer *mp = inputSignals->GetMotorPattern();
+        GenericSublayer *lp = inputSignals->GetLocationPattern();
+        //printf("Loc patt %08x\n", lp);
         //sublayer->GetHtmPtr()->PrintPattern(mp);
         if (mp) {
-            /*printf("\t"
-                "Adding synapses to distal dendrite from previous "
-                "motor pattern."
-            "\n");*/
-            synsFound = AddSynapsesFromSublayer(
-                sublayer, mp, MOTOR_DISTAL, newSeg
+            printf("\t"
+                "Adding synapses to distal dendrite "
+                "segment in SMI layer.\n"
             );
+            synsFound = AddSynapsesFromSublayer(
+                sublayer, lp, LOCATION_DISTAL, newSeg
+            );
+            //synsFound = AddSynapsesFromSublayer(
+                //sublayer, mp, MOTOR_DISTAL, newSeg
+            //);
             /*printf(
                 "\t" \
                 "Adding synapses to distal dendrite from previous "
                 "sensory pattern."
             "\n");*/
-            synsFound += AddSynapsesFromSublayer(
-                sublayer, sublayer, SENSORY_DISTAL, newSeg
-            );
+        //    synsFound += AddSynapsesFromSublayer(
+        //        sublayer, sublayer, SENSORY_DISTAL, newSeg
+        //    );
         } else {
             printf("\tNo motor pattern found.\n");
             newSeg->SetNoTemporalContext();
@@ -147,91 +146,108 @@ bool Cell::AddSynapsesFromSublayer(
      * for lateral, intra-layer connections, it subsamples the
      * number of active columns in the previous timestep.
      *
-     * for connections to sensory or motor input, the dendrite
+     * for connections to motor input, the dendrite
      * segment subsamples the number of active input bits in the
      * input pattern.
+     *
+     * location pattern inputs follow the same rule as motor.
      */
     int subsampleSz =
-        (inType != MOTOR_DISTAL ?
+        (inType == LATERAL_DISTAL ?
             thisSublayer->LastActiveColumns() :
             src->GetNumActiveInputs()) *
         DendriteSegment::GetSubsamplePercent();
     if (inType == SENSORY_DISTAL)
         subsampleSz *= 0.50;
 
-    std::vector<GenericInput *> projections;
-
-    auto il = { h-1-celly, celly, w-1-cellx, cellx };
-
-    /*printf("\t\tsubsampleSz = %d * %f = %d\n",
-            inType!=MOTOR_DISTAL ?
-                thisSublayer->LastActiveColumns() :
-                src->GetNumActiveInputs(),
-            DendriteSegment::GetSubsamplePercent(), subsampleSz
-    );*/
-    for (int distance=1; distance<std::max(il); distance++) {
-        for (int yd=-distance; yd<=distance&&!foundSampleSize; yd++) {
-            for (int xd=-distance; xd<=distance&&!foundSampleSize; xd++) {
-                if (abs(xd) != distance && abs(yd) != distance)
-                    continue;
-                int x = cellx+xd;
-                int y = celly+yd;
-                // minimum limitations
-                if ((x<0 || y<0) || (x==cellx && y==celly))
-                    continue;
-                // maximum limitations
-                if ((x>=w) || (y>=h))
-                    continue;
-                /*
-                 * Synapses from HtmSublayer to SensoryRegion connect to
-                 * inputBits[y][x].
-                 *
-                 * Synapses from HtmSublayer to HtmSublayer connect to the
-                 * learning cell in inputBits[y][x].
-                 */
-                projections.clear();
-                if (inType == LATERAL_DISTAL) {
-                    std::vector<Cell *> cVect =
-                        ((Column *)inputBits[y][x])->GetCells();
-                    projections.insert(
-                        projections.end(),
-                        cVect.begin(),
-                        cVect.end()
+    // when adding synapses from the location signal,
+    // disregard relative position of this output cell
+    // in relation to input pattern.
+    if (inType == LOCATION_DISTAL) {
+        for (unsigned int i=0; i<h&&!foundSampleSize; i++) {
+            for (unsigned int j=0; j<w&&!foundSampleSize; j++) {
+                if (inputBits[i][j]->IsActive()) {
+                    Synapse *newSyn = new Synapse(
+                        inputBits[i][j], j, i, inType
                     );
-                } else {
-                    projections.push_back(inputBits[y][x]);
+                    //printf("\t\tnew synapse 0x%08x\n", newSyn);
+                    seg->NewSynapse(newSyn);
+                    if ((++synsFound) >= subsampleSz)
+                        foundSampleSize = true;
                 }
-                //printf("\t\tchecking %u input projections...\n", projections.size());
-                for (unsigned k=0; k<projections.size() && !foundSampleSize; k++) {
+           }
+        }
+    } else {
+        std::vector<GenericInput *> projections;
+
+        auto il = { h-1-celly, celly, w-1-cellx, cellx };
+
+        /*printf("\t\tsubsampleSz = %d * %f = %d\n",
+                inType!=MOTOR_DISTAL ?
+                    thisSublayer->LastActiveColumns() :
+                    src->GetNumActiveInputs(),
+                DendriteSegment::GetSubsamplePercent(), subsampleSz
+        );*/
+        for (int distance=1; distance<std::max(il); distance++) {
+            for (int yd=-distance; yd<=distance&&!foundSampleSize; yd++) {
+                for (int xd=-distance; xd<=distance&&!foundSampleSize; xd++) {
+                    if (abs(xd) != distance && abs(yd) != distance)
+                        continue;
+                    int x = cellx+xd;
+                    int y = celly+yd;
+                    // minimum limitations
+                    if ((x<0 || y<0) || (x==cellx && y==celly))
+                        continue;
+                    // maximum limitations
+                    if ((x>=w) || (y>=h))
+                        continue;
                     /*
-                     * The cla wants to form new synapses with cells that would
-                     * have been able to predict this cell's activity.
+                     * Synapses from HtmSublayer to SensoryRegion connect to
+                     * inputBits[y][x].
+                     *
+                     * Synapses from HtmSublayer to HtmSublayer connect to the
+                     * learning cell in inputBits[y][x].
                      */
-                    bool activeflag =
-                        inType != MOTOR_DISTAL ?
-                            projections[k]->WasActive() :
-                            projections[k]->IsActive();
-                    if (activeflag) {
-                        if (inType == LATERAL_DISTAL)
-                            if (!projections[k]->WasLearning())
-                                continue;
-                        //printf("\t\t\t(col %d,%d, c %d)\n", x, y, k);
-                        if ((unsigned int)projections[k]==0x3e4ccccd) {
-                            printf("SYNAPSE IS CORRUPT\n");
-                            abort();
-                        }
-                        Synapse *newSyn = new Synapse(
-                            projections[k], x, y, inType
+                    projections.clear();
+                    if (inType == LATERAL_DISTAL) {
+                        std::vector<Cell *> cVect =
+                            ((Column *)inputBits[y][x])->GetCells();
+                        projections.insert(
+                            projections.end(),
+                            cVect.begin(),
+                            cVect.end()
                         );
-                        //printf("\t\tnew synapse 0x%08x\n", newSyn);
-                        seg->NewSynapse(newSyn);
-                        //printf("\t\tsynapse added to segment\n");
+                    } else {
+                        projections.push_back(inputBits[y][x]);
+                    }
+                    //printf("\t\tchecking %u input projections...\n", projections.size());
+                    for (unsigned k=0; k<projections.size() && !foundSampleSize; k++) {
                         /*
-                         * check if we have found the subset
-                         * sample size.
+                         * The cla wants to form new synapses with cells that would
+                         * have been able to predict this cell's activity.
                          */
-                        if ((++synsFound) >= subsampleSz)
-                            foundSampleSize = true;
+                        bool activeflag =
+                            inType == LATERAL_DISTAL ?
+                                projections[k]->WasActive() :
+                                projections[k]->IsActive();
+                        if (activeflag) {
+                            if (inType == LATERAL_DISTAL)
+                                if (!projections[k]->WasLearning())
+                                    continue;
+                            //printf("\t\t\t(col %d,%d, c %d)\n", x, y, k);
+                            Synapse *newSyn = new Synapse(
+                                projections[k], x, y, inType
+                            );
+                            //printf("\t\tnew synapse 0x%08x\n", newSyn);
+                            seg->NewSynapse(newSyn);
+                            //printf("\t\tsynapse added to segment\n");
+                            /*
+                             * check if we have found the subset
+                             * sample size.
+                             */
+                            if ((++synsFound) >= subsampleSz)
+                                foundSampleSize = true;
+                        }
                     }
                 }
             }

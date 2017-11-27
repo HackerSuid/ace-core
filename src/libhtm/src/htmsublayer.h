@@ -79,9 +79,10 @@ public:
     );
     void InitializeProximalDendrites();
     void RefreshLowerSynapses();
-    void CLA(bool Learning, bool allowBoosting);
+    void ComputeLayerStateFromInput(
+        bool Learning, bool allowBoosting);
     void SpatialPooler(bool Learning, bool allowBoosting);
-    void SequenceMemory(bool Learning, bool firstPattern);
+    void TemporalMemory(bool Learning, bool firstPattern);
     void NewTimestep();
     int LastActiveColumns();
     int CurrentActiveColumns();

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 #include "qt.h"
 #include "sensoryregion.h"
@@ -80,6 +81,43 @@ QGridLayout* QtSensoryRegion::MotorUnitGrid()
     }
 
     return motorUnitGrid;
+}
+
+QGridLayout* QtSensoryRegion::LocationUnitGrid()
+{
+    if (locUnitGrid)
+        return locUnitGrid;
+
+    locUnitGrid = new QGridLayout();
+    locUnitGrid->setSpacing(0);
+    locUnitGrid->setAlignment(Qt::AlignCenter);
+    SensoryRegion *locPattern = pattern->GetLocationPattern();
+
+    int w = locPattern->GetWidth();
+    int h = locPattern->GetHeight();
+
+    SensoryInput ***bits = locPattern->GetInput();
+
+    // location signal is 1D, but partition it into segments for a
+    // better visual.
+    unsigned int n=0;
+    for (int i=0; i<sqrt(w); i++) {
+        for (int j=0; j<sqrt(w); j++, n++) {
+            QtUnit *unit = new QtUnit(
+                bits[0][n],
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                0, 6, 6
+            );
+            if (bits[0][n]->IsActive())
+                unit->setBrushColor(ACTIVE_COLOR);
+            locUnitGrid->addWidget(unit, i, j, 1, 1);
+        }
+    }
+
+    return locUnitGrid;
 }
 
 SensoryRegion* QtSensoryRegion::GetPattern()

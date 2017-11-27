@@ -64,7 +64,8 @@ private:
     // training window widgets
     QWidget *TrainingWindow;
     QGridLayout *TrainingLayout;
-    QGroupBox *sensoryGroup, *motorGroup, *htmGroup, *objHtm;
+    QGroupBox *sensoryGroup, *motorGroup, *locGroup;
+    QGroupBox *htmGroup, *objHtm;
     QLabel *predCompWindowVal, *predSpecWindowVal;
     QPushButton *TrainSingPattButton, *TrainSingProgButton, *TrainVarButton;
     QLineEdit *VarEdit;
@@ -115,12 +116,13 @@ Q_OBJECT
 private:
     QWidget *parent;
     SensoryRegion *pattern;
-    QGridLayout *sensoryUnitGrid, *motorUnitGrid;
+    QGridLayout *sensoryUnitGrid, *motorUnitGrid, *locUnitGrid;
 public:
     QtSensoryRegion(QWidget *parent, SensoryRegion *patt);
     ~QtSensoryRegion();
     QGridLayout* SensoryUnitGrid();
     QGridLayout* MotorUnitGrid();
+    QGridLayout* LocationUnitGrid();
     SensoryRegion* GetPattern();
 };
 
@@ -154,6 +156,7 @@ public:
         QGridLayout *htmGrid,
         QGridLayout *sensoryGrid,
         QGridLayout *motorGrid,
+        QGridLayout *locGrid,
         int c, int w=DEF_UNIT_W, int h=DEF_UNIT_H
     );
     ~QtUnit();
@@ -179,6 +182,7 @@ protected:
     void leaveEvent(QEvent *event);
 private:
     QGridLayout *htmGrid, *sensoryGrid, *motorGrid;
+    QGridLayout *locGrid;
     // context menu members
     QAction *showProximalConnections, *hideProximalConnections;
     // cell layout members
@@ -208,6 +212,7 @@ public:
         QGridLayout *htmGrid,
         QGridLayout *sensoryGrid,
         QGridLayout *motorGrid,
+        QGridLayout *locGrid,
         int w=DEF_CELL_W,
         int h=DEF_CELL_H
     );
@@ -233,6 +238,7 @@ private:
     int sizeW, sizeH;
     Cell *cell;
     QGridLayout *htmGrid, *sensoryGrid, *motorGrid;
+    QGridLayout *locGrid;
     bool toggled;
 
     void _ToggleDistalConnections(bool flag);

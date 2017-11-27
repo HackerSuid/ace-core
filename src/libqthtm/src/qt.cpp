@@ -125,16 +125,22 @@ void QtFront::CreateTrainingWidget()
     TrainingLayout = new QGridLayout();
 
     // groupbox for sensory input.
-    sensoryGroup = new QGroupBox("sensory input");
+    sensoryGroup = new QGroupBox("proximal sensory input");
     sensoryGroup->setObjectName("RegionId");
     QGridLayout *sensoryGrid = CurrentInput->SensoryUnitGrid();
     sensoryGroup->setLayout(sensoryGrid);
 
     // groupbox for motor input.
-    motorGroup = new QGroupBox("motor input");
-    motorGroup->setObjectName("RegionId");
-    QGridLayout *motorGrid = CurrentInput->MotorUnitGrid();
-    motorGroup->setLayout(motorGrid);
+    //motorGroup = new QGroupBox("motor input");
+    //motorGroup->setObjectName("RegionId");
+    //QGridLayout *motorGrid = CurrentInput->MotorUnitGrid();
+    //motorGroup->setLayout(motorGrid);
+
+    // groupbox for motor input.
+    locGroup = new QGroupBox("allocentric input");
+    locGroup->setObjectName("RegionId");
+    QGridLayout *locGrid = CurrentInput->LocationUnitGrid();
+    locGroup->setLayout(locGrid);
 
     // Interactive controls
     QWidget *controls = new QWidget;
@@ -208,7 +214,7 @@ void QtFront::CreateTrainingWidget()
     htmGroup->setLayout(htmGrid);
 
     TrainingLayout->addWidget(sensoryGroup, 0, 0, 1, 1);
-    TrainingLayout->addWidget(motorGroup, 1, 0, 1, 1);
+    TrainingLayout->addWidget(locGroup, 1, 0, 1, 1);
     //TrainingLayout->addWidget(objHtm, 1, 0, 1, 1);
     TrainingLayout->addWidget(controls, 2, 0, 1, 1);
     TrainingLayout->addWidget(htmGroup, 0, 1, 3, 1);
@@ -490,7 +496,7 @@ int QtFront::Run()
         htm->ConnectSubcorticalInput(true);
         return 0;
     }
-    htm->PushNextClaInput();
+    htm->SendInputThroughLayers();
 
     CurrentInput = new QtSensoryRegion(this, pattern);
     HtmDisplay = new QtHtm(this, htm);

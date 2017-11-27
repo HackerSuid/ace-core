@@ -66,7 +66,7 @@ class SensoryInput;
 
 typedef struct
 {
-    int fd;
+    int fd, inode;
     SensoryCodec *codec;
 } SensoryCodecBinding;
 
@@ -119,6 +119,7 @@ private:
     std::map<const char *, SensoryCodec *, strcmpr> CodecCtorMap;
 };
 
+class LocationCodec;
 class HtmSublayer;
 class Autoencoder;
 class SensoryRegion;
@@ -130,7 +131,8 @@ public:
     ElfCodec();
     ~ElfCodec();
 
-    bool Init(char *target_path, HtmSublayer *sensoryLayer);
+    bool Init(char *target_path, HtmSublayer *sensoryLayer,
+              unsigned int locSize, unsigned int locActiveBits);
     bool LoadTarget();
     unsigned int ExecuteToCall(
         std::vector<unsigned int>,
@@ -157,6 +159,7 @@ private:
 
     // private data
     SensoryCodecFactory sensoryCodecFactory;
+    LocationCodec *locationCodec;
 
     static bool const registered;
     bool firstPattern;

@@ -72,13 +72,15 @@ void HtmSublayer::InitializeProximalDendrites()
 {
     Column ***columns = (Column ***)input;
 
-    for (unsigned int i=0, n=0; i<height; i++)
-        for (unsigned int j=0; j<width; j++, n++)
+    for (unsigned int i=0, n=0; i<height; i++) {
+        for (unsigned int j=0; j<width; j++, n++) {
             columns[i][j]->InitializeProximalDendrite(
                 lower,
                 lower->GetWidth()/width,
                 lower->GetHeight()/height
             );
+        }
+    }
 }
 
 void HtmSublayer::RefreshLowerSynapses()
@@ -90,7 +92,8 @@ void HtmSublayer::RefreshLowerSynapses()
             columns[i][j]->RefreshNewPattern(lower);
 }
 
-void HtmSublayer::CLA(bool Learning, bool allowBoosting)
+void HtmSublayer::ComputeLayerStateFromInput(
+    bool Learning, bool allowBoosting)
 {
     numActiveColumns[0] = 0;
     /*
@@ -117,7 +120,7 @@ void HtmSublayer::CLA(bool Learning, bool allowBoosting)
      * 2. Form a prediction given the lateral, intrinsic connections of the
      *    region by depolarizing cells with active distal dendrite segments.
      */
-    SequenceMemory(Learning, htmPtr->FirstPattern());
+    TemporalMemory(Learning, htmPtr->FirstPattern());
 
     // Update the internal timestep counter for every column.
     NewTimestep();
@@ -203,7 +206,7 @@ void HtmSublayer::SpatialPooler(bool Learning, bool allowBoosting)
     }
 }
 
-void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
+void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
 {
     // the sublayer's columns are declared as GenericInputs.
     Column ***columns = (Column ***)input;
@@ -237,6 +240,71 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
      * number of predicted inactive columns.
      */
     unsigned long numActiveColsPredicted=0, numInactiveColsPredicted=0;
+    /*
+     * 2. Compute the predictive state of each cell for the current timestep.
+     *
+     * Original implementation:
+     *
+     *    Learned predictions are reinforced. The cells' learn states are
+     *    disregarded when just generating a prediction because a bursting
+     *    column should generate multiple predictions.
+     *
+     * Modified implementation:
+     *
+     *    If the HTM is learning sequences, predictions are only generated
+     *    for cells active from distal, learning cells. So bursting does
+     *    not generate extra predictions from non-learning active cells.
+     *
+     * I'm not decided on which version is more useful.
+     */
+    printf("Computing predictions\n");
+    for (unsigned int i=0; i<height; i++) {
+        for (unsigned int j=0; j<width; j++) {
+            std::vector<Cell *> cells = columns[i][j]->GetCells();
+            int nc = columns[i][j]->GetNumCells();
+            for (int k=0; k<nc; k++) {
+                /*
+                 * If a cell is being predicted for the next timestep,
+                 * set it into the predictive state (depolarize it).
+                 * Otherwise leave it at its resting potential.
+                 *
+                 * Queue updates to any segment on the cell that
+                 * is predicting its activity. The cell could be
+                 * participating in the context of many temporal
+                 * sequences.
+                 */
+                std::vector<DendriteSegment *> segments =
+                    cells[k]->GetSegments();
+                unsigned int numSegs = cells[k]->GetNumSegments();
+                bool predflag = false;
+                for (unsigned int s=0; s<numSegs; s++) {
+                    bool segactive =
+                        Learning ? segments[s]->IsActiveFromLearning() :
+                                   segments[s]->IsActive();
+                    if (segactive) {
+                        /*
+                         * Only SetPredicted() once if there are multiple active
+                         * segments to avoid corrupting the state machine.
+                         */
+                        if (!predflag) {
+                            printf("\t\tpredicting col (%d, %d) cell %d"
+                                " [0x%08x] segment 0x%08x\n",
+                                cells[k]->GetParentColumn()->GetX(),
+                                cells[k]->GetParentColumn()->GetY(),
+                                cells[k]->GetColIdx(), cells[k],
+                                segments[s]
+                            );
+                            cells[k]->SetPredicted(true);
+                            predflag = true;
+                        }
+                        _EnqueueSegmentUpdate(cells[k], s, segments[s], true);
+                    }
+                }
+                if (!predflag)
+                    cells[k]->SetPredicted(false);
+            }
+        }
+    }
     /*
      * For each active column:
      * 1. Compute the active and learning state of each cell in the column for
@@ -312,7 +380,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
                          */
                         printf("\tchecking if segment is active from "
                                "learning cells\n");
-                        if (ActiveSegment->WasActiveFromLearning()) {
+                        if (ActiveSegment->IsActiveFromLearning()) {
                             printf("\tcell %d predicted and chosen for learning\n", k);
                             learningCells.push_back(cells[k]);
                             learnCellChosen = true;
@@ -444,72 +512,6 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
         }
     }
     /*
-     * 2. Compute the predictive state of each cell for the current timestep.
-     *
-     * Original implementation:
-     *
-     *    Learned predictions are reinforced. The cells' learn states are
-     *    disregarded when just generating a prediction because a bursting
-     *    column should generate multiple predictions.
-     *
-     * Modified implementation:
-     *
-     *    If the HTM is learning sequences, predictions are only generated
-     *    for cells active from distal, learning cells. So bursting does
-     *    not generate extra predictions from non-learning active cells.
-     *
-     * I'm not decided on which version is more useful.
-     */
-    printf("Computing predictions\n");
-    for (unsigned int i=0; i<height; i++) {
-        for (unsigned int j=0; j<width; j++) {
-            std::vector<Cell *> cells = columns[i][j]->GetCells();
-            int nc = columns[i][j]->GetNumCells();
-            for (int k=0; k<nc; k++) {
-                /*
-                 * If a cell is being predicted for the next timestep,
-                 * set it into the predictive state (depolarize it).
-                 * Otherwise leave it at its resting potential.
-                 *
-                 * Queue updates to any segment on the cell that
-                 * is predicting its activity. The cell could be
-                 * participating in the context of many temporal
-                 * sequences.
-                 */
-                std::vector<DendriteSegment *> segments =
-                    cells[k]->GetSegments();
-                unsigned int numSegs = cells[k]->GetNumSegments();
-                bool predflag = false;
-                for (unsigned int s=0; s<numSegs; s++) {
-                    bool segactive =
-                        Learning ? segments[s]->IsActiveFromLearning() :
-                                   segments[s]->IsActive();
-                    if (segactive) {
-                        /*
-                         * Only SetPredicted() once if there are multiple active
-                         * segments to avoid corrupting the state machine.
-                         */
-                        if (!predflag) {
-                            printf("\t\tpredicting col (%d, %d) cell %d"
-                                " [0x%08x] segment 0x%08x\n",
-                                cells[k]->GetParentColumn()->GetX(),
-                                cells[k]->GetParentColumn()->GetY(),
-                                cells[k]->GetColIdx(), cells[k],
-                                segments[s]
-                            );
-                            cells[k]->SetPredicted(true);
-                            predflag = true;
-                        }
-                        _EnqueueSegmentUpdate(cells[k], s, segments[s], true);
-                    }
-                }
-                if (!predflag)
-                    cells[k]->SetPredicted(false);
-            }
-        }
-    }
-    
-    /*
      * 3. Modify (positively or negatively) distal dendrite synapses based on
      *    prediction accuracy. Segment updates only get enqueued if a cell is
      *    chosen for learning that had a new segment created or a prediction
@@ -552,7 +554,7 @@ void HtmSublayer::SequenceMemory(bool Learning, bool firstPattern)
             skipSegments++;
         }
     }
-    printf("Sequence memory updated!\n\n");
+    printf("Temporal memory updated!\n\n");
 }
 
 /*
@@ -599,18 +601,21 @@ void HtmSublayer::_DequeueSegmentUpdate(
          * composed of synapses to cells that were active in the previous timestep in
          * order to learn a transition in the active sequence.
          */
+        //printf("[htmsublayer] smi %d\n", this->IsSensorimotor());
         DendriteSegment *newSeg = cell->NewSegment(this, htmPtr->FirstPattern());
         segment = newSeg;
     }
 
     if (segment) {
-        printf("\tupdating segment 0x%08x\n", segment);
+        printf("\tupdating segment 0x%08x, isConnected %u\n",
+            segment, isConnected);
         std::vector<Synapse*> synsToUpdate =
             isConnected ? segment->GetWasActiveSynapses():
                           segment->GetWasNearActiveSynapses();
             
         // synaptic modification: Hebbian learning rule
-        printf("\t\t[%d] syns to modify = %d\n", reinforce, synsToUpdate.size());
+        printf("\t\t[%d] syns to modify = %u\n",
+            reinforce, synsToUpdate.size());
 //        printf("\t\t");
         unsigned int null_syns=0;
         for (unsigned int i=0; i < synsToUpdate.size(); i++) {

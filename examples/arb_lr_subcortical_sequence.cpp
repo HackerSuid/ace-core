@@ -154,7 +154,7 @@ int scan_room(DIR *curdirp, char *dir, char *cwd, int cwdsize)
 
     printf("\t[*] calling motor function\n");
 ///*
-    if (rand()/(float)RAND_MAX < 0.50) {
+    if (rand()/(float)RAND_MAX < 2.0) {
         if ((nextdirp=turn_left(dir, cwd, cwdsize))==NULL)
             return 0;
     } else {
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 {
     //DIR *dirp=NULL;
     //struct dirent *de=NULL;
-    char *root=(char *)"/mnt/lfs/root/ace-core/examples/LR_world/";
+    char *root=(char *)"/root/ace-core/examples/abcdxbcy_world/";
 
     srand(time(NULL)+getpid());
 

@@ -35,6 +35,10 @@ public:
     {
         motorPattern = mp;
     }
+    void SetLocationPattern(SensoryRegion *lp)
+    {
+        locationPattern = lp;
+    }
 };
 
 #endif

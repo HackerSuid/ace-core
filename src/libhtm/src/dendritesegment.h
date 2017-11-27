@@ -20,6 +20,7 @@ typedef enum {
     SENSORY_DISTAL,
     MOTOR_DISTAL,
     LATERAL_DISTAL,
+    LOCATION_DISTAL,
     SENSORY_PROXIMAL
 } input_t;
 
@@ -40,33 +41,41 @@ public:
     std::vector<Synapse*> GetIsActiveSynapses();
     unsigned int GetNumIsActiveSensorySynapses();
     unsigned int GetNumIsActiveMotorSynapses();
+    unsigned int GetNumIsActiveLocationSynapses();
     unsigned int GetNumIsActiveLateralSynapses();
     std::vector<Synapse*> GetIsActiveSensorySynapses();
     std::vector<Synapse*> GetIsActiveMotorSynapses();
+    std::vector<Synapse*> GetIsActiveLocationSynapses();
     std::vector<Synapse*> GetIsActiveLateralSynapses();
 
     unsigned int GetNumWasActiveSynapses();
     std::vector<Synapse*> GetWasActiveSynapses();
     unsigned int GetNumWasActiveSensorySynapses();
     unsigned int GetNumWasActiveMotorSynapses();
+    unsigned int GetNumWasActiveLocationSynapses();
     unsigned int GetNumWasActiveLateralSynapses();
     std::vector<Synapse*> GetWasActiveSensorySynapses();
     std::vector<Synapse*> GetWasActiveMotorSynapses();
+    std::vector<Synapse*> GetWasActiveLocationSynapses();
     std::vector<Synapse*> GetWasActiveLateralSynapses();
 
     unsigned int GetNumIsLearningSynapses();
-    unsigned int GetNumIsLearningSensorySynapses();
     unsigned int GetNumIsLearningMotorSynapses();
+    unsigned int GetNumIsLearningLocationSynapses();
+    unsigned int GetNumIsLearningSensorySynapses();
     unsigned int GetNumIsLearningLateralSynapses();
     std::vector<Synapse*> GetIsLearningSensorySynapses();
     std::vector<Synapse*> GetIsLearningMotorSynapses();
+    std::vector<Synapse*> GetIsLearningLocationSynapses();
     std::vector<Synapse*> GetIsLearningLateralSynapses();
 
     unsigned int GetNumWasLearningSensorySynapses();
     unsigned int GetNumWasLearningMotorSynapses();
+    unsigned int GetNumWasLearningLocationSynapses();
     unsigned int GetNumWasLearningLateralSynapses();
     std::vector<Synapse*> GetWasLearningSensorySynapses();
     std::vector<Synapse*> GetWasLearningMotorSynapses();
+    std::vector<Synapse*> GetWasLearningLocationSynapses();
     std::vector<Synapse*> GetWasLearningLateralSynapses();
 
     std::vector<Synapse*> GetWasNearActiveSynapses();
@@ -82,8 +91,10 @@ public:
     bool GetNoTemporalContext();
 private:
     bool sensorimotorSegment;
-    unsigned int numSensorySyns, numMotorSyns, numLateralSyns;
-    std::vector<Synapse *> sensorySyns, motorSyns, lateralSyns;
+    unsigned int numSensorySyns, numMotorSyns;
+    unsigned int numLateralSyns, numLocationSyns;
+    std::vector<Synapse *> sensorySyns, motorSyns;
+    std::vector<Synapse *> lateralSyns, locationSyns;
     bool noTemporalContext;
 };
 

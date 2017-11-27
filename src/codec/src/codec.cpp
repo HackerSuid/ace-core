@@ -21,6 +21,7 @@
 
 // libhtm headers
 #include "codec.h"
+#include "location_codec.h"
 #include "htm.h"
 #include "htmsublayer.h"
 #include "column.h"
@@ -58,7 +59,9 @@ ElfCodec::~ElfCodec()
     if (codecName) free(codecName);
 }
 
-bool ElfCodec::Init(char *target_path, HtmSublayer *sensoryLayer)
+bool ElfCodec::Init(
+    char *target_path, HtmSublayer *sensoryLayer,
+    unsigned int locSize, unsigned int locActiveBits)
 {
     Elf *e;
     GElf_Ehdr ehdr;
@@ -103,6 +106,10 @@ bool ElfCodec::Init(char *target_path, HtmSublayer *sensoryLayer)
             masterMotorEncoding[i][j] = new SensoryInput(j, i);
     }
 
+    // create the location/allocentric signal codec
+    // 1024 / 8 = 128
+    locationCodec = new LocationCodec(locSize, locActiveBits, 1);
+    
     if (elf_version(EV_CURRENT) == EV_NONE)
         errx(
             EX_SOFTWARE,
@@ -495,7 +502,7 @@ bool ElfCodec::LoadTarget()
                 printf("[*] Encoding motor commands from function API.\n");
                 /* obtain machine code of local functions. */
                 for (auto i : localFuncMap) {
-                    //printf("%s: %d bytes at 0x%08x\n",
+                    //printf("\t%s: %d bytes at 0x%08x\n",
                         //i.first, i.second[1], i.second[0]
                     //);
                     for (unsigned int j=0; j<i.second[1]; j++) {
@@ -526,9 +533,8 @@ bool ElfCodec::LoadTarget()
                  * referenced in the GOT and called indirectly from the
                  * PLT.
                  */
-                //printf("looping through plt to trace got addresses\n");
                 for (auto iter : pltToGotMap) {
-                    //printf("%s: ",iter.first);
+                    //printf("\t%s\n",iter.first);
                     unsigned int c=0;
                     unsigned int relocGotAddr = ptrace(
                         PTRACE_PEEKTEXT, child_pid,
@@ -621,8 +627,7 @@ bool ElfCodec::LoadTarget()
                 );
                 motorLayer->setlower(initPatt);
                 motorLayer->InitializeProximalDendrites();
-
-/*
+                /*
                 ae = new Autoencoder(fcnMachCodeMap);
                 ae->Train(1);
                 printf("AE trained.\n");
@@ -632,7 +637,7 @@ bool ElfCodec::LoadTarget()
                     ae->Classify(classifyEntry);
                     classifyEntry.clear();
                 }
-*/
+                */
                 break;
             }
             // Otherwise, continue; make the child execute another
@@ -842,11 +847,11 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         sensorimotorFunctions.begin();
     std::vector<unsigned int>::iterator smotor_e =
         sensorimotorFunctions.end();
-    SensoryRegion *inputpattern = NULL;
+    SensoryRegion *inputSignals = NULL;
     if (std::find(pure_b, pure_e, call_addr) != pure_e) {
         //printf("\t\tpure sensory function\n");
         binding = HandlePureSensory(&regs);
-        inputpattern = binding.codec->GetPattern(
+        inputSignals = binding.codec->GetPattern(
             binding.fd, Learning
         );
     } else if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
@@ -862,9 +867,15 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
          * codec with which to obtain sensory pattern.
          */
         binding = HandlePureSensory(&regs);
-        inputpattern = binding.codec->GetPattern(
+        inputSignals = binding.codec->GetPattern(
             binding.fd, Learning
         );
+
+        SensoryRegion *locationPattern = locationCodec->GetPattern(
+            binding.inode
+        );
+        printf("[codec] location pattern 0x%08x\n", locationPattern);
+        inputSignals->SetLocationPattern(locationPattern);
 
         /* step through code until motor function call. */
         printf("[codec] executing to cpg/motor call\n");
@@ -872,7 +883,7 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
 
         // obtain the associated motor command pattern.
         // ~~ deprecated method ~~
-        //inputpattern->SetMotorPattern(
+        //inputSignals->SetMotorPattern(
         //    motorCommandEncodings[cpgAddr]
         //);
         // ~~ SP method ~~
@@ -890,7 +901,7 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
             motorLayer->GetWidth(),
             motorLayer->GetHeight()
         );
-        inputpattern->SetMotorPattern(sparseMotorPattern);
+        inputSignals->SetMotorPattern(sparseMotorPattern);
     } else {
         fprintf(stderr, "[X] Error: 0x%08x not marked as an ACE" \
                 " function\n", call_addr);
@@ -902,7 +913,7 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
     if (Learning && firstPattern)
         firstPattern = false;
 
-    return inputpattern;
+    return inputSignals;
 }
 
 /*
@@ -939,6 +950,14 @@ SensoryCodecBinding ElfCodec::HandlePureSensory(
     mode = ptrace(PTRACE_PEEKTEXT, child_pid, regs->esp+0x4);
     fd = open(path_str, mode);
     bind.fd = fd;
+    struct stat file_stat;  
+    int ret;  
+    ret = fstat(fd, &file_stat);  
+    if (ret < 0) {  
+        perror("fstat: ");
+        abort();
+    } 
+    bind.inode = file_stat.st_ino;
     bind.codec = sensoryCodecFactory.Get(
         (const char *)strrchr((char *)path_str, '.')
     );

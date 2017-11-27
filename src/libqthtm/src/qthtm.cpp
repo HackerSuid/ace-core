@@ -40,6 +40,7 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
         ((QtFront *)parentWidget())->GetCurrentInputDisplay();
     QGridLayout *sensoryGrid = qtinput->SensoryUnitGrid();
     QGridLayout *motorGrid = qtinput->MotorUnitGrid();
+    QGridLayout *locGrid = qtinput->LocationUnitGrid();
     for (int i=0; i<h; i++) {
         for (int j=0; j<w; j++) {
             QtUnit *unit = new QtUnit(
@@ -48,6 +49,7 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
                 htmUnitGrid,
                 sensoryGrid,
                 motorGrid,
+                locGrid,
                 c
             );
             unit->SetClickable(true);

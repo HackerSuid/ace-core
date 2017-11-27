@@ -19,6 +19,7 @@ private:
     bool Learning, allowBoosting;
     int seqRstFact;
     Codec *codec;
+    unsigned int locCodecSz, locCodecBits;
     SensoryRegion *currentPattern;
 public:
     Htm();
@@ -35,7 +36,7 @@ public:
     int NewSublayer(HtmSublayer *reg);
     void ConnectHeirarchy();
     void ConnectSubcorticalInput(bool refresh);
-    void PushNextClaInput();
+    void SendInputThroughLayers();
 
     void GeneratePredCompX11Gnuplot();
     void GeneratePredSpecX11Gnuplot();

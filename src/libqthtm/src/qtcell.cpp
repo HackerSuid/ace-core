@@ -12,6 +12,7 @@ QtCell::QtCell(
     QGridLayout *htmGrid,
     QGridLayout *sensoryGrid,
     QGridLayout *motorGrid,
+    QGridLayout *locGrid,
     int w, int h
 ) : QWidget(parent)
 {
@@ -41,6 +42,7 @@ QtCell::QtCell(
     this->htmGrid = htmGrid;
     this->sensoryGrid = sensoryGrid;
     this->motorGrid = motorGrid;
+    this->locGrid = locGrid;
 
     CreateActions();
 }
@@ -92,7 +94,8 @@ void QtCell::_ToggleDistalConnections(bool flag)
         std::vector<Synapse *> distalSyns =
             segments[seg]->GetSynapses();
         printf("\tseg %u has %u synapses\n", seg, distalSyns.size());
-        unsigned int numActiveLat=0, numActiveMot=0, numActiveSen=0;
+        unsigned int numActiveLat=0, numActiveMot=0;
+        unsigned int numActiveLoc=0, numActiveSen=0;
         for (unsigned int syn=0; syn<distalSyns.size(); syn++) {
             QGridLayout *srcLayout = NULL;
             if (distalSyns[syn]->IsLateral()) {
@@ -132,6 +135,16 @@ void QtCell::_ToggleDistalConnections(bool flag)
                     }
                     srcLayout = motorGrid;
                 }
+                if (distalSyns[syn]->IsLocation()) {
+                    if (distalSyns[syn]->IsFiring()) {
+                        printf("[loc] (%d, %d) %d\n",
+                            distalSyns[syn]->GetX(),
+                            distalSyns[syn]->GetY(),
+                            distalSyns[syn]->IsFiring());
+                        numActiveLoc++;
+                    }
+                    srcLayout = locGrid;
+                }
                 if (distalSyns[syn]->IsSensory()) {
                     if (distalSyns[syn]->IsFiring()) {
                         printf("[sen] (%d, %d) %d\n",
@@ -162,9 +175,10 @@ void QtCell::_ToggleDistalConnections(bool flag)
             //printf("\t[%d] (%d, %d)\n",
                 //i, prox_syns[i]->GetX(), prox_syns[i]->GetY());
         }
-        printf("\t\t%u total: %u sen %u mot %u lat\n",
-            distalSyns.size(), numActiveSen, numActiveMot,
-            numActiveLat
+        printf("\t\t%u total: %u sen %u mot %u loc %u "
+               "lat\n",
+            distalSyns.size(), numActiveSen,
+            numActiveMot, numActiveLoc, numActiveLat
         );
     }
 }

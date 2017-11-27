@@ -38,7 +38,7 @@ void Htm::InitHtm(const char *config_file_path)
     if (!(codec = Codec::Instantiate()))
         abort();
     // initialization of the codec.
-    if (!codec->Init(target_path, sublayers[0]))
+    if (!codec->Init(target_path, sublayers[0], locCodecSz, locCodecBits))
         abort();
     // initialization and linkage of the regions.
     printf("[*] Connecting cortical sublayers to sensory stream.\n");
@@ -102,8 +102,23 @@ bool Htm::LoadXmlConfig(const char *pathname)
             sensorimotor = atob(
                 sublayer_node->first_attribute("sensorimotor")->value()
             );
+            rapidxml::xml_attribute<> *lpattsz_attr =
+                sublayer_node->first_attribute(
+                    "locationPatternSz"
+            );
+            rapidxml::xml_attribute<> *lpattbits_attr =
+                sublayer_node->first_attribute(
+                    "locationPatternBits"
+            );
+            if (!lpattsz_attr || !lpattbits_attr) {
+                fprintf(stderr, "Location pattern sz & bits are required for SMI.\n");
+                abort();
+            }
+            locCodecSz = atoi(lpattsz_attr->value());
+            locCodecBits = atoi(lpattbits_attr->value());
         }
         //printf("%d columns: %d x %d.\n", h*w, h, w);
+        //printf("[htm] smi %d\n", sensorimotor);
         HtmSublayer *curr = new HtmSublayer(h, w, cpc, this, sensorimotor);
 
         rapidxml::xml_node<> *cols = sublayer_node->first_node("Columns");
@@ -179,6 +194,9 @@ SensoryRegion* Htm::ConsumePattern()
 {
     currentPattern = codec->GetPattern(Learning);
 
+    printf("[htm] ConsumePattern location pattern 0x%08x\n",
+        currentPattern->GetLocationPattern());
+
     return currentPattern;
 }
 
@@ -220,12 +238,13 @@ int Htm::NewSublayer(HtmSublayer *sublayer)
 
 // the first subcortical input is loaded during initialization, so load the
 // next one at the end.
-void Htm::PushNextClaInput()
+void Htm::SendInputThroughLayers()
 {
     if (Learning == false)
         Learning = true;
     for (int i=0; i<num_sublayers; i++)
-        sublayers[i]->CLA(Learning, allowBoosting);
+        sublayers[i]->ComputeLayerStateFromInput(
+            Learning, allowBoosting);
     ConnectSubcorticalInput(true);
 }
 /*

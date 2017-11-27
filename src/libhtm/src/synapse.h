@@ -34,6 +34,7 @@ public:
     bool IsMotor() { return type==MOTOR_DISTAL; }
     bool IsLateral() { return type==LATERAL_DISTAL; }
     bool IsSensory() { return type==SENSORY_DISTAL; }
+    bool IsLocation() { return type==LOCATION_DISTAL; }
     input_t GetType() { return type; }
     float GetPerm();
     void IncPerm(float factor=1.0);

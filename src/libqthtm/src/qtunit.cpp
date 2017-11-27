@@ -12,6 +12,7 @@ QtUnit::QtUnit(
     QGridLayout *htmGrid,
     QGridLayout *sensoryGrid,
     QGridLayout *motorGrid,
+    QGridLayout *locGrid,
     int c, int w, int h)
 {
     /* don't resize on repaint. */
@@ -33,6 +34,7 @@ QtUnit::QtUnit(
     this->htmGrid = htmGrid;
     this->sensoryGrid = sensoryGrid;
     this->motorGrid = motorGrid;
+    this->locGrid = locGrid;
 
     cells = c;
     if (cells) {
@@ -45,7 +47,8 @@ QtUnit::QtUnit(
                     cell,
                     htmGrid,
                     sensoryGrid,
-                    motorGrid
+                    motorGrid,
+                    locGrid
                 );
                 //CellGrid->addWidget(qtcell, i, j);
                 qtcell->setGeometry(

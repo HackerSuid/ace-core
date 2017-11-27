@@ -30,27 +30,16 @@ public:
 
     virtual bool Init(
         char *target_path,
-        HtmSublayer *sensoryLayer) = 0;
+        HtmSublayer *sensoryLayer,
+        unsigned int locSize,
+        unsigned int locActiveBits) = 0;
     virtual SensoryRegion* GetPattern(bool Learning) = 0;
-    virtual bool FirstPattern() = 0;
-    virtual bool Reset() = 0;
+    virtual bool FirstPattern() { return true; }
+    virtual bool Reset() { return true; }
     char* GetCodecName();
 private:
     static Codec *Instance;
 };
-
-/* Remove this when I no longer need as reference.
-class ElfApiCodec : public Codec
-{
-public:
-    ElfApiCodec();
-    ~ElfApiCodec();
-    static ElfApiCodec* ElfApiCodecFactory();
-    SensoryRegion* CurrentPattern();
-    SensoryRegion* ConsumePattern();
-    bool FirstPattern();
-};
-*/
 
 #endif
 
