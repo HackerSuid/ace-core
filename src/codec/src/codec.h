@@ -66,7 +66,7 @@ class SensoryInput;
 
 typedef struct
 {
-    int fd, inode;
+    int fd, parent_inode;
     SensoryCodec *codec;
 } SensoryCodecBinding;
 
@@ -156,6 +156,7 @@ private:
         unsigned int height,
         unsigned int leftover
     );
+    int get_parent_fd(char *path);
 
     // private data
     SensoryCodecFactory sensoryCodecFactory;
@@ -196,8 +197,8 @@ private:
         unsigned int,
         std::map<
             unsigned char *,
-            std::vector<unsigned char>
-        >
+            std::vector<unsigned char> *
+        > *
     > fcnMachCodeMap;
 
     // store a lookup table from function call address to encoded

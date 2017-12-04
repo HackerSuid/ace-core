@@ -87,6 +87,7 @@ void QtCell::_ToggleDistalConnections(bool flag)
         return;
     toggled = flag;
 
+    printf("Toggling distal synapses\n");
     std::vector<DendriteSegment *> segments = cell->GetSegments();
     printf("Cell has %u segments.\n", segments.size());
 
@@ -156,6 +157,7 @@ void QtCell::_ToggleDistalConnections(bool flag)
                     srcLayout = htmGrid;
                 }
 
+                printf("getting source qtunit\n");
                 QtUnit *srcWidget = (QtUnit *)srcLayout->itemAtPosition(
                     distalSyns[syn]->GetY(),
                     distalSyns[syn]->GetX()

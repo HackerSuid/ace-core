@@ -12,6 +12,7 @@ QtSensoryRegion::QtSensoryRegion(QWidget *parent, SensoryRegion *patt)
     this->pattern = patt;
     sensoryUnitGrid = NULL;
     motorUnitGrid = NULL;
+    locUnitGrid = NULL;
 }
 
 QtSensoryRegion::~QtSensoryRegion()
@@ -34,6 +35,7 @@ QGridLayout* QtSensoryRegion::SensoryUnitGrid()
         for (int j=0; j<w; j++) {
             QtUnit *unit = new QtUnit(
                 bits[i][j],
+                NULL,
                 NULL,
                 NULL,
                 NULL,
@@ -72,6 +74,7 @@ QGridLayout* QtSensoryRegion::MotorUnitGrid()
                 NULL,
                 NULL,
                 NULL,
+                NULL,
                 0, 6, 6
             );
             if (bits[i][j]->IsActive())
@@ -100,11 +103,15 @@ QGridLayout* QtSensoryRegion::LocationUnitGrid()
 
     // location signal is 1D, but partition it into segments for a
     // better visual.
+    printf("[QtSensoryRegion] Loc patt %d by %d\n", h, w);
+    printf("[QtSensoryRegion] Creating %f x %f unit grid\n",
+        sqrt((double)w), sqrt((double)w));
     unsigned int n=0;
-    for (int i=0; i<sqrt(w); i++) {
-        for (int j=0; j<sqrt(w); j++, n++) {
+    for (int i=0; i<sqrt((double)w); i++) {
+        for (int j=0; j<sqrt((double)w); j++, n++) {
             QtUnit *unit = new QtUnit(
                 bits[0][n],
+                NULL,
                 NULL,
                 NULL,
                 NULL,

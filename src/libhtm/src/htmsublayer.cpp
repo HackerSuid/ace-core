@@ -657,12 +657,14 @@ void HtmSublayer::_DequeueSegmentUpdate(
 
 void HtmSublayer::NewTimestep()
 {
+    printf("[htmsublayer] NewTimestep()\n");
     Column ***columns = (Column ***)input;
     for (unsigned int i=0; i<height; i++)
         for (unsigned int j=0; j<width; j++)
             columns[i][j]->NextTimestep();
     // save number of active columns for next timestep.
     numActiveColumns[1] = numActiveColumns[0];
+    printf("[htmsublayer] Timestep done.\n");
 }
 
 int HtmSublayer::LastActiveColumns()

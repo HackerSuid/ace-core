@@ -65,26 +65,26 @@ bool ElfCodec::Init(
 {
     Elf *e;
     GElf_Ehdr ehdr;
-    GElf_Phdr phdr;
+    //GElf_Phdr phdr;
     GElf_Shdr shdr;
     GElf_Sym sym;
     GElf_Rel reloc;
     Elf_Scn *scn;
     Elf_Data *symtab_data=NULL, *dynsym_data=NULL;
     Elf_Data *reloc_data=NULL, *plt_data=NULL;
-    Elf_Data *gotplt_data=NULL;
+    //Elf_Data *gotplt_data=NULL;
     Elf_Data *pure_sensory_data=NULL, *sensorimotor_data=NULL;
     Elf_Data *cpg_data=NULL;
     int elf_fd, elf_class;
     char *ident, *name, *func_name;
-    size_t shnum, phnum, shstrndx, pure_sensory_ndx, sensorimotor_ndx;
-    size_t cpg_ndx;
-    size_t symtab_num, dynsym_num, reloc_num;
-    size_t plt_num, gotplt_num;
+    size_t shnum, phnum, shstrndx, pure_sensory_ndx=0, sensorimotor_ndx=0;
+    size_t cpg_ndx=0;
+    size_t symtab_num=0, dynsym_num=0, reloc_num=0;
+    size_t plt_num=0;//, gotplt_num=0;
 
-    unsigned char read_sym_ndx, open_sym_ndx, strtab_ndx;
+    unsigned char read_sym_ndx=0, open_sym_ndx=0, strtab_ndx=0;
     unsigned int plt_addr;
-    unsigned int read_got_offset, open_got_offset;
+    unsigned int read_got_offset=0, open_got_offset=0;
 
     this->sensoryLayer = sensoryLayer;
 
@@ -271,10 +271,10 @@ bool ElfCodec::Init(
                     plt_num = plt_data->d_size/0x10;
                     plt_addr = shdr.sh_addr;
                 }
-                if (!strcmp(".got.plt", name)) {
-                    gotplt_data = elf_getdata(scn, gotplt_data);
-                    gotplt_num = gotplt_data->d_size/0x4;
-                }
+                //if (!strcmp(".got.plt", name)) {
+                //    gotplt_data = elf_getdata(scn, gotplt_data);
+                //    gotplt_num = gotplt_data->d_size/0x4;
+                //}
                 if (!strcmp(".pure_sensory", name)) {
                     pure_sensory_data = elf_getdata(scn, pure_sensory_data);
                     pure_sensory_ndx = elf_ndxscn(scn);
@@ -437,14 +437,14 @@ bool ElfCodec::Init(
 char* ElfCodec::ptype_str(size_t pt)
 {
     char *s;
-#define C(V) case  PT_##V: s = #V; break
+#define C(V) case  PT_##V: s = (char *)#V; break
     switch (pt) {
         C(NULL);    C(LOAD);        C(DYNAMIC);
         C(INTERP);  C(NOTE);        C(SHLIB);
         C(PHDR);    C(TLS);         C(SUNWBSS);
         C(SUNWSTACK);
         default:
-            s = "unknown";
+            s = (char *)"unknown";
         break;
     }
     return s;
@@ -492,7 +492,7 @@ bool ElfCodec::LoadTarget()
             //std::map<unsigned char *,
                      //std::vector<unsigned char> > classifyMap;
             std::map<unsigned char *,
-                     std::vector<unsigned char> > fcnStrCodeMap;
+                     std::vector<unsigned char> * > fcnStrCodeMap;
             /*
              * get the current register values, and stop tracing if
              * it has reached main().
@@ -501,9 +501,10 @@ bool ElfCodec::LoadTarget()
             if ((unsigned int)regs.eip == main_addr) {
                 printf("[*] Encoding motor commands from function API.\n");
                 /* obtain machine code of local functions. */
+                //printf("\tlocal functions\n");
                 for (auto i : localFuncMap) {
                     //printf("\t%s: %d bytes at 0x%08x\n",
-                        //i.first, i.second[1], i.second[0]
+                    //    i.first, i.second[1], i.second[0]
                     //);
                     for (unsigned int j=0; j<i.second[1]; j++) {
                         machCode.push_back(ptrace(
@@ -520,10 +521,20 @@ bool ElfCodec::LoadTarget()
                         //machCode.clear();
                         //continue;
                     //}
-                    fcnStrCodeMap[(unsigned char *)strdup(
-                        (const char *)i.first)] =  machCode;
+                    //fcnStrCodeMap[(unsigned char *)i.first] = mc;
+                    std::map<unsigned char *,
+                        std::vector<unsigned char> * > *fscm =
+                            new std::map<unsigned char *,
+                                std::vector<unsigned char> * >(fcnStrCodeMap);
+                    fscm->insert(
+                        std::pair<unsigned char *,
+                            std::vector<unsigned char> * >(
+                                (unsigned char *)strdup((const char *)i.first),
+                                new std::vector<unsigned char>(machCode)));
                     //}
-                    fcnMachCodeMap[i.second[0]] = fcnStrCodeMap;
+                    fcnMachCodeMap[i.second[0]] =
+                        new std::map<unsigned char *,
+                            std::vector<unsigned char> * >(*fscm);
                     machCode.clear();
                     fcnStrCodeMap.clear();
                     //printf("\n");
@@ -533,8 +544,9 @@ bool ElfCodec::LoadTarget()
                  * referenced in the GOT and called indirectly from the
                  * PLT.
                  */
+                //printf("\tdynamic functions\n");
                 for (auto iter : pltToGotMap) {
-                    //printf("\t%s\n",iter.first);
+                    //printf("\tdyn func: %s\n", iter.first);
                     unsigned int c=0;
                     unsigned int relocGotAddr = ptrace(
                         PTRACE_PEEKTEXT, child_pid,
@@ -555,10 +567,19 @@ bool ElfCodec::LoadTarget()
                     //if (machCode.size()>=0&&machCode.size()<=93) {
                     //classifyMap[(unsigned char *)strdup(
                         //(const char *)iter.first)] = machCode;
-                    fcnStrCodeMap[(unsigned char *)strdup(
-                        (const char *)iter.first)] = machCode;
+                    std::map<unsigned char *,
+                        std::vector<unsigned char> * > *fscm =
+                            new std::map<unsigned char *,
+                                std::vector<unsigned char> * >(fcnStrCodeMap);
+                    fscm->insert(
+                        std::pair<unsigned char *,
+                            std::vector<unsigned char> * >(
+                                (unsigned char *)strdup((const char *)iter.first),
+                                new std::vector<unsigned char>(machCode)));
                     //}
-                    fcnMachCodeMap[iter.second[0]] = fcnStrCodeMap;
+                    fcnMachCodeMap[iter.second[0]] =
+                        new std::map<unsigned char *,
+                            std::vector<unsigned char> * >(*fscm);
                     machCode.clear();
                     fcnStrCodeMap.clear();
                 }
@@ -662,9 +683,9 @@ unsigned int ElfCodec::FindFcnLargestSz()
     unsigned int highestSz = 0;
  
     for (auto f : fcnMachCodeMap)
-        for (auto s : f.second)
-            if (s.second.size() > highestSz)
-                highestSz = s.second.size();
+        for (auto s : *(f.second))
+            if (s.second->size() > highestSz)
+                highestSz = s.second->size();
  
     return highestSz;
 }
@@ -672,24 +693,30 @@ unsigned int ElfCodec::FindFcnLargestSz()
 void ElfCodec::NormalizeFcnMachCodeMap(unsigned int numBytes)
 {
     unsigned int bytePos, normBytePos, opCode;
-    std::map<unsigned char *, std::vector<unsigned char> > normFcnMap;
+    std::map<unsigned char *,
+        std::vector<unsigned char> * > normFcnMap;
     std::vector<unsigned char> normFcnVect;
 
     for (auto m=fcnMachCodeMap.begin(); m!=fcnMachCodeMap.end(); ++m) {
         bytePos = 0, normBytePos = 0;
-        for (auto f : m->second) {
+        for (auto f : *(m->second)) {
             while (normBytePos < numBytes) {
-                if (f.second[bytePos]==RET_OPCODE&&normBytePos<numBytes-1)
+                if ((*(f.second))[bytePos]==RET_OPCODE&&normBytePos<numBytes-1)
                     opCode = NOP_OPCODE;
                 else
-                    opCode = f.second[bytePos++];
+                    opCode = (*(f.second))[bytePos++];
                 normFcnVect.push_back(opCode);
                 normBytePos++;
             }
             // replace the non-normalized vector with the new,
             // normalized one.
-            normFcnMap[f.first] = normFcnVect;
-            m->second = normFcnMap;
+            normFcnMap.insert(
+                std::pair<unsigned char *,
+                    std::vector<unsigned char> * >(
+                        (unsigned char *)f.first,
+                        new std::vector<unsigned char>(normFcnVect)));
+            m->second = new std::map<unsigned char *,
+                std::vector<unsigned char> * >(normFcnMap);
             normFcnMap.clear();
             normFcnVect.clear();
         }
@@ -708,9 +735,9 @@ void ElfCodec::TranslateOpcodeArrayToSensoryInput(
         SensoryInput ***motorInputs = (SensoryInput ***)malloc(
             sizeof(SensoryInput **) * height
         );
-        std::vector<unsigned char> opcodeArray =
-            fcn.second.begin()->second;
-        unsigned int totalBits = opcodeArray.size()*8;
+        std::vector<unsigned char> *opcodeArray =
+            fcn.second->begin()->second;
+        unsigned int totalBits = opcodeArray->size()*8;
         // adjust width and height with leftover?
         unsigned int bitPos = 0, bytePos = 0;
         for (unsigned int h=0; h<height; h++) {
@@ -725,7 +752,7 @@ void ElfCodec::TranslateOpcodeArrayToSensoryInput(
                             //((1<<bit)&opcodeArray[bytePos])>>bit);
                         motorInputs[h][w] = new SensoryInput(w, h);
                         motorInputs[h][w]->SetActive(
-                            ((1<<bit)&opcodeArray[bytePos])>>bit
+                            ((1<<bit)&(*opcodeArray)[bytePos])>>bit
                         );
                         if (motorInputs[h][w]->IsActive())
                             numActiveInputs++;
@@ -738,7 +765,7 @@ void ElfCodec::TranslateOpcodeArrayToSensoryInput(
                         //((1<<bit)&opcodeArray[bytePos])>>bit);
                     motorInputs[h][w] = new SensoryInput(w, h);
                     motorInputs[h][w]->SetActive(
-                        ((1<<bit)&opcodeArray[bytePos])>>bit
+                        ((1<<bit)&(*opcodeArray)[bytePos])>>bit
                     );
                     if (motorInputs[h][w]->IsActive())
                         numActiveInputs++;
@@ -747,7 +774,7 @@ void ElfCodec::TranslateOpcodeArrayToSensoryInput(
         }
         // account for leftover next?
 
-        sensoryMap[fcn.second.begin()->first] = new SensoryRegion(
+        sensoryMap[fcn.second->begin()->first] = new SensoryRegion(
             motorInputs,
             numActiveInputs,
             width, height,
@@ -821,7 +848,7 @@ unsigned int ElfCodec::ExecuteToCall(
 
 SensoryRegion* ElfCodec::GetPattern(bool Learning)
 {
-    long int fd = -1;
+    //long int fd = -1;
     struct user_regs_struct regs;
     unsigned int senseAddr, cpgAddr;
     SensoryCodecBinding binding;
@@ -832,7 +859,9 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         sensorimotorFunctions.begin(),
         sensorimotorFunctions.end()
     );
+    printf("[Codec] Executing to next function call\n");
     unsigned int call_addr = ExecuteToCall(allFunctions, &regs);
+    printf("[Codec] call_addr 0x%08x\n", call_addr);
     if (call_addr == 0)
         return NULL;
     std::vector<unsigned int>::iterator pure_b =
@@ -858,28 +887,10 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         //printf("\t\tcpg function\n");
     } else if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
         printf("[codec] sensorimotor function.\n");
-        /* step through code until sensory function call. */
-        printf("[codec] executing to sensory call\n");
-        senseAddr = ExecuteToCall(pureSensoryFunctions, &regs);
-
-        /*
-         * duplicate open fd and determine corresponding sensory
-         * codec with which to obtain sensory pattern.
-         */
-        binding = HandlePureSensory(&regs);
-        inputSignals = binding.codec->GetPattern(
-            binding.fd, Learning
-        );
-
-        SensoryRegion *locationPattern = locationCodec->GetPattern(
-            binding.inode
-        );
-        printf("[codec] location pattern 0x%08x\n", locationPattern);
-        inputSignals->SetLocationPattern(locationPattern);
-
         /* step through code until motor function call. */
         printf("[codec] executing to cpg/motor call\n");
         cpgAddr = ExecuteToCall(cpgFunctions, &regs);
+        printf("\tcpgAddr 0x%08x\n", cpgAddr);
 
         // obtain the associated motor command pattern.
         // ~~ deprecated method ~~
@@ -901,7 +912,29 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
             motorLayer->GetWidth(),
             motorLayer->GetHeight()
         );
+        /* step through code until sensory function call. */
+        printf("[codec] executing to sensory call\n");
+        senseAddr = ExecuteToCall(pureSensoryFunctions, &regs);
+        printf("\tsenseAddr 0x%08x\n", senseAddr);
+
+        /*
+         * duplicate open fd and determine corresponding sensory
+         * codec with which to obtain sensory pattern.
+         */
+        binding = HandlePureSensory(&regs);
+        printf("[codec] HandlePureSensory() returned\n");
+        inputSignals = binding.codec->GetPattern(
+            binding.fd, Learning
+        );
+
+        printf("[codec] getting location pattern\n");
+        SensoryRegion *locationPattern = locationCodec->GetPattern(
+            binding.parent_inode
+        );
+        printf("[codec] location pattern 0x%08x\n", (unsigned int)locationPattern);
+        inputSignals->SetLocationPattern(locationPattern);
         inputSignals->SetMotorPattern(sparseMotorPattern);
+
     } else {
         fprintf(stderr, "[X] Error: 0x%08x not marked as an ACE" \
                 " function\n", call_addr);
@@ -930,7 +963,6 @@ SensoryCodecBinding ElfCodec::HandlePureSensory(
     struct user_regs_struct *regs
 ) {
     std::vector<unsigned int> open_read_vect;
-    unsigned int call_addr;
     unsigned int open_path, mode;
     char *path_str = (char *)malloc(sizeof(char)*128);
     unsigned char c;
@@ -938,7 +970,7 @@ SensoryCodecBinding ElfCodec::HandlePureSensory(
     SensoryCodecBinding bind;
 
     open_read_vect.push_back(open_plt);
-    call_addr = ExecuteToCall(open_read_vect, regs);
+    ExecuteToCall(open_read_vect, regs);
     open_path =
         ptrace(PTRACE_PEEKTEXT, child_pid, regs->esp);
     do {
@@ -948,25 +980,44 @@ SensoryCodecBinding ElfCodec::HandlePureSensory(
     } while (c != 0x00);
     path_str[j] = 0;
     mode = ptrace(PTRACE_PEEKTEXT, child_pid, regs->esp+0x4);
+    // TODO i would prefer to dup2() the returned fd.
     fd = open(path_str, mode);
     bind.fd = fd;
-    struct stat file_stat;  
-    int ret;  
-    ret = fstat(fd, &file_stat);  
-    if (ret < 0) {  
+    int parentfd = get_parent_fd(path_str);
+    struct stat file_stat;
+    int ret;
+    ret = fstat(parentfd, &file_stat);
+    if (ret < 0) {
         perror("fstat: ");
         abort();
     } 
-    bind.inode = file_stat.st_ino;
+    bind.parent_inode = file_stat.st_ino;
+    close(parentfd);
     bind.codec = sensoryCodecFactory.Get(
         (const char *)strrchr((char *)path_str, '.')
     );
     open_read_vect.clear();
     open_read_vect.push_back(read_plt);
-    call_addr = ExecuteToCall(open_read_vect, regs);
+    ExecuteToCall(open_read_vect, regs);
 
     free(path_str);
     return bind;
+}
+
+int ElfCodec::get_parent_fd(char *path)
+{
+    int pfd;
+    char *parent_path = strdup(path);
+    char *new_eos = strrchr(parent_path, '/');
+
+    *new_eos = 0;
+    if ((pfd = open(parent_path, O_RDONLY))<0) {
+        perror("open() location fd");
+        abort();
+    }
+
+    free(parent_path);
+    return pfd;
 }
 
 // Encode the function address of the motor command as a random, unique
@@ -1015,11 +1066,11 @@ SensoryRegion* ElfCodec::GenerateSparseMotorRep(
         sizeof(SensoryInput **) * height
     );
 
-    for (unsigned int h=0; h<height; h++) {
+    for (int h=0; h<height; h++) {
         motorInputs[h] = (SensoryInput **)malloc(
             sizeof(SensoryInput *) * width
         );
-        for (unsigned int w=0; w<width; w++) {
+        for (int w=0; w<width; w++) {
             motorInputs[h][w] = new SensoryInput(w, h);
             numActive += (int)cols[h][w]->IsActive();
             motorInputs[h][w]->SetActive(cols[h][w]->WasActive());

@@ -43,6 +43,7 @@ void Htm::InitHtm(const char *config_file_path)
     // initialization and linkage of the regions.
     printf("[*] Connecting cortical sublayers to sensory stream.\n");
     this->ConnectHeirarchy();
+    printf("[htm] Initialized.\n");
 }
 
 bool Htm::LoadXmlConfig(const char *pathname)
@@ -66,7 +67,10 @@ bool Htm::LoadXmlConfig(const char *pathname)
     // Load the HTM and pass parameters to the constructor.
     rapidxml::xml_node<> *HtmNode = doc.first_node("Htm");
     char *logfile = NULL;
-    if ((logfile = HtmNode->first_attribute("output_log")->value())) {
+    rapidxml::xml_attribute<> *lognode =
+        HtmNode->first_attribute("output_log");
+    if (lognode) {
+        logfile = lognode->value();
         printf("Redirecting stdout and stderr to %s\n", logfile);
         if ((logfd = open(logfile, O_RDWR|O_CREAT|O_TRUNC)) < 0)
             perror("open() failed: ");
@@ -194,9 +198,6 @@ SensoryRegion* Htm::ConsumePattern()
 {
     currentPattern = codec->GetPattern(Learning);
 
-    printf("[htm] ConsumePattern location pattern 0x%08x\n",
-        currentPattern->GetLocationPattern());
-
     return currentPattern;
 }
 
@@ -246,6 +247,7 @@ void Htm::SendInputThroughLayers()
         sublayers[i]->ComputeLayerStateFromInput(
             Learning, allowBoosting);
     ConnectSubcorticalInput(true);
+    printf("[htm] returning for next input\n");
 }
 /*
  * Generates a gnuplot data file containing the data points for

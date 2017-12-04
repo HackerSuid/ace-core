@@ -305,10 +305,16 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
     int h = newPattern->GetHeight();
 
     SensoryRegion *mp = newPattern->GetMotorPattern();
-    QGridLayout *currMotorGrid =
-        (QGridLayout *)motorGroup->layout();
-    QGridLayout *newMotorGrid =
-        CurrentInput->MotorUnitGrid();
+    //QGridLayout *currMotorGrid =
+    //    (QGridLayout *)motorGroup->layout();
+    //QGridLayout *newMotorGrid =
+    //    CurrentInput->MotorUnitGrid();
+
+    SensoryRegion *lp = newPattern->GetLocationPattern();
+    QGridLayout *currLocGrid =
+        (QGridLayout *)locGroup->layout();
+    QGridLayout *newLocGrid =
+        CurrentInput->LocationUnitGrid();
 
     int r, g, b;
     QColor rgb;
@@ -342,6 +348,7 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
         oldqtunit->setBrushColor(QColor(r, g, b));
     }
     /* motor input display grid */
+    /*
     for (int i=0; i<newMotorGrid->count(); i++) {
         int row, col, rs, cs;
         newMotorGrid->getItemPosition(i, &row, &col, &rs, &cs);
@@ -349,6 +356,19 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
         rgb = newqtunit->getBrushColor();
         rgb.getRgb(&r, &g, &b);
         oldqtunit = (QtUnit *)currMotorGrid->itemAt(i)->widget();
+        oldqtunit->setBrushColor(QColor(r, g, b));
+        oldqtunit->SetActive(newqtunit->IsActive());
+    }
+    */
+
+    /* location input display grid */
+    for (unsigned int i=0; i<newLocGrid->count(); i++) {
+        int row, col, rs, cs;
+        newLocGrid->getItemPosition(i, &row, &col, &rs, &cs);
+        newqtunit = (QtUnit *)newLocGrid->itemAt(i)->widget();
+        rgb = newqtunit->getBrushColor();
+        rgb.getRgb(&r, &g, &b);
+        oldqtunit = (QtUnit *)currLocGrid->itemAt(i)->widget();
         oldqtunit->setBrushColor(QColor(r, g, b));
         oldqtunit->SetActive(newqtunit->IsActive());
     }

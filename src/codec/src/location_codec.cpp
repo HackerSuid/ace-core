@@ -75,7 +75,6 @@ SensoryRegion* LocationCodec::GetPattern(int inode)
     unsigned int bucketIdx = getBucketIdx(inode);
     std::vector<unsigned int> output(n, 0);
     if (bucketMap.find(bucketIdx) == bucketMap.end()) {
-        //printf("No bucket map for idx %u\n", bucketIdx);
         createNewBucket(bucketIdx);
     }// else
         //printf("Found bucket map for idx %u", bucketIdx);
@@ -136,23 +135,24 @@ unsigned int LocationCodec::getBucketIdx(int inode)
 
 void LocationCodec::createNewBucket(unsigned int idx)
 {
+    bucketMap[idx] = newRepresentation(idx);
     if (idx < minIndex) {
-        if (idx == minIndex-1) {
-            bucketMap[idx] = newRepresentation(idx);
+        //if (idx == minIndex-1) {
+            //bucketMap[idx] = newRepresentation(idx);
             minIndex = idx;
-        } else {
-            createNewBucket(idx+1);
-            createNewBucket(idx);
-        }
+        //} else {
+            //createNewBucket(idx+1);
+            //createNewBucket(idx);
+        //}
     } else {
-        if (idx == maxIndex+1) {
-            printf("creating bucket idx %u\n", idx);
-            bucketMap[idx] = newRepresentation(idx);
+    //    if (idx == maxIndex+1) {
+    //        printf("creating bucket idx %u\n", idx);
+    //        bucketMap[idx] = newRepresentation(idx);
             maxIndex = idx;
-        } else {
-            createNewBucket(idx-1);
-            createNewBucket(idx);
-        }
+    //    } else {
+    //        createNewBucket(idx-1);
+    //        createNewBucket(idx);
+    //    }
     }
 }
 
@@ -170,18 +170,16 @@ std::vector<unsigned int> LocationCodec::newRepresentation(
         chkMax = idx;
     if (idx<minIndex)
         chkMin = idx;
-    //printf("chkMin %u chkMax %u\n", chkMin, chkMax);
     // check if any bit index is already used by any other bucket
     while (repOK == false) {
         //printf("trying ");
         //for (unsigned int u=0; u<newRep.size(); u++)
         //    printf("%u ", newRep[u]);
         //printf("\n");
-        for (unsigned int i=chkMin; i<chkMax; i++) {
-            std::vector<unsigned int> buck = bucketMap[i];
-            if (i == idx)
-                continue;
-            //printf("\tchecking vs idx %u\n", i);
+        //for (unsigned int i=chkMin; i<chkMax; i++) {
+        for (auto bucket : bucketMap) {
+            std::vector<unsigned int> buck = bucket.second;
+            //printf("\tchecking vs idx %u\n", bucket.first);
             for (unsigned int j=0; j<w; j++) {
                 // not worrying about adding same one twice since they
                 // are unique
@@ -189,7 +187,7 @@ std::vector<unsigned int> LocationCodec::newRepresentation(
                     //printf("\t\t%u v %u\n", buck[j], newRep[k]);
                     if (buck[j] == newRep[k]) {
                         redoIdx.push_back(k);
-                        //printf("\t\t%u taken by %u\n", newRep[k], i);
+                        //printf("\t\t%u taken by %u\n", newRep[k], bucket.first);
                     }
                 }
             }

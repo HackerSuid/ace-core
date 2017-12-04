@@ -127,7 +127,9 @@ bool Cell::AddSynapsesFromSublayer(
     input_t inType,
     DendriteSegment *seg)
 {
+    printf("adding syns\n");
     GenericInput ***inputBits = src->GetInput();
+    printf("got input bits\n");
 
     int w = src->GetWidth();
     int h = src->GetHeight();
@@ -152,6 +154,7 @@ bool Cell::AddSynapsesFromSublayer(
      *
      * location pattern inputs follow the same rule as motor.
      */
+    printf("getting subsample s\n");
     int subsampleSz =
         (inType == LATERAL_DISTAL ?
             thisSublayer->LastActiveColumns() :
@@ -164,11 +167,13 @@ bool Cell::AddSynapsesFromSublayer(
     // disregard relative position of this output cell
     // in relation to input pattern.
     if (inType == LOCATION_DISTAL) {
-        for (unsigned int i=0; i<h&&!foundSampleSize; i++) {
-            for (unsigned int j=0; j<w&&!foundSampleSize; j++) {
+        printf("searching for active bits\n");
+        double sqrtw = sqrt(w);
+        for (int i=0; i<h&&!foundSampleSize; i++) {
+            for (int j=0; j<w&&!foundSampleSize; j++) {
                 if (inputBits[i][j]->IsActive()) {
                     Synapse *newSyn = new Synapse(
-                        inputBits[i][j], j, i, inType
+                        inputBits[i][j], j%(int)sqrtw, j/(int)sqrtw, inType
                     );
                     //printf("\t\tnew synapse 0x%08x\n", newSyn);
                     seg->NewSynapse(newSyn);
@@ -177,6 +182,7 @@ bool Cell::AddSynapsesFromSublayer(
                 }
            }
         }
+        printf("found %d syns\n", synsFound);
     } else {
         std::vector<GenericInput *> projections;
 
@@ -254,7 +260,7 @@ bool Cell::AddSynapsesFromSublayer(
         }
     }
 
-    //printf("\t\tformed %d synapses.\n", synsFound);
+    printf("\t\tformed %d synapses.\n", synsFound);
     return true;
 }
 
