@@ -510,13 +510,14 @@ int QtFront::Run()
 {
     SensoryRegion *pattern;
 
+    htm->SendInputThroughLayers();
+
     pattern = htm->CurrentPattern();
     if (pattern == NULL) {
         htm->ResetCodec();
         htm->ConnectSubcorticalInput(true);
         return 0;
     }
-    htm->SendInputThroughLayers();
 
     CurrentInput = new QtSensoryRegion(this, pattern);
     HtmDisplay = new QtHtm(this, htm);

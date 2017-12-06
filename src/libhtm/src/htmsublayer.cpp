@@ -323,7 +323,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
             int nc = columns[i][j]->GetNumCells();
             std::vector<Cell *> cells = columns[i][j]->GetCells();
             if (columns[i][j]->IsActive()) {
-                printf("\tcol (%d,%d) active\n", j, i);
+                //printf("\tcol (%d,%d) active\n", j, i);
                 /*
                  * Search for cells that were predicted and activate them; they
                  * fire and inhibit ipsicolumnar cells. If cells that caused
@@ -337,7 +337,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                  */
                 bool buPredicted = false;
                 bool learnCellChosen = false;
-                printf("\twas it predicted by a cell's dendrite segment?\n");
+                //printf("\twas it predicted by a cell's dendrite segment?\n");
                 for (int k=0; k<nc; k++) {
                     /*
                      * If a cell is predicting the activity of this column for
@@ -346,8 +346,8 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                      * be negatively reinforced later.
                      */ 
                     if (cells[k]->IsPredicted()) {
-                        printf("\tcol (%d, %d) predicted by cell %d\n",
-                            j, i, k);
+                        //printf("\tcol (%d, %d) predicted by cell %d\n",
+                        //    j, i, k);
                         buPredicted = true;
                         numActiveColsPredicted++;
                         predictedCells.push_back(cells[k]);
@@ -366,10 +366,10 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                          * the cells that were active during the
                          * previous timestep.
                          */
-                        printf("\twhat dendrite segment caused this prediction?\n");
+                        //printf("\twhat dendrite segment caused this prediction?\n");
                         DendriteSegment *ActiveSegment =
                             cells[k]->GetMostActiveSegment();
-                        printf("\tmost active segment @ 0x%08x\n", ActiveSegment);
+                        //printf("\tmost active segment @ 0x%08x\n", ActiveSegment);
                         /*
                          * Note: as with computing the active state, it appears
                          * the current timestep is used to check the learning
@@ -378,14 +378,14 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                          * the algorithm ultimately calls IsLearning() to get
                          * the learn state for the cells in the previous timestep.
                          */
-                        printf("\tchecking if segment is active from "
-                               "learning cells\n");
+                        //printf("\tchecking if segment is active from "
+                        //       "learning cells\n");
                         if (ActiveSegment->IsActiveFromLearning()) {
-                            printf("\tcell %d predicted and chosen for learning\n", k);
+                            //printf("\tcell %d predicted and chosen for learning\n", k);
                             learningCells.push_back(cells[k]);
                             learnCellChosen = true;
                         } else {
-                            printf("\tcell %d predicted BUT NOT chosen for learning\n", k);
+                            //printf("\tcell %d predicted BUT NOT chosen for learning\n", k);
                         }
                     } else
                         nonPredictedCells.push_back(cells[k]);
@@ -396,7 +396,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                  * Otherwise deactivate the non-predicted cells.
                  */
                 if (!buPredicted) {
-                    printf("\tno cells predicted. activating all cells\n");
+                    //printf("\tno cells predicted. activating all cells\n");
                     for (int k=0; k<nc; k++) {
                         /*
                          * It was just added to the non-prediction list, which
@@ -414,7 +414,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                  * false for this timestep.
                  */
                 if (!learnCellChosen) {
-                    printf("\tchoosing unpredicted/bursted learning cell\n");
+                    //printf("\tchoosing unpredicted/bursted learning cell\n");
                     DendriteSegment *segment = NULL;
                     int segidx;
                     Cell *BestCell = columns[i][j]->GetBestMatchingCell(
@@ -428,8 +428,8 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                     /*
                      * Queue up the segment of BestCell to be reinforced.
                      */
-                    printf("\tchoosing cell %d segment 0x%08x %d\n",
-                        BestCell->GetColIdx(), segment, segidx);
+                    //printf("\tchoosing cell %d segment 0x%08x %d\n",
+                    //    BestCell->GetColIdx(), segment, segidx);
                     _EnqueueSegmentUpdate(BestCell, segidx, segment, false);
                 }
                 /*
@@ -586,16 +586,16 @@ void HtmSublayer::_DequeueSegmentUpdate(
     Cell *cell = segUpdate->GetCell();
     bool isConnected = segUpdate->IsConnected();
 
-    printf("\tcol (%d, %d) cell %d [0x%08x] segment 0x%08x\n",
-        cell->GetParentColumn()->GetX(), cell->GetParentColumn()->GetY(),
-        cell->GetColIdx(), cell, segment
-    );
+    //printf("\tcol (%d, %d) cell %d [0x%08x] segment 0x%08x\n",
+    //    cell->GetParentColumn()->GetX(), cell->GetParentColumn()->GetY(),
+    //    cell->GetColIdx(), cell, segment
+    //);
     /*
      * TODO: One segment can learn to recognize multiple different patterns.
      * Currently, synapses are only added for a single pattern though.
      */
     if (!segment) {
-        printf("\tsegment is null, creating one.\n");
+        //printf("\tsegment is null, creating one.\n");
         /*
          * A NULL segment will invoke the dequeing code to create a new segment
          * composed of synapses to cells that were active in the previous timestep in
@@ -607,15 +607,15 @@ void HtmSublayer::_DequeueSegmentUpdate(
     }
 
     if (segment) {
-        printf("\tupdating segment 0x%08x, isConnected %u\n",
-            segment, isConnected);
+        //printf("\tupdating segment 0x%08x, isConnected %u\n",
+        //    segment, isConnected);
         std::vector<Synapse*> synsToUpdate =
             isConnected ? segment->GetWasActiveSynapses():
                           segment->GetWasNearActiveSynapses();
             
         // synaptic modification: Hebbian learning rule
-        printf("\t\t[%d] syns to modify = %u\n",
-            reinforce, synsToUpdate.size());
+        //printf("\t\t[%d] syns to modify = %u\n",
+        //    reinforce, synsToUpdate.size());
 //        printf("\t\t");
         unsigned int null_syns=0;
         for (unsigned int i=0; i < synsToUpdate.size(); i++) {

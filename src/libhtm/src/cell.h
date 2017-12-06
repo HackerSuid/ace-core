@@ -26,6 +26,7 @@ public:
         input_t inType,
         DendriteSegment *seg
     );
+    void RefreshDendrites(GenericSublayer *NewPattern);
     void RemoveSegment(int segidx);
     DendriteSegment* GetMostActiveSegment();
     DendriteSegment* GetBestMatchingSegment(

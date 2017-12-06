@@ -183,6 +183,7 @@ void Htm::ConnectSubcorticalInput(bool refresh)
 
     sublayers[0]->setlower(NewPattern);
     if (refresh) {
+        printf("refreshing sublayer input\n");
         sublayers[0]->RefreshLowerSynapses();
     }
 }
@@ -246,6 +247,7 @@ void Htm::SendInputThroughLayers()
     for (int i=0; i<num_sublayers; i++)
         sublayers[i]->ComputeLayerStateFromInput(
             Learning, allowBoosting);
+    printf("Connecting input\n");
     ConnectSubcorticalInput(true);
     printf("[htm] returning for next input\n");
 }

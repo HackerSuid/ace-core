@@ -71,10 +71,10 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
         //printf("Loc patt %08x\n", lp);
         //sublayer->GetHtmPtr()->PrintPattern(mp);
         if (mp) {
-            printf("\t"
-                "Adding synapses to distal dendrite "
-                "segment in SMI layer.\n"
-            );
+            //printf("\t"
+            //    "Adding synapses to distal dendrite "
+            //    "segment in SMI layer.\n"
+            //);
             synsFound = AddSynapsesFromSublayer(
                 sublayer, lp, LOCATION_DISTAL, newSeg
             );
@@ -127,9 +127,7 @@ bool Cell::AddSynapsesFromSublayer(
     input_t inType,
     DendriteSegment *seg)
 {
-    printf("adding syns\n");
     GenericInput ***inputBits = src->GetInput();
-    printf("got input bits\n");
 
     int w = src->GetWidth();
     int h = src->GetHeight();
@@ -154,7 +152,6 @@ bool Cell::AddSynapsesFromSublayer(
      *
      * location pattern inputs follow the same rule as motor.
      */
-    printf("getting subsample s\n");
     int subsampleSz =
         (inType == LATERAL_DISTAL ?
             thisSublayer->LastActiveColumns() :
@@ -167,7 +164,6 @@ bool Cell::AddSynapsesFromSublayer(
     // disregard relative position of this output cell
     // in relation to input pattern.
     if (inType == LOCATION_DISTAL) {
-        printf("searching for active bits\n");
         double sqrtw = sqrt(w);
         for (int i=0; i<h&&!foundSampleSize; i++) {
             for (int j=0; j<w&&!foundSampleSize; j++) {
@@ -182,7 +178,6 @@ bool Cell::AddSynapsesFromSublayer(
                 }
            }
         }
-        printf("found %d syns\n", synsFound);
     } else {
         std::vector<GenericInput *> projections;
 
@@ -260,8 +255,16 @@ bool Cell::AddSynapsesFromSublayer(
         }
     }
 
-    printf("\t\tformed %d synapses.\n", synsFound);
+    //printf("\t\tformed %d synapses.\n", synsFound);
     return true;
+}
+
+void Cell::RefreshDendrites(GenericSublayer *NewPattern)
+{
+    for (unsigned int s=0; s<DistalDendriteSegments.size(); s++) {
+        printf("refreshing dendrite %u\n", s);
+        DistalDendriteSegments[s]->RefreshSynapses(NewPattern);
+    }
 }
 
 void Cell::RemoveSegment(int segidx)

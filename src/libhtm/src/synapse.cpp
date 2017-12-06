@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "cell.h"
 #include "synapse.h"
@@ -23,7 +24,18 @@ Synapse::~Synapse()
 
 void Synapse::RefreshSynapse(GenericSublayer *NewPattern)
 {
-    source = (NewPattern->GetInput())[srcy][srcx];
+    if (type == SENSORY_PROXIMAL)
+        source = (NewPattern->GetInput())[srcy][srcx];
+    // srcx & srcy correspond to the unit grid positions
+    // instead of where it is in the input pattern.
+    if (type == LOCATION_DISTAL) {
+        unsigned int sqw = (unsigned int)sqrt(
+            NewPattern->GetWidth()
+        );
+        unsigned int h = NewPattern->GetHeight();
+        source =
+            (NewPattern->GetInput())[h][srcy*sqw+srcx];
+    }
 }
 
 bool Synapse::IsFiring()

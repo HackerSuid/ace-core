@@ -107,7 +107,7 @@ SensoryRegion* LocationCodec::GetPattern(int inode)
 
     for (unsigned int i=0; i<n; i++) {
         locInputs[0][i] = new SensoryInput(i, 0);
-        locInputs[0][i]->SetActive(output[i]?true:false);
+        locInputs[0][i]->SetActive(false);
         locInputs[0][i]->SetActive(output[i]?true:false);
 
     }

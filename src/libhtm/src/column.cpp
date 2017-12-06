@@ -139,6 +139,12 @@ void Column::InitializeProximalDendrite(
 void Column::RefreshNewPattern(GenericSublayer *NewPattern)
 {
     ProximalDendriteSegment->RefreshSynapses(NewPattern);
+    for (unsigned int c=0; c<cells.size(); c++) {
+        printf("refresing cell %u\n", c);
+        cells[c]->RefreshDendrites(
+            (GenericSublayer *)NewPattern->GetLocationPattern()
+        );
+    }
 }
 
 void Column::ComputeOverlap()

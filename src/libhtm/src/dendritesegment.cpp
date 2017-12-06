@@ -66,8 +66,10 @@ bool DendriteSegment::IsActive()
         locThreshold = locationSyns.size() * SUBSAMPLE_THRESHOLD;
         //if (activeSen && activeMot)
             //if (activeSen>=senThreshold&&activeMot>=motThreshold)
-        if (activeLoc>=locThreshold)
-                return true;
+        if (activeLoc>=locThreshold) {
+            printf("%u >= %u\n", activeLoc, locThreshold);
+            return true;
+        }
     } else {
         activeLat = GetNumIsActiveLateralSynapses();
         latThreshold = lateralSyns.size()*SUBSAMPLE_THRESHOLD;
@@ -564,8 +566,10 @@ void DendriteSegment::RefreshSynapses(GenericSublayer *NewPattern)
         for (unsigned int i=0; i<motorSyns.size(); i++)
             motorSyns[i]->RefreshSynapse(NewPattern);
         */
-        for (unsigned int i=0; i<locationSyns.size(); i++)
+        for (unsigned int i=0; i<locationSyns.size(); i++) {
+            printf("refreshing synapse %u\n", i);
             locationSyns[i]->RefreshSynapse(NewPattern);
+        }
     } else {
         for (unsigned int i=0; i<lateralSyns.size(); i++)
             lateralSyns[i]->RefreshSynapse(NewPattern);

@@ -13,12 +13,20 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
+#include <signal.h>
 
 #define PURESENSORY_SECTION __attribute__((section (".pure_sensory")))
 #define CPG_SECTION __attribute__((section (".cpg")))
 #define SENSORIMOTOR_SECTION __attribute__((section (".sensorimotor")))
 // number of bits composing a sensory pattern
 #define PATTERN_SZ      10854
+
+void reset_signal_callback(int signum)
+{
+    // for the ElfCodec to know about a reset of
+    // sequence or object.
+    //printf("agent signaled a reset.\n");
+}
 
 // open and read from the fd, and parse it for a reward signal.
 PURESENSORY_SECTION
@@ -188,6 +196,8 @@ int explore_world(char *dir_of_objs, unsigned int niter)
             if (chdir(dir_of_objs)<0)
                 perror("chdir");
         }
+        // signal next object
+        raise(SIGUSR1);
     }
 
     /*
@@ -207,6 +217,7 @@ int main(int argc, char **argv)
     char *root=(char *)"/root/ace-core/examples/smi_world/";
     unsigned int num_iters=3;
     srand(time(NULL)+getpid());
+    signal(SIGUSR1, reset_signal_callback);
 
     printf("[*] Changing to root objects dir %s\n", root);
     if (chdir(root) < 0) {
