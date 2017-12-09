@@ -243,12 +243,12 @@ void Htm::SendInputThroughLayers()
 {
     if (Learning == false)
         Learning = true;
+    printf("[*] Sending current input pattern through layers.\n");
     for (int i=0; i<num_sublayers; i++)
         sublayers[i]->ComputeLayerStateFromInput(
             Learning, allowBoosting);
-    printf("Connecting input\n");
+    printf("[*] Consuming next input pattern\n");
     ConnectSubcorticalInput(true);
-    printf("[htm] returning for next input\n");
 }
 /*
  * Generates a gnuplot data file containing the data points for

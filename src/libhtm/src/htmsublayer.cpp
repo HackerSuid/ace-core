@@ -243,6 +243,9 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
     /*
      * 2. Compute the predictive state of each cell for the current timestep.
      *
+     * Remember, for SMI, the location signal from the current timestep is
+     * used for depolarinz context, nothing from previous timestep here.
+     *
      * Original implementation:
      *
      *    Learned predictions are reinforced. The cells' learn states are
