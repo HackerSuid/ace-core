@@ -183,7 +183,6 @@ void Htm::ConnectSubcorticalInput(bool refresh)
 
     sublayers[0]->setlower(NewPattern);
     if (refresh) {
-        printf("refreshing sublayer input\n");
         sublayers[0]->RefreshLowerSynapses();
     }
 }
@@ -207,10 +206,10 @@ bool Htm::FirstPattern()
     return codec->FirstPattern();
 }
 
-void Htm::ResetCodec()
+void Htm::ReloadCodecTarget()
 {
     Learning = false;
-    codec->Reset();
+    codec->ReloadTarget();
 }
 
 void Htm::PrintPattern(SensoryRegion *pattern)

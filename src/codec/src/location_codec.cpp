@@ -113,7 +113,7 @@ SensoryRegion* LocationCodec::GetPattern(int inode)
     }
 
     locPattern = new SensoryRegion(
-        locInputs, this->w, n, 1, 0, NULL
+        locInputs, this->w, n, 1, 0, NULL, false
     );
     return locPattern;
 }

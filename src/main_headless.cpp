@@ -41,7 +41,7 @@ int Run(Htm *htm)
 
     pattern = htm->CurrentPattern();
     if (pattern == NULL) {
-        htm->ResetCodec();
+        htm->ReloadCodecTarget();
         htm->ConnectSubcorticalInput(true);
         return 0;
     }

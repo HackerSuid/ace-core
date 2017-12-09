@@ -93,7 +93,9 @@ bool DendriteSegment::IsActiveFromLearning()
     if (sensorimotorSegment) {
         //activeSen = GetNumIsLearningSensorySynapses();
         //activeMot = GetNumIsLearningMotorSynapses();
+        printf("\tgetting num loc learning syns\n");    
         activeLoc = GetNumIsLearningLocationSynapses();
+        printf("\tactiveLoc=%u\n", activeLoc);
         //senThreshold = sensorySyns.size() * SUBSAMPLE_THRESHOLD;
         //motThreshold = motorSyns.size() * SUBSAMPLE_THRESHOLD;
         locThreshold = locationSyns.size() * SUBSAMPLE_THRESHOLD;
@@ -567,7 +569,7 @@ void DendriteSegment::RefreshSynapses(GenericSublayer *NewPattern)
             motorSyns[i]->RefreshSynapse(NewPattern);
         */
         for (unsigned int i=0; i<locationSyns.size(); i++) {
-            printf("refreshing synapse %u\n", i);
+            //printf("refreshing synapse %u\n", i);
             locationSyns[i]->RefreshSynapse(NewPattern);
         }
     } else {

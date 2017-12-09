@@ -514,7 +514,7 @@ int QtFront::Run()
 
     pattern = htm->CurrentPattern();
     if (pattern == NULL) {
-        htm->ResetCodec();
+        htm->ReloadCodecTarget();
         htm->ConnectSubcorticalInput(true);
         return 0;
     }

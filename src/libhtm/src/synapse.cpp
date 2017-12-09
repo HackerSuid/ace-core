@@ -32,9 +32,9 @@ void Synapse::RefreshSynapse(GenericSublayer *NewPattern)
         unsigned int sqw = (unsigned int)sqrt(
             NewPattern->GetWidth()
         );
-        unsigned int h = NewPattern->GetHeight();
+        unsigned int pos = (unsigned int)(srcy*sqw)+srcx;
         source =
-            (NewPattern->GetInput())[h][srcy*sqw+srcx];
+            (NewPattern->GetInput())[0][pos];
     }
 }
 

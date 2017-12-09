@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <algorithm>
+#include <signal.h>
 
 // ptrace headers
 #include <sys/wait.h>
@@ -785,7 +786,7 @@ void ElfCodec::TranslateOpcodeArrayToSensoryInput(
     }
 }
 
-bool ElfCodec::Reset()
+bool ElfCodec::ReloadTarget()
 {
     // re-fork()/execl() the target executable.
     printf("[*] Reloading target: %s\n", targetPath);
@@ -799,20 +800,35 @@ bool ElfCodec::Reset()
 
 // single-step through executable's .text instructions until
 // calling one of the addresses in the vector.
+//
+// the running program also might exit or raise
+// a reset signal
 unsigned int ElfCodec::ExecuteToCall(
     std::vector<unsigned int> addrs,
     struct user_regs_struct *regs)
 {
+    siginfo_t sig_info;
+    unsigned int reset=0;
+
     if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
         perror("ptrace");
         return 0;
     }
+    /*
+    if (ptrace(PTRACE_GETSIGINFO, child_pid, 0, (void *)&sig_info) < 0) {
+        perror("ptrace");
+        return 0;
+    }
+    if (sig_info.si_signo==SIGUSR1)
+        reset=1;
+    */
     wait(&wait_status);
     while (WIFSTOPPED(wait_status)) {
         // get the current register values
         ptrace(PTRACE_GETREGS, child_pid, 0, regs);
         // get the current instruction being executed.
         unsigned int xi = ptrace(PTRACE_PEEKTEXT, child_pid, regs->eip, 0);
+        // check for a call
         if ((uint8_t)(xi & 0x000000FF) == CALL_OPCODE) {
             // get the address to the relative offset of the
             // address being called (located one byte after
@@ -824,9 +840,12 @@ unsigned int ElfCodec::ExecuteToCall(
             // compute the address being called using the relative
             // offset.
             unsigned int call_addr =
-                (unsigned int)(rel_off_addr)+sizeof(unsigned int)+rel_off;
+                (unsigned int)(rel_off_addr)+
+                sizeof(unsigned int)+rel_off;
             std::vector<unsigned int>::iterator beg = addrs.begin();
             std::vector<unsigned int>::iterator end = addrs.end();
+            // return address if calling one ACE
+            // cares about
             if (std::find(beg, end, call_addr) != end)
                 return call_addr;
         }
@@ -835,7 +854,15 @@ unsigned int ElfCodec::ExecuteToCall(
             perror("ptrace");
             return 0;
         }
-        // Wait for child to stop on its next instruction.
+        /*
+        if (ptrace(PTRACE_GETSIGINFO, child_pid, 0, (void *)&sig_info) < 0) {
+            perror("ptrace");
+            return 0;
+        }
+        if (sig_info.si_signo==SIGUSR1)
+            reset=1;
+        */
+        // Wait for child to stop on its next instruction, exit, or reset.
         wait(&wait_status);
         if (WIFEXITED(wait_status)) {
             printf("child exited successfully. status %d\n",
@@ -843,7 +870,7 @@ unsigned int ElfCodec::ExecuteToCall(
             return 0;
         }
     }
-    return 0;
+    return reset;
 }
 
 SensoryRegion* ElfCodec::GetPattern(bool Learning)

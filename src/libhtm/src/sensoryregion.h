@@ -9,6 +9,7 @@ class SensoryRegion : public GenericSublayer
 {
 private:
     SensoryRegion *next;
+    bool reset;
 public:
     SensoryRegion(
         SensoryInput ***bits,
@@ -16,7 +17,8 @@ public:
         unsigned int w,
         unsigned int h,
         unsigned int d,
-        SensoryRegion *mp
+        SensoryRegion *mp,
+        bool resetFlag=false
     );
     ~SensoryRegion();
     SensoryInput*** GetInput()
@@ -39,6 +41,7 @@ public:
     {
         locationPattern = lp;
     }
+    bool GetReset() { return reset; }
 };
 
 #endif

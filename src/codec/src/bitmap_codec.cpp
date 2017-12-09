@@ -52,11 +52,10 @@ SensoryRegion* BitmapCodec::GetPattern(int sense_fd, bool Learning)
     //fclose(fp);
 
     // input patterns will have zero cells.
-    printf("[bmp] creating sensory region\n");
     pattern = new SensoryRegion(
         input, numActiveInputs,
         bmh->bmih.width, bmh->bmih.height,
-        0, NULL
+        0, NULL, false
     );
     printf("[bmp] returning pattern\n");
 

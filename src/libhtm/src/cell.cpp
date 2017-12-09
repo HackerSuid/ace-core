@@ -262,7 +262,7 @@ bool Cell::AddSynapsesFromSublayer(
 void Cell::RefreshDendrites(GenericSublayer *NewPattern)
 {
     for (unsigned int s=0; s<DistalDendriteSegments.size(); s++) {
-        printf("refreshing dendrite %u\n", s);
+        //printf("refreshing dendrite %u\n", s);
         DistalDendriteSegments[s]->RefreshSynapses(NewPattern);
     }
 }

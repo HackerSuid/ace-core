@@ -2,15 +2,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include <sys/ptrace.h>
 
-#include "qt.h"
 #include "htm.h"
+#include "htmsublayer.h"
+#include "sensoryregion.h"
 
-// Export the QApplication object pointer so the instantiated Qt classes can
-// reference it after it's been instantiated itself.
-QApplication *app;
+int Run(Htm *htm);
+void RunProgram(Htm *htm);
 
 int main(int argc, char **argv)
 {
@@ -20,20 +21,39 @@ int main(int argc, char **argv)
     }
     // seed the rng first thing.
     srand(time(NULL)*getpid());
-    // instantiate the QApplication for use by the Qt library.
-    app = new QApplication(argc, argv);
     // Instantiate an Htm: initializes a handful of member variables.
     Htm *htm = new Htm;
     // Initialize the Htm from XML config and create/init codecs.
     htm->InitHtm(argv[1]);
-    // Instantiate a QtFront object to visualize the Htm.
-    QtFront *display = new QtFront(htm);
-    // Load the first input pattern and prepare initialize the Htm Qt
-    // members.
-    display->LoadQt();
-    // Transfer control to Qt immediately.
-    app->exec();
-    // We're done when Qt exits.
+
+    printf("[MAIN] Initiating runs.\n");
+    for (int i=0; i<100; i++) {
+        printf("[MAIN] iteration %d\n", i);
+        RunProgram(htm);
+    }
+
     return 0;
+}
+
+int Run(Htm *htm)
+{
+    SensoryRegion *pattern;
+
+    htm->SendInputThroughLayers();
+
+    pattern = htm->CurrentPattern();
+    if (pattern == NULL) {
+        htm->ReloadCodecTarget();
+        htm->ConnectSubcorticalInput(true);
+        return 0;
+    }
+
+    return 1;
+}
+
+void RunProgram(Htm *htm)
+{
+    while (Run(htm))
+        ;
 }
 

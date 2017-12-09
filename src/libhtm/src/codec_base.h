@@ -35,7 +35,7 @@ public:
         unsigned int locActiveBits) = 0;
     virtual SensoryRegion* GetPattern(bool Learning) = 0;
     virtual bool FirstPattern() { return true; }
-    virtual bool Reset() { return true; }
+    virtual bool ReloadTarget() { return true; }
     char* GetCodecName();
 private:
     static Codec *Instance;

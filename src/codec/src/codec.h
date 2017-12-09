@@ -144,7 +144,7 @@ public:
     SensoryRegion* GenerateSparseMotorRep(Column ***cols, int width, int height);
     int GetRewardSignal();
     bool FirstPattern();
-    bool Reset();
+    bool ReloadTarget();
 
 private:
     // private functions

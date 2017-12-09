@@ -257,51 +257,55 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
      *
      * I'm not decided on which version is more useful.
      */
-    printf("Computing predictions\n");
-    for (unsigned int i=0; i<height; i++) {
-        for (unsigned int j=0; j<width; j++) {
-            std::vector<Cell *> cells = columns[i][j]->GetCells();
-            int nc = columns[i][j]->GetNumCells();
-            for (int k=0; k<nc; k++) {
-                /*
-                 * If a cell is being predicted for the next timestep,
-                 * set it into the predictive state (depolarize it).
-                 * Otherwise leave it at its resting potential.
-                 *
-                 * Queue updates to any segment on the cell that
-                 * is predicting its activity. The cell could be
-                 * participating in the context of many temporal
-                 * sequences.
-                 */
-                std::vector<DendriteSegment *> segments =
-                    cells[k]->GetSegments();
-                unsigned int numSegs = cells[k]->GetNumSegments();
-                bool predflag = false;
-                for (unsigned int s=0; s<numSegs; s++) {
-                    bool segactive =
-                        Learning ? segments[s]->IsActiveFromLearning() :
-                                   segments[s]->IsActive();
-                    if (segactive) {
-                        /*
-                         * Only SetPredicted() once if there are multiple active
-                         * segments to avoid corrupting the state machine.
-                         */
-                        if (!predflag) {
-                            printf("\t\tpredicting col (%d, %d) cell %d"
-                                " [0x%08x] segment 0x%08x\n",
-                                cells[k]->GetParentColumn()->GetX(),
-                                cells[k]->GetParentColumn()->GetY(),
-                                cells[k]->GetColIdx(), cells[k],
-                                segments[s]
-                            );
-                            cells[k]->SetPredicted(true);
-                            predflag = true;
+    if (!htmPtr->ResetNewObject()) {
+        printf("Computing predictions\n");
+        for (unsigned int i=0; i<height; i++) {
+            for (unsigned int j=0; j<width; j++) {
+                std::vector<Cell *> cells = columns[i][j]->GetCells();
+                int nc = columns[i][j]->GetNumCells();
+                for (int k=0; k<nc; k++) {
+                    /*
+                     * If a cell is being predicted for the next timestep,
+                     * set it into the predictive state (depolarize it).
+                     * Otherwise leave it at its resting potential.
+                     *
+                     * Queue updates to any segment on the cell that
+                     * is predicting its activity. The cell could be
+                     * participating in the context of many temporal
+                     * sequences.
+                     */
+                    std::vector<DendriteSegment *> segments =
+                        cells[k]->GetSegments();
+                    unsigned int numSegs = cells[k]->GetNumSegments();
+                    bool predflag = false;
+                    for (unsigned int s=0; s<numSegs; s++) {
+                        printf("\tchecking is segment %u active\n", s);
+                        bool segactive =
+                            Learning ? segments[s]->IsActiveFromLearning() :
+                                       segments[s]->IsActive();
+                        printf("\tsegactive=%u\n", segactive);
+                        if (segactive) {
+                            /*
+                             * Only SetPredicted() once if there are multiple active
+                             * segments to avoid corrupting the state machine.
+                             */
+                            if (!predflag) {
+                                printf("\t\tpredicting col (%d, %d) cell %d"
+                                    " [0x%08x] segment 0x%08x\n",
+                                    cells[k]->GetParentColumn()->GetX(),
+                                    cells[k]->GetParentColumn()->GetY(),
+                                    cells[k]->GetColIdx(), cells[k],
+                                    segments[s]
+                                );
+                                cells[k]->SetPredicted(true);
+                                predflag = true;
+                            }
+                            _EnqueueSegmentUpdate(cells[k], s, segments[s], true);
                         }
-                        _EnqueueSegmentUpdate(cells[k], s, segments[s], true);
                     }
+                    if (!predflag)
+                        cells[k]->SetPredicted(false);
                 }
-                if (!predflag)
-                    cells[k]->SetPredicted(false);
             }
         }
     }

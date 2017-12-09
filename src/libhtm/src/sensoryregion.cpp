@@ -10,12 +10,14 @@ SensoryRegion::SensoryRegion(
     unsigned int w,
     unsigned int h,
     unsigned int d,
-    SensoryRegion *mp)
+    SensoryRegion *mp,
+    bool resetFlag)
 {
     this->width = w;
     this->height = h;
     this->depth = d;
     motorPattern = mp;
+    reset = resetFlag;
 
     this->numActiveInputs = numActiveInputs;
 

@@ -3,8 +3,9 @@
 
 #define XML_LEN             2048
 
+#include "sensoryregion.h"
+
 class Codec;
-class SensoryRegion;
 class HtmRegion;
 class HtmSublayer;
 
@@ -29,8 +30,12 @@ public:
     void LoadHtmCodec(Codec *codec);
     SensoryRegion* CurrentPattern();
     SensoryRegion* ConsumePattern();
+    bool ResetNewObject()
+    {
+        return currentPattern->GetReset();
+    }
     bool FirstPattern();
-    void ResetCodec();
+    void ReloadCodecTarget();
     void PrintPattern(SensoryRegion *pattern);
 
     int NewSublayer(HtmSublayer *reg);
