@@ -43,8 +43,10 @@ Column::Column(
     this->x = x;
     this->y = y;
     this->numCells = numCells;
-    for (unsigned int i=0; i<numCells; i++)
-        cells.push_back(new Cell(this, i));
+    for (unsigned int i=0; i<numCells; i++) {
+        Cell *cell = new Cell(this, i);
+        cells.push_back(cell);
+    }
 }
 
 Column::~Column()

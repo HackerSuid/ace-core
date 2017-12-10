@@ -21,7 +21,8 @@ HFILES  = src/cell.h \
           src/genericinput.h \
           src/sensoryregion.h \
           src/util.h \
-          src/htmsublayer.h
+          src/htmsublayer.h \
+          src/pooling_layer.h
 #          src/htmregion.h
 
 OBJS    = obj/cell.o \
@@ -36,7 +37,8 @@ OBJS    = obj/cell.o \
           obj/genericinput.o \
           obj/sensoryregion.o \
           obj/util.o \
-          obj/htmsublayer.o
+          obj/htmsublayer.o \
+          obj/pooling_layer.o
 #          obj/htmregion.o
 
 INSTALL = bin/
@@ -90,6 +92,9 @@ obj/genericinput.o:   src/genericinput.cpp
 #	$(CC) $(CFLAGS) -c $< -o $@
 
 obj/htmsublayer.o: src/htmsublayer.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
+
+obj/pooling_layer.o: src/pooling_layer.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 obj/sensoryregion.o:   src/sensoryregion.cpp

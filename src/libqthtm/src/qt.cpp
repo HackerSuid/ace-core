@@ -206,18 +206,24 @@ void QtFront::CreateTrainingWidget()
     objHtm->setStyleSheet("color: white;");
 
     // groupbox for htm region sublayer.
-    htmGroup = new QGroupBox("sublayer 0");
-    htmGroup->setObjectName("RegionId");
-    QGridLayout *htmGrid = HtmDisplay->UnitGrid(objHtm);
+    smiLayerGroup = new QGroupBox("sublayer 0");
+    smiLayerGroup->setObjectName("RegionId");
+    QGridLayout *smiGrid = HtmDisplay->UnitGrid(objHtm);
     // connect first Htm region grid units to sensory input grid units.
     //HtmDisplay->SetQtSynapses(inputGrid);
-    htmGroup->setLayout(htmGrid);
+    smiLayerGroup->setLayout(smiGrid);
+
+    poolGroup = new QGroupBox("pooling layer");
+    poolGroup->setObjectName("RegionId");
+    QGridLayout *poolGrid = HtmDisplay->PoolUnitGrid();
+    poolGroup->setLayout(poolGrid);
 
     TrainingLayout->addWidget(sensoryGroup, 0, 0, 1, 1);
     TrainingLayout->addWidget(locGroup, 1, 0, 1, 1);
     //TrainingLayout->addWidget(objHtm, 1, 0, 1, 1);
     TrainingLayout->addWidget(controls, 2, 0, 1, 1);
-    TrainingLayout->addWidget(htmGroup, 0, 1, 3, 1);
+    TrainingLayout->addWidget(smiLayerGroup, 0, 1, 3, 1);
+    TrainingLayout->addWidget(poolGroup, 0, 2, 3, 1);
 
     TrainingLayout->setColumnStretch(0, 30);
     TrainingLayout->setColumnStretch(1, 100);
@@ -379,7 +385,7 @@ void QtFront::UpdateInputDisplay(SensoryRegion *newPattern)
  */
 void QtFront::UpdateHtmDisplay()
 {
-    QGridLayout *currGrid = (QGridLayout *)htmGroup->layout();
+    QGridLayout *currGrid = (QGridLayout *)smiLayerGroup->layout();
     QGridLayout *newHtmGrid = HtmDisplay->UnitGrid(objHtm); 
     HtmSublayer **sublayers = htm->GetSublayers();
     int h = sublayers[0]->GetHeight();

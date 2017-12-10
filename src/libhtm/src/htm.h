@@ -8,6 +8,7 @@
 class Codec;
 class HtmRegion;
 class HtmSublayer;
+class PoolingLayer;
 
 class Htm {
 private:
@@ -16,6 +17,7 @@ private:
     unsigned int window_w, window_h;
     HtmRegion **regions;
     HtmSublayer **sublayers;
+    PoolingLayer *poolingLayer;
     int num_sublayers;
     bool Learning, allowBoosting;
     int seqRstFact;
@@ -52,6 +54,7 @@ public:
     unsigned int GetNumSublayers();
     HtmSublayer** GetSublayers();
     char* GetCodecName();
+    PoolingLayer* GetPoolingLayer() { return poolingLayer; }
     int GetSeqRstIdx() { return seqRstFact; }
 };
 

@@ -4,6 +4,7 @@
 #include "qt.h"
 #include "htm.h"
 #include "htmsublayer.h"
+#include "pooling_layer.h"
 #include "column.h"
 
 QtHtm::QtHtm(QWidget *parent, Htm *htm)
@@ -11,6 +12,7 @@ QtHtm::QtHtm(QWidget *parent, Htm *htm)
 {
     this->htm = htm;
     htmUnitGrid = NULL;
+    poolUnitGrid = NULL;
 }
 
 QtHtm::~QtHtm()
@@ -60,6 +62,38 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
     }
 
     return htmUnitGrid;
+}
+
+QGridLayout* QtHtm::PoolUnitGrid()
+{
+    if (poolUnitGrid)
+        return poolUnitGrid;
+
+    int h = htm->GetPoolingLayer()->GetHeight();
+    int w = htm->GetPoolingLayer()->GetWidth();
+
+    poolUnitGrid = new QGridLayout();
+    poolUnitGrid->setSpacing(0);
+    poolUnitGrid->setAlignment(Qt::AlignCenter);
+    for (int i=0; i<h; i++) {
+        for (int j=0; j<w; j++) {
+            QtUnit *unit = new QtUnit(
+                NULL,
+                NULL,
+                htmUnitGrid,
+                NULL,
+                NULL,
+                NULL,
+                0
+            );
+            unit->SetClickable(true);
+            //if (cols[i][j]->IsActive())
+            //    unit->setBrushColor(ACTIVE_COLOR);
+            poolUnitGrid->addWidget(unit, i, j, 1, 1);
+        }
+    }
+
+    return poolUnitGrid;
 }
 
 float QtHtm::SlidingWindowAvg(std::list<float> window)

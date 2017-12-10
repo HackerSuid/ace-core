@@ -48,7 +48,7 @@ void HtmSublayer::AllocateColumns(
     input = (GenericInput ***)malloc(sizeof(GenericInput **) * height);
     for (unsigned int i=0; i<height; i++) {
         input[i] = (GenericInput **)malloc(sizeof(GenericInput *) * width);
-        for (unsigned int j=0; j<width; j++)
+        for (unsigned int j=0; j<width; j++) {
             input[i][j] = new Column(
                 this,
                 j, i,
@@ -60,6 +60,7 @@ void HtmSublayer::AllocateColumns(
                 activityCycleWindow,
                 sensorimotorLayer
             );
+        }
     }
 }
 
