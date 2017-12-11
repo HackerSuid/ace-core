@@ -57,7 +57,6 @@ SensoryRegion* BitmapCodec::GetPattern(int sense_fd, bool Learning)
         bmh->bmih.width, bmh->bmih.height,
         0, NULL, false
     );
-    printf("[bmp] returning pattern\n");
 
     return pattern;
 }

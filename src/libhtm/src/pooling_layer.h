@@ -1,17 +1,23 @@
 #ifndef POOLING_LAYER_H_
 #define POOLING_LAYER_H_
 
+#include "genericsublayer.h"
+
 class Htm;
 
-class PoolingLayer
+class PoolingLayer : public GenericSublayer
 {
 public:
-    PoolingLayer(int h, int w, Htm *htmPtr);
+    PoolingLayer(
+        unsigned int h, unsigned int w, unsigned int d,
+        unsigned int maxSdrSz, Htm *htmPtr
+    );
     ~PoolingLayer();
     int GetHeight() { return height; }
     int GetWidth() { return width; }
 private:
-    int height, width;
+    unsigned int height, width, depth;
+    unsigned int maxSdrSz;
     Htm *htmPtr;
 };
 

@@ -12,7 +12,7 @@
 #include "cell.h"
 
 Column::Column(
-    HtmSublayer *sublayer,
+    GenericSublayer *sublayer,
     int x, int y,
     unsigned int numCells,
     int rfsz,

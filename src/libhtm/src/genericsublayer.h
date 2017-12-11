@@ -28,9 +28,9 @@ public:
     GenericSublayer();
     ~GenericSublayer();
     bool IsSensorimotor() { return sensorimotorLayer; }
-    unsigned int GetHeight();
-    unsigned int GetWidth();
-    unsigned int GetDepth();
+    unsigned int GetHeight() { return height; }
+    unsigned int GetWidth() { return width; }
+    unsigned int GetDepth() { return depth; }
     //std::vector <std::vector <GenericInput*> > GetInput();
     GenericInput*** GetInput();
     int GetNumActiveInputs()

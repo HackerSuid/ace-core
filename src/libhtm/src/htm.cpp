@@ -151,7 +151,7 @@ bool Htm::LoadXmlConfig(const char *pathname)
         this->NewSublayer(curr);
     } while ((sublayer_node = sublayer_node->next_sibling("Region")));
 
-    poolingLayer = new PoolingLayer(16, 8, this);
+    poolingLayer = new PoolingLayer(24, 24, 0, 8, this);
 
     close(xmlfd);
     return true;

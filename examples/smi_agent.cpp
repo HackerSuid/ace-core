@@ -50,14 +50,14 @@ int acquire_pattern(char *filename)
     unsigned int pathlen = strlen(path);
     path[pathlen] = 0;
 
-    printf("\tConsuming pattern %s\n", path);
+    //printf("\tConsuming pattern %s\n", path);
     if ((patt_fd = open(path, O_RDONLY)) < 0) {
         perror("could not open senaory pattern");
         return 0;
     }
-    printf("\nReading pattern\n");
+    //printf("\nReading pattern\n");
     read(patt_fd, pattern, PATTERN_SZ);
-    printf("\t\t...got it.\n");
+    //printf("\t\t...got it.\n");
 
     close(patt_fd);
     return 1;
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
     srand(time(NULL)+getpid());
     signal(SIGUSR1, reset_signal_callback);
 
-    printf("[*] Changing to root objects dir %s\n", root);
+    //printf("[*] Changing to root objects dir %s\n", root);
     if (chdir(root) < 0) {
         perror("chdir() failed");
         return 0;

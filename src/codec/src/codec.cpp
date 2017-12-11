@@ -886,9 +886,7 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
         sensorimotorFunctions.begin(),
         sensorimotorFunctions.end()
     );
-    printf("[Codec] Executing to next function call\n");
     unsigned int call_addr = ExecuteToCall(allFunctions, &regs);
-    printf("[Codec] call_addr 0x%08x\n", call_addr);
     if (call_addr == 0)
         return NULL;
     std::vector<unsigned int>::iterator pure_b =
@@ -913,11 +911,11 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
     } else if (std::find(cpg_b, cpg_e, call_addr) != cpg_e) {
         //printf("\t\tcpg function\n");
     } else if (std::find(smotor_b, smotor_e, call_addr) != smotor_e) {
-        printf("[codec] sensorimotor function.\n");
+        //printf("[codec] sensorimotor function.\n");
         /* step through code until motor function call. */
-        printf("[codec] executing to cpg/motor call\n");
+        //printf("[codec] executing to cpg/motor call\n");
         cpgAddr = ExecuteToCall(cpgFunctions, &regs);
-        printf("\tcpgAddr 0x%08x\n", cpgAddr);
+        //printf("\tcpgAddr 0x%08x\n", cpgAddr);
 
         // obtain the associated motor command pattern.
         // ~~ deprecated method ~~
@@ -940,25 +938,26 @@ SensoryRegion* ElfCodec::GetPattern(bool Learning)
             motorLayer->GetHeight()
         );
         /* step through code until sensory function call. */
-        printf("[codec] executing to sensory call\n");
+        //printf("[codec] executing to sensory call\n");
         senseAddr = ExecuteToCall(pureSensoryFunctions, &regs);
-        printf("\tsenseAddr 0x%08x\n", senseAddr);
+        //printf("\tsenseAddr 0x%08x\n", senseAddr);
 
         /*
          * duplicate open fd and determine corresponding sensory
          * codec with which to obtain sensory pattern.
          */
         binding = HandlePureSensory(&regs);
-        printf("[codec] HandlePureSensory() returned\n");
+        //printf("[codec] HandlePureSensory() returned\n");
         inputSignals = binding.codec->GetPattern(
             binding.fd, Learning
         );
 
-        printf("[codec] getting location pattern\n");
+        //printf("[codec] getting location pattern\n");
         SensoryRegion *locationPattern = locationCodec->GetPattern(
             binding.parent_inode
         );
-        printf("[codec] location pattern 0x%08x\n", (unsigned int)locationPattern);
+        //printf("[codec] location pattern 0x%08x\n",
+            //(unsigned int)locationPattern);
         inputSignals->SetLocationPattern(locationPattern);
         inputSignals->SetMotorPattern(sparseMotorPattern);
 

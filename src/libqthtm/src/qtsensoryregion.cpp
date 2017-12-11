@@ -103,9 +103,6 @@ QGridLayout* QtSensoryRegion::LocationUnitGrid()
 
     // location signal is 1D, but partition it into segments for a
     // better visual.
-    printf("[QtSensoryRegion] Loc patt %d by %d\n", h, w);
-    printf("[QtSensoryRegion] Creating %f x %f unit grid\n",
-        sqrt((double)w), sqrt((double)w));
     unsigned int n=0;
     for (int i=0; i<sqrt((double)w); i++) {
         for (int j=0; j<sqrt((double)w); j++, n++) {
