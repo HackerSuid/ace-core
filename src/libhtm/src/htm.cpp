@@ -151,7 +151,7 @@ bool Htm::LoadXmlConfig(const char *pathname)
         this->NewSublayer(curr);
     } while ((sublayer_node = sublayer_node->next_sibling("Region")));
 
-    poolingLayer = new PoolingLayer(24, 24, 0, 8, this);
+    poolingLayer = new PoolingLayer(24, 24, 0, 8, this, sublayers[0]);
 
     close(xmlfd);
     return true;
@@ -171,6 +171,7 @@ void Htm::ConnectHeirarchy()
         else
             sublayers[i]->sethigher(sublayers[i+1]);
     }
+    poolingLayer->InitializeProximalDendrites();
 }
 
 /*
@@ -252,6 +253,7 @@ void Htm::SendInputThroughLayers()
     for (int i=0; i<num_sublayers; i++)
         sublayers[i]->ComputeLayerStateFromInput(
             Learning, allowBoosting);
+    poolingLayer->PoolInputColumns();
     printf("[*] Consuming next input pattern\n");
     ConnectSubcorticalInput(true);
 }

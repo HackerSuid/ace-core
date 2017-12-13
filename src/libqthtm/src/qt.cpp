@@ -3,6 +3,7 @@
 #include "qt.h"
 #include "htm.h"
 #include "htmsublayer.h"
+#include "pooling_layer.h"
 #include "sensoryregion.h"
 
 #include <ctime>
@@ -388,9 +389,9 @@ void QtFront::UpdateHtmDisplay()
     QGridLayout *currGrid = (QGridLayout *)smiLayerGroup->layout();
     QGridLayout *newHtmGrid = HtmDisplay->UnitGrid(objHtm); 
     HtmSublayer **sublayers = htm->GetSublayers();
-    int h = sublayers[0]->GetHeight();
-    int w = sublayers[0]->GetWidth();
-    int d = sublayers[0]->GetDepth();
+    unsigned int h = sublayers[0]->GetHeight();
+    unsigned int w = sublayers[0]->GetWidth();
+    unsigned int d = sublayers[0]->GetDepth();
     QtUnit *colUnit = NULL;
     QList<QtCell *> qtCells;
     //QGridLayout *cellGrid = NULL;
@@ -416,6 +417,27 @@ void QtFront::UpdateHtmDisplay()
                 qtCells.at(c-1)->setBrushColor(
                     QColor(r[c], g[c], b[c])
                 );
+        }
+    }
+
+    QGridLayout *currPoolingGrid = (QGridLayout *)poolGroup->layout();
+    QGridLayout *newPoolingGrid = HtmDisplay->PoolUnitGrid();
+    PoolingLayer *p = htm->GetPoolingLayer();
+    h = p->GetHeight();
+    w = p->GetWidth();
+    QColor rgbPool;
+    int rP, gP, bP;
+
+    for (unsigned int i=0; i<h; i++) {
+        for (unsigned int j=0; j<w; j++) {
+            colUnit =
+                (QtUnit *)newPoolingGrid->itemAtPosition(i, j)->widget();
+            rgbPool = colUnit->getBrushColor();
+            rgbPool.getRgb(&rP, &gP, &bP);
+            colUnit =
+                (QtUnit *)currPoolingGrid->itemAtPosition(i, j)->widget();
+            colUnit->setBrushColor(
+                QColor(rP, gP, bP));
         }
     }
 }

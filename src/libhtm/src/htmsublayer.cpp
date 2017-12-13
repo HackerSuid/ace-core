@@ -299,7 +299,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                                     cells[k]->GetParentColumn()->GetX(),
                                     cells[k]->GetParentColumn()->GetY(),
                                     cells[k]->GetColIdx(), cells[k],
-                                    segments[s]
+                                    (unsigned int)segments[s]
                                 );
                                 cells[k]->SetPredicted(true);
                                 predflag = true;
@@ -542,7 +542,8 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
              * learning cells, or it was chosen as the best learning cell to
              * predict the current input pattern.
              */
-            printf("Dequeing (+) 0x%08x: Learning cell\n", nextUpdate);
+            printf("Dequeing (+) 0x%08x: Learning cell\n",
+                (unsigned int)nextUpdate);
             _DequeueSegmentUpdate(nextUpdate, true);
         } else if (cellUpdate->WasPredicted() and
             !cellUpdate->IsActive()) {
@@ -551,7 +552,8 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
              * did not become active, meaning an incorrect prediction of the
              * feed-forward input.
              */
-            printf("Dequeing (-) 0x%08x: Bad prediction\n", nextUpdate);
+            printf("Dequeing (-) 0x%08x: Bad prediction\n",
+                (unsigned int)nextUpdate);
             _DequeueSegmentUpdate(nextUpdate, false);
         } else {
             /*
