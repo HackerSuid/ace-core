@@ -52,6 +52,7 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
                 sensoryGrid,
                 motorGrid,
                 locGrid,
+                sensoryGrid,
                 c
             );
             unit->SetClickable(true);
@@ -64,31 +65,41 @@ QGridLayout* QtHtm::UnitGrid(QGroupBox *objHtm)
     return htmUnitGrid;
 }
 
-QGridLayout* QtHtm::PoolUnitGrid()
+QGridLayout* QtHtm::PoolUnitGrid(QGroupBox *objHtm)
 {
     if (poolUnitGrid)
         return poolUnitGrid;
 
-    int h = htm->GetPoolingLayer()->GetHeight();
-    int w = htm->GetPoolingLayer()->GetWidth();
+    PoolingLayer *pL = htm->GetPoolingLayer();
+    int h = pL->GetHeight();
+    int w = pL->GetWidth();
+    Column ***cols = (Column ***)pL->GetInput();
 
     poolUnitGrid = new QGridLayout();
     poolUnitGrid->setSpacing(0);
     poolUnitGrid->setAlignment(Qt::AlignCenter);
+
+    QtSensoryRegion *qtinput =
+        ((QtFront *)parentWidget())->GetCurrentInputDisplay();
+    QGridLayout *sensoryGrid = qtinput->SensoryUnitGrid();
+    QGridLayout *motorGrid = qtinput->MotorUnitGrid();
+    QGridLayout *locGrid = qtinput->LocationUnitGrid();
+
     for (int i=0; i<h; i++) {
         for (int j=0; j<w; j++) {
             QtUnit *unit = new QtUnit(
-                NULL,
-                NULL,
+                cols[i][j],
+                objHtm,
                 htmUnitGrid,
-                NULL,
-                NULL,
-                NULL,
+                sensoryGrid,
+                motorGrid,
+                locGrid,
+                htmUnitGrid,
                 0
             );
             unit->SetClickable(true);
-            //if (cols[i][j]->IsActive())
-            //    unit->setBrushColor(ACTIVE_COLOR);
+            if (cols[i][j]->IsActive())
+                unit->setBrushColor(ACTIVE_COLOR);
             poolUnitGrid->addWidget(unit, i, j, 1, 1);
         }
     }

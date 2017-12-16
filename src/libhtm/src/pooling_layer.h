@@ -20,7 +20,6 @@ public:
         HtmSublayer *inLayer
     );
     ~PoolingLayer();
-    void InitializeProximalDendrites();
     void PoolInputColumns();
 
     void initBucketMap();
@@ -41,6 +40,7 @@ private:
     unsigned int height, width, depth;
     unsigned int sdrSz;
     unsigned int num_objects;
+    std::vector<unsigned int> *currCols;
     Htm *htmPtr;
     HtmSublayer *inputLayer;
     std::map<unsigned int, std::vector<unsigned int> >

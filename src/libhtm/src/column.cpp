@@ -138,6 +138,45 @@ void Column::InitializeProximalDendrite(
 */
 }
 
+void Column::ConnectToActiveInputs(HtmSublayer *lower)
+{
+    Column ***columns = lower->GetInput();
+    unsigned int h = lower->GetHeight();
+    unsigned int w = lower->GetWidth();
+
+    std::vector<Column *> colsConnected;
+
+    if (ProximalDendriteSegment==NULL)
+        ProximalDendriteSegment = new DendriteSegment(false);
+    else {
+        std::vector<Synapse *> syns = ProximalDendriteSegment->GetSynapses();
+        for (unsigned int p=0; p<syns.size(); p++) {
+            if (syns[p]->GetSource()->IsActive()) {
+                syns[p]->IncPerm();
+                colsConnected.push_back((Column *)syns[p]->GetSource());
+            }
+        }
+    }
+
+    for (unsigned int i=0; i<h; i++) {
+        for (unsigned int j=0; j<w; j++) {
+            if (columns[i][j]->IsActive()) {
+                for (unsigned int c=0; c<colsConnected.size(); c++) {
+                    if (columns[i][j]==colsConnected[c])
+                        continue;
+                }
+                // column isn't learned yet, so add a synapse.
+                ProximalDendriteSegment->NewSynapse(
+                    new Synapse(
+                        columns[i][j], j, i,
+                        SENSORY_PROXIMAL
+                    )
+                );
+            }
+        }
+    }
+}
+
 void Column::RefreshNewPattern(GenericSublayer *NewPattern)
 {
     ProximalDendriteSegment->RefreshSynapses(NewPattern);

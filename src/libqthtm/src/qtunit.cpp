@@ -13,6 +13,7 @@ QtUnit::QtUnit(
     QGridLayout *sensoryGrid,
     QGridLayout *motorGrid,
     QGridLayout *locGrid,
+    QGridLayout *proxInputGrid,
     int c, int w, int h)
 {
     /* don't resize on repaint. */
@@ -35,6 +36,7 @@ QtUnit::QtUnit(
     this->sensoryGrid = sensoryGrid;
     this->motorGrid = motorGrid;
     this->locGrid = locGrid;
+    this->proxInputGrid = proxInputGrid;
 
     cells = c;
     if (cells) {
@@ -112,11 +114,11 @@ void QtUnit::_ToggleProximalConnections(bool flag)
     Column *col = (Column *)node;
     DendriteSegment *segment = col->GetProximalDendriteSegment();
     std::vector<Synapse *> prox_syns = segment->GetSynapses();
-    int rfs = col->GetRecFieldSz();
+    //int rfs = col->GetRecFieldSz();
 
     //printf("rfs = %d\n", rfs);
-    for (int i=0; i<rfs; i++) {
-        QtUnit *src = (QtUnit *)(sensoryGrid->itemAtPosition(
+    for (unsigned int i=0; i<prox_syns.size(); i++) {
+        QtUnit *src = (QtUnit *)(proxInputGrid->itemAtPosition(
             prox_syns[i]->GetY(), prox_syns[i]->GetX())->widget());
         if (flag) {
             src->SaveBrushColor();
@@ -129,7 +131,8 @@ void QtUnit::_ToggleProximalConnections(bool flag)
         //printf("\t[%d] (%d, %d)\n",
             //i, prox_syns[i]->GetX(), prox_syns[i]->GetY());
     }
-    ((QtSensoryRegion *)(sensoryGrid->parentWidget()))->repaint();
+    //((QtSensoryRegion *)(proxInputGrid->parentWidget()))->repaint();
+    proxInputGrid->parentWidget()->repaint();
 }
 
 void QtUnit::SetClickable(bool flag)

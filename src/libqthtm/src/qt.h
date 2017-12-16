@@ -140,7 +140,7 @@ public:
     QtHtm(QWidget *parent, Htm *htm);
     ~QtHtm();
     QGridLayout* UnitGrid(QGroupBox *objHtm);
-    QGridLayout* PoolUnitGrid();
+    QGridLayout* PoolUnitGrid(QGroupBox *objHtm);
     float PredictionComprehensionMetric();
     float PredictionSpecificityMetric();
     void SetQtSynapses(QGridLayout *inputGrid);
@@ -158,6 +158,7 @@ public:
         QGridLayout *sensoryGrid,
         QGridLayout *motorGrid,
         QGridLayout *locGrid,
+        QGridLayout *proxInputGrid,
         int c, int w=DEF_UNIT_W, int h=DEF_UNIT_H
     );
     ~QtUnit();
@@ -183,7 +184,7 @@ protected:
     void leaveEvent(QEvent *event);
 private:
     QGridLayout *htmGrid, *sensoryGrid, *motorGrid;
-    QGridLayout *locGrid;
+    QGridLayout *locGrid, *proxInputGrid;
     // context menu members
     QAction *showProximalConnections, *hideProximalConnections;
     // cell layout members

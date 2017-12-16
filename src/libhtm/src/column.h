@@ -66,6 +66,8 @@ public:
         GenericSublayer *lower, 
         int x_ratio, int y_ratio
     );
+    // for column pooling columns
+    void ConnectToActiveInputs(HtmSublayer *lower); 
     void RefreshNewPattern(GenericSublayer *NewPattern);
 
     // Spatial Pooler functions

@@ -40,6 +40,7 @@ QGridLayout* QtSensoryRegion::SensoryUnitGrid()
                 NULL,
                 NULL,
                 NULL,
+                NULL,
                 0, 3, 3
             );
             if (bits[i][j]->IsActive())
@@ -70,6 +71,7 @@ QGridLayout* QtSensoryRegion::MotorUnitGrid()
         for (int j=0; j<w; j++) {
             QtUnit *unit = new QtUnit(
                 bits[i][j],
+                NULL,
                 NULL,
                 NULL,
                 NULL,
@@ -108,6 +110,7 @@ QGridLayout* QtSensoryRegion::LocationUnitGrid()
         for (int j=0; j<sqrt((double)w); j++, n++) {
             QtUnit *unit = new QtUnit(
                 bits[0][n],
+                NULL,
                 NULL,
                 NULL,
                 NULL,

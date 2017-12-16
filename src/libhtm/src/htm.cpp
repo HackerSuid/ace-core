@@ -171,7 +171,6 @@ void Htm::ConnectHeirarchy()
         else
             sublayers[i]->sethigher(sublayers[i+1]);
     }
-    poolingLayer->InitializeProximalDendrites();
 }
 
 /*

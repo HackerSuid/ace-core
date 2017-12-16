@@ -14,6 +14,7 @@ PoolingLayer::PoolingLayer(
     depth = d;
     this->sdrSz = sdrSz;
     numActiveInputs = 0;
+    currCols = NULL;
     // not an smi L4 layer
     sensorimotorLayer = false;
 
@@ -61,26 +62,13 @@ PoolingLayer::~PoolingLayer()
     delete input;
 }
 
-void PoolingLayer::InitializeProximalDendrites()
-{
-    Column ***columns = (Column ***)input;
-
-    for (unsigned int i=0, n=0; i<height; i++) {
-        for (unsigned int j=0; j<width; j++, n++) {
-            columns[i][j]->InitializeProximalDendrite(
-                inputLayer,
-                inputLayer->GetWidth()/width,
-                inputLayer->GetHeight()/height
-            );
-        }
-    }
-}
-
 void PoolingLayer::PoolInputColumns()
 {
+    Column ***columns = (Column ***)input;
+    unsigned int i, j, c;
+
     if ((unsigned int)numActiveInputs != sdrSz) {
         // object was reset, so create new object representation.
-
         unsigned int n = height*width;
         int bucketIdx = getBucketIdx(num_objects);
         std::vector<unsigned int> layerIdxs(n, 0);
@@ -88,12 +76,33 @@ void PoolingLayer::PoolInputColumns()
            createNewBucket(bucketIdx);
         }
         std::vector<unsigned int> sdrColIdxs = bucketMap[bucketIdx];
-        for (unsigned int i=0; i<sdrColIdxs.size(); i++) {
-            printf("%u (%u,%u)\n", sdrColIdxs[i], sdrColIdxs[i]%width,
-                sdrColIdxs[i]/height);
+        bool colActive = false;
+        for (i=0; i<height; i++) {
+            for (j=0; j<width; j++) {
+                for (c=0; c<sdrColIdxs.size(); c++) {
+                    if (i*height+j==sdrColIdxs[c]) {
+                        columns[i][j]->SetActive(true, false);
+                        columns[i][j]->ConnectToActiveInputs(inputLayer);
+                        colActive = true;
+                        numActiveInputs++;
+                        break;
+                    }
+                }
+                if (!colActive)
+                    columns[i][j]->SetActive(false, false);
+            }
         }
+        num_objects++;
+        currCols = new std::vector<unsigned int>(sdrColIdxs);
     } else {
-        // continue learning current object.
+        // continue learning current object by reinforcing the
+        // currently active synapses.
+        for (i=0; i<currCols->size(); i++) {
+            unsigned int x = (*currCols)[i]%width;
+            unsigned int y = (*currCols)[i]/height;
+            if (columns[y][x]->IsActive())
+                columns[y][x]->ConnectToActiveInputs(inputLayer);
+        }
     }
 }
 

@@ -216,7 +216,7 @@ void QtFront::CreateTrainingWidget()
 
     poolGroup = new QGroupBox("pooling layer");
     poolGroup->setObjectName("RegionId");
-    QGridLayout *poolGrid = HtmDisplay->PoolUnitGrid();
+    QGridLayout *poolGrid = HtmDisplay->PoolUnitGrid(objHtm);
     poolGroup->setLayout(poolGrid);
 
     TrainingLayout->addWidget(sensoryGroup, 0, 0, 1, 1);
@@ -421,7 +421,7 @@ void QtFront::UpdateHtmDisplay()
     }
 
     QGridLayout *currPoolingGrid = (QGridLayout *)poolGroup->layout();
-    QGridLayout *newPoolingGrid = HtmDisplay->PoolUnitGrid();
+    QGridLayout *newPoolingGrid = HtmDisplay->PoolUnitGrid(objHtm);
     PoolingLayer *p = htm->GetPoolingLayer();
     h = p->GetHeight();
     w = p->GetWidth();
