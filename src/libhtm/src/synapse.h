@@ -33,7 +33,7 @@ public:
     bool IsNearConnected();
     bool IsMotor() { return type==MOTOR_DISTAL; }
     bool IsLateral() { return type==LATERAL_DISTAL; }
-    bool IsSensory() { return type==SENSORY_DISTAL; }
+    bool IsSensory() { return type==SENSORY_PROXIMAL; }
     bool IsLocation() { return type==LOCATION_DISTAL; }
     input_t GetType() { return type; }
     float GetPerm();

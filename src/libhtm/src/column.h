@@ -11,6 +11,7 @@ class GenericSublayer;
 class HtmSublayer;
 class Cell;
 class DendriteSegment;
+class ProximalDendrite;
 
 struct ActivityLogEntry
 {
@@ -41,8 +42,7 @@ private:
     int numNeighbors;
     int inhibitionRadius;
     bool highTier;
-    DendriteSegment *ProximalDendriteSegment;
-    bool sensorimotorColumn;
+    ProximalDendrite *ProximalDendriteSegment;
 
     void UpdateBoostingStructure(
         struct ActivityLogEntry **head,
@@ -58,8 +58,7 @@ public:
         float localActivity,
         float columnComplexity,
         bool highTier,
-        int activityCycleWindow,
-        bool sensorimotorColumn
+        int activityCycleWindow
     );
     ~Column();
     void InitializeProximalDendrite(
@@ -99,7 +98,7 @@ public:
     int GetOverlap();
     double GetBoost();
     double GetMinActivityLevel();
-    DendriteSegment* GetProximalDendriteSegment();
+    ProximalDendrite* GetProximalDendriteSegment();
     Column** GetNeighbors(
         Column ***columns,
         int radius,
@@ -111,8 +110,6 @@ public:
 
     int GetNumCells();
     std::vector<Cell *> GetCells();
-
-    bool IsSensorimotorColumn() { return sensorimotorColumn; }
 };
 
 #endif

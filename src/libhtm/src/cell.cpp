@@ -86,9 +86,6 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
                 "Adding synapses to distal dendrite from previous "
                 "sensory pattern."
             "\n");*/
-        //    synsFound += AddSynapsesFromSublayer(
-        //        sublayer, sublayer, SENSORY_DISTAL, newSeg
-        //    );
         } else {
             printf("\tNo motor pattern found.\n");
             newSeg->SetNoTemporalContext();
@@ -313,7 +310,7 @@ DendriteSegment* Cell::GetBestMatchingSegment(
     int minThreshold;
     SensoryRegion *mp = sublayer->GetLower()->GetMotorPattern();
 
-    if (parentColumn->IsSensorimotorColumn() && mp) {
+    if (sublayer->IsSensorimotor() && mp) {
         minThreshold = 
             (lastActiveColumns + mp->GetNumActiveInputs()) *
             DendriteSegment::GetSubsamplePercent();

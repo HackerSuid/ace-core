@@ -10,6 +10,7 @@
 
 class Htm;
 class HtmSublayer;
+class Column;
 
 class PoolingLayer : public GenericSublayer
 {
@@ -40,7 +41,8 @@ private:
     unsigned int height, width, depth;
     unsigned int sdrSz;
     unsigned int num_objects;
-    std::vector<unsigned int> *currCols;
+    bool new_object;
+    std::vector<Column *> currObjRep;
     Htm *htmPtr;
     HtmSublayer *inputLayer;
     std::map<unsigned int, std::vector<unsigned int> >

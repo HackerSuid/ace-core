@@ -39,13 +39,14 @@ int Run(Htm *htm)
 {
     SensoryRegion *pattern;
 
+    htm->SendInputThroughLayers();
+
     pattern = htm->CurrentPattern();
     if (pattern == NULL) {
         htm->ReloadCodecTarget();
         htm->ConnectSubcorticalInput(true);
         return 0;
     }
-    htm->SendInputThroughLayers();
 
     return 1;
 }

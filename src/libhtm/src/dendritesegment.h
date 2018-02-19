@@ -31,14 +31,20 @@ class DendriteSegment
 {
 public:
     DendriteSegment(bool sensorimotorFlag);
-    ~DendriteSegment();
-    void NewSynapse(Synapse *newSyn);
-    bool IsActive();
-    bool IsActiveFromLearning();
-    bool WasActiveFromLearning();
+    virtual ~DendriteSegment();
 
-    unsigned int GetNumIsActiveSynapses();
-    std::vector<Synapse*> GetIsActiveSynapses();
+    virtual void NewSynapse(Synapse *newSyn);
+    virtual bool IsActive();
+    virtual bool IsActiveFromLearning();
+    virtual bool WasActiveFromLearning();
+    virtual unsigned int GetNumIsActiveSynapses();
+    virtual std::vector<Synapse*> GetIsActiveSynapses();
+    virtual unsigned int GetNumWasActiveSynapses();
+    virtual std::vector<Synapse*> GetWasActiveSynapses();
+    virtual unsigned int GetNumIsLearningSynapses();
+    virtual std::vector<Synapse*> GetWasNearActiveSynapses();
+    virtual int GetNumIsNearActiveSynapses();
+
     unsigned int GetNumIsActiveSensorySynapses();
     unsigned int GetNumIsActiveMotorSynapses();
     unsigned int GetNumIsActiveLocationSynapses();
@@ -48,8 +54,6 @@ public:
     std::vector<Synapse*> GetIsActiveLocationSynapses();
     std::vector<Synapse*> GetIsActiveLateralSynapses();
 
-    unsigned int GetNumWasActiveSynapses();
-    std::vector<Synapse*> GetWasActiveSynapses();
     unsigned int GetNumWasActiveSensorySynapses();
     unsigned int GetNumWasActiveMotorSynapses();
     unsigned int GetNumWasActiveLocationSynapses();
@@ -59,7 +63,6 @@ public:
     std::vector<Synapse*> GetWasActiveLocationSynapses();
     std::vector<Synapse*> GetWasActiveLateralSynapses();
 
-    unsigned int GetNumIsLearningSynapses();
     unsigned int GetNumIsLearningMotorSynapses();
     unsigned int GetNumIsLearningLocationSynapses();
     unsigned int GetNumIsLearningSensorySynapses();
@@ -78,15 +81,12 @@ public:
     std::vector<Synapse*> GetWasLearningLocationSynapses();
     std::vector<Synapse*> GetWasLearningLateralSynapses();
 
-    std::vector<Synapse*> GetWasNearActiveSynapses();
-    int GetNumIsNearActiveSynapses();
-
     bool IsSensorimotor() { return sensorimotorSegment; }
     int GetNumSensorySyns() { return numSensorySyns; }
     int GetNumMotorSyns() { return numMotorSyns; }
     static float GetSubsamplePercent() { return SUBSAMPLE_PERCENT; }
-    void RefreshSynapses(GenericSublayer *NewPattern);
-    std::vector<Synapse *> GetSynapses();
+    virtual void RefreshSynapses(GenericSublayer *NewPattern);
+    virtual std::vector<Synapse *> GetSynapses();
     void SetNoTemporalContext();
     bool GetNoTemporalContext();
 private:
@@ -96,6 +96,53 @@ private:
     std::vector<Synapse *> sensorySyns, motorSyns;
     std::vector<Synapse *> lateralSyns, locationSyns;
     bool noTemporalContext;
+protected:
+    std::vector<Synapse *> syns;
+};
+
+// feedforward synapses on mini-columns
+//   - causes action potential
+class ProximalDendrite : public DendriteSegment
+{
+public:
+    ProximalDendrite();
+    ~ProximalDendrite();
+    void NewSynapse(Synapse *newSyn);
+    bool IsActive();
+    bool IsActiveFromLearning();
+    bool WasActiveFromLearning();
+    unsigned int GetNumIsActiveSynapses();
+    std::vector<Synapse*> GetIsActiveSynapses();
+    unsigned int GetNumWasActiveSynapses();
+    std::vector<Synapse*> GetWasActiveSynapses();
+    unsigned int GetNumIsLearningSynapses();
+    std::vector<Synapse*> GetIsLearningSynapses();
+    unsigned int GetNumWasLearningSynapses();
+    std::vector<Synapse*> GetWasLearningSynapses();
+    std::vector<Synapse*> GetWasNearActiveSynapses();
+    int GetNumIsNearActiveSynapses();
+    void RefreshSynapses(GenericSublayer *NewPattern);
+    std::vector<Synapse *> GetSynapses();
+private:
+};
+
+// prediction context synapses on cells
+//   - causes soma depolarization
+class DistalDendrite : public DendriteSegment
+{
+public:
+    DistalDendrite();
+    ~DistalDendrite();
+    void NewSynapse(Synapse *newSyn);
+    bool IsActive();
+    bool IsActiveFromLearning();
+    bool WasActiveFromLearning();
+
+    unsigned int GetNumIsActiveSynapses();
+    std::vector<Synapse*> GetIsActiveSynapses();
+    void RefreshSynapses(GenericSublayer *NewPattern);
+    std::vector<Synapse *> GetSynapses();
+private:
 };
 
 #endif

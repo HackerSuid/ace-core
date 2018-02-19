@@ -814,16 +814,16 @@ unsigned int ElfCodec::ExecuteToCall(
         perror("ptrace");
         return 0;
     }
-    /*
-    if (ptrace(PTRACE_GETSIGINFO, child_pid, 0, (void *)&sig_info) < 0) {
-        perror("ptrace");
-        return 0;
-    }
-    if (sig_info.si_signo==SIGUSR1)
-        reset=1;
-    */
     wait(&wait_status);
     while (WIFSTOPPED(wait_status)) {
+        /*
+        if (ptrace(PTRACE_GETSIGINFO, child_pid, 0, (void *)&sig_info) < 0) {
+            perror("ptrace");
+            return 0;
+        }
+        if (sig_info.si_signo==SIGUSR1)
+            reset=1;
+        */
         // get the current register values
         ptrace(PTRACE_GETREGS, child_pid, 0, regs);
         // get the current instruction being executed.
@@ -854,14 +854,6 @@ unsigned int ElfCodec::ExecuteToCall(
             perror("ptrace");
             return 0;
         }
-        /*
-        if (ptrace(PTRACE_GETSIGINFO, child_pid, 0, (void *)&sig_info) < 0) {
-            perror("ptrace");
-            return 0;
-        }
-        if (sig_info.si_signo==SIGUSR1)
-            reset=1;
-        */
         // Wait for child to stop on its next instruction, exit, or reset.
         wait(&wait_status);
         if (WIFEXITED(wait_status)) {

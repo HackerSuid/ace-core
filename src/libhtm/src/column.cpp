@@ -19,8 +19,7 @@ Column::Column(
     float localActivity,
     float columnComplexity,
     bool highTier,
-    int activityCycleWindow,
-    bool sensorimotorColumn)
+    int activityCycleWindow)
 {
     ProximalDendriteSegment = NULL;
     rec_field_sz = rfsz;
@@ -37,7 +36,6 @@ Column::Column(
     activityLogHead = activityLogTail = NULL;
     overlapLogHead = overlapLogTail = NULL;
     timeStep = 0;
-    this->sensorimotorColumn = sensorimotorColumn;
 
     parentLayer = sublayer;
     this->x = x;
@@ -80,7 +78,7 @@ void Column::InitializeProximalDendrite(
     y_center = this->y*y_ratio+(y_ratio/2);
 
     memset(syn_pos, 0, sizeof(syn_pos));
-    ProximalDendriteSegment = new DendriteSegment(false);
+    ProximalDendriteSegment = new ProximalDendrite();
 
     // compute the maximum distance from the center for each
     // 2d vector component. aka the radius of the receptive
@@ -146,9 +144,9 @@ void Column::ConnectToActiveInputs(HtmSublayer *lower)
 
     std::vector<Column *> colsConnected;
 
-    if (ProximalDendriteSegment==NULL)
-        ProximalDendriteSegment = new DendriteSegment(false);
-    else {
+    if (ProximalDendriteSegment==NULL) {
+        ProximalDendriteSegment = new ProximalDendrite();
+    } else {
         std::vector<Synapse *> syns = ProximalDendriteSegment->GetSynapses();
         for (unsigned int p=0; p<syns.size(); p++) {
             if (syns[p]->GetSource()->IsActive()) {
@@ -191,8 +189,9 @@ void Column::RefreshNewPattern(GenericSublayer *NewPattern)
 void Column::ComputeOverlap()
 {
     overlap = 0;
-    std::vector<Synapse *> synapses = ProximalDendriteSegment->GetSynapses();
-    for (int i=0; i<rec_field_sz; i++)
+    std::vector<Synapse *> synapses =
+        ProximalDendriteSegment->GetSynapses();
+    for (unsigned int i=0; i<synapses.size(); i++)
         if (synapses[i]->IsFiring())
             overlap++;
 }
@@ -200,7 +199,7 @@ void Column::ComputeOverlap()
 void Column::ModifySynapses()
 {
     std::vector<Synapse *> synapses = ProximalDendriteSegment->GetSynapses();
-    for (int i=0; i<rec_field_sz; i++)
+    for (unsigned int i=0; i<synapses.size(); i++)
         if (synapses[i]->GetSource()->IsActive())
             synapses[i]->IncPerm();
         else
@@ -377,7 +376,7 @@ void Column::NextTimestep()
     timeStep++;
 }
 
-DendriteSegment* Column::GetProximalDendriteSegment()
+ProximalDendrite* Column::GetProximalDendriteSegment()
 {
     return ProximalDendriteSegment;
 }
@@ -438,7 +437,7 @@ Cell* Column::GetBestMatchingCell(
      * segments would be active.
      */
     if (FirstPattern) {
-        printf("\t\t[column] cell 0 chosen for learning (first patt)\n");
+        //printf("\t\t[column] cell 0 chosen for learning (first patt)\n");
         *segidx = 0;
         return cells[0];
     }
@@ -505,8 +504,8 @@ Cell* Column::GetBestMatchingCell(
         *segidx = bestSegIdx;
     }
 
-    printf("\t\t[column] cell %d chosen for learning\n",
-        bestCellIdx);
+    //printf("\t\t[column] cell %d chosen for learning\n",
+        //bestCellIdx);
 
     return BestCell;
 }

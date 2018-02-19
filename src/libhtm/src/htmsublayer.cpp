@@ -57,8 +57,7 @@ void HtmSublayer::AllocateColumns(
                 localActivity,
                 columnComplexity,
                 highTier,
-                activityCycleWindow,
-                sensorimotorLayer
+                activityCycleWindow
             );
         }
     }
@@ -88,9 +87,11 @@ void HtmSublayer::RefreshLowerSynapses()
 {
     Column ***columns = (Column ***)input;
 
-    for (unsigned int i=0, n=0; i<height; i++)
-        for (unsigned int j=0; j<width; j++, n++)
+    for (unsigned int i=0; i<height; i++)
+        for (unsigned int j=0; j<width; j++) {
+            //printf("[col] refreshing col (%u, %u)\n", j, i);
             columns[i][j]->RefreshNewPattern(lower);
+        }
 }
 
 void HtmSublayer::ComputeLayerStateFromInput(
@@ -121,7 +122,7 @@ void HtmSublayer::ComputeLayerStateFromInput(
      * 2. Form a prediction given the lateral, intrinsic connections of the
      *    region by depolarizing cells with active distal dendrite segments.
      */
-    TemporalMemory(Learning, htmPtr->FirstPattern());
+//    TemporalMemory(Learning, htmPtr->FirstPattern());
 
     // Update the internal timestep counter for every column.
     NewTimestep();
@@ -179,6 +180,7 @@ void HtmSublayer::SpatialPooler(bool Learning, bool allowBoosting)
         for (unsigned int j=0; j<width; j++) {
             if (columns[i][j]->GetOverlap()) {
                 if (_EligibleToFire(columns[i][j])) {
+                    printf("\tcol (%u, %u) active\n", i, j);
                     columns[i][j]->SetActive(true, allowBoosting);
                     numActiveColumns[0]++;
                     /*
@@ -542,8 +544,8 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
              * learning cells, or it was chosen as the best learning cell to
              * predict the current input pattern.
              */
-            printf("Dequeing (+) 0x%08x: Learning cell\n",
-                (unsigned int)nextUpdate);
+            //printf("Dequeing (+) 0x%08x: Learning cell\n",
+            //    (unsigned int)nextUpdate);
             _DequeueSegmentUpdate(nextUpdate, true);
         } else if (cellUpdate->WasPredicted() and
             !cellUpdate->IsActive()) {
@@ -552,8 +554,8 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
              * did not become active, meaning an incorrect prediction of the
              * feed-forward input.
              */
-            printf("Dequeing (-) 0x%08x: Bad prediction\n",
-                (unsigned int)nextUpdate);
+            //printf("Dequeing (-) 0x%08x: Bad prediction\n",
+            //    (unsigned int)nextUpdate);
             _DequeueSegmentUpdate(nextUpdate, false);
         } else {
             /*

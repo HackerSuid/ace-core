@@ -125,7 +125,7 @@ bool Htm::LoadXmlConfig(const char *pathname)
             locCodecBits = atoi(lpattbits_attr->value());
         }
         //printf("%d columns: %d x %d.\n", h*w, h, w);
-        //printf("[htm] smi %d\n", sensorimotor);
+        //printf("[htm] sensorimotor flag: %d\n", sensorimotor);
         HtmSublayer *curr = new HtmSublayer(h, w, cpc, this, sensorimotor);
 
         rapidxml::xml_node<> *cols = sublayer_node->first_node("Columns");
@@ -151,7 +151,7 @@ bool Htm::LoadXmlConfig(const char *pathname)
         this->NewSublayer(curr);
     } while ((sublayer_node = sublayer_node->next_sibling("Region")));
 
-    poolingLayer = new PoolingLayer(24, 24, 0, 8, this, sublayers[0]);
+    //poolingLayer = new PoolingLayer(24, 24, 0, 8, this, sublayers[0]);
 
     close(xmlfd);
     return true;
@@ -188,6 +188,7 @@ void Htm::ConnectSubcorticalInput(bool refresh)
 
     sublayers[0]->setlower(NewPattern);
     if (refresh) {
+        printf("[htm] refreshing sublayer 0\n");
         sublayers[0]->RefreshLowerSynapses();
     }
 }
@@ -252,7 +253,7 @@ void Htm::SendInputThroughLayers()
     for (int i=0; i<num_sublayers; i++)
         sublayers[i]->ComputeLayerStateFromInput(
             Learning, allowBoosting);
-    poolingLayer->PoolInputColumns();
+//    poolingLayer->PoolInputColumns();
     printf("[*] Consuming next input pattern\n");
     ConnectSubcorticalInput(true);
 }

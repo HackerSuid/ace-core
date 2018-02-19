@@ -24,8 +24,9 @@ Synapse::~Synapse()
 
 void Synapse::RefreshSynapse(GenericSublayer *NewPattern)
 {
-    if (type == SENSORY_PROXIMAL)
+    if (type == SENSORY_PROXIMAL) {
         source = (NewPattern->GetInput())[srcy][srcx];
+    }
     // srcx & srcy correspond to the unit grid positions
     // instead of where it is in the input pattern.
     if (type == LOCATION_DISTAL) {
