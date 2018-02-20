@@ -11,6 +11,7 @@ class GenericSublayer;
 class HtmSublayer;
 class Cell;
 class DendriteSegment;
+class DistalDendrite;
 class ProximalDendrite;
 
 struct ActivityLogEntry
@@ -81,7 +82,7 @@ public:
 
     // Sequence Memory functions
     Cell* GetBestMatchingCell(
-        DendriteSegment **segment,
+        DistalDendrite **segment,
         int *segidx,
         HtmSublayer *sublayer,
         bool FirstPattern

@@ -9,6 +9,7 @@ class GenericSublayer;
 class HtmSublayer;
 class Column;
 class DendriteSegment;
+class DistalDendrite;
 class Synapse;
 
 class Cell : public GenericInput
@@ -19,21 +20,21 @@ public:
     bool IsPredicted();
     bool WasPredicted();
     void SetPredicted(bool flag);
-    DendriteSegment* NewSegment(HtmSublayer *sublayer, bool FirstPattern);
+    DistalDendrite* NewSegment(HtmSublayer *sublayer, bool FirstPattern);
     bool AddSynapsesFromSublayer(
         HtmSublayer *thisSublayer,
         GenericSublayer *src,
         input_t inType,
-        DendriteSegment *seg
+        DistalDendrite *seg
     );
     void RefreshDendrites(GenericSublayer *NewPattern);
     void RemoveSegment(int segidx);
-    DendriteSegment* GetMostActiveSegment();
-    DendriteSegment* GetBestMatchingSegment(
+    DistalDendrite* GetMostActiveSegment();
+    DistalDendrite* GetBestMatchingSegment(
         int *bestSegIdx,
         HtmSublayer *sublayer
     );
-    std::vector<DendriteSegment *> GetSegments()
+    std::vector<DistalDendrite *> GetSegments()
     {
         return DistalDendriteSegments;
     }
@@ -46,7 +47,7 @@ public:
 private:
     Column *parentColumn;
     unsigned int colIdx;
-    std::vector<DendriteSegment *> DistalDendriteSegments;
+    std::vector<DistalDendrite *> DistalDendriteSegments;
     int distalSegmentCount;
     bool predicted[2];
 };

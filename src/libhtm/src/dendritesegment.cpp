@@ -616,6 +616,7 @@ ProximalDendrite::~ProximalDendrite()
         delete (*it);
 }
 
+// TODO: refactor into parent class
 void ProximalDendrite::NewSynapse(Synapse *newSyn)
 {
     syns.push_back(newSyn);
@@ -753,35 +754,127 @@ DistalDendrite::~DistalDendrite()
         delete (*it);
 }
 
+// TODO refactor into parent class
 void DistalDendrite::NewSynapse(Synapse *newSyn)
 {
+    syns.push_back(newSyn);
 }
 
 bool DistalDendrite::IsActive()
 {
+    float n = syns.size() * SUBSAMPLE_THRESHOLD;
+
+    return (GetNumIsActiveSynapses() >= n);
 }
 
 bool DistalDendrite::IsActiveFromLearning()
 {
+    float n = syns.size() * SUBSAMPLE_THRESHOLD;
+
+    return (GetNumIsLearningSynapses() >= n);
 }
 
 bool DistalDendrite::WasActiveFromLearning()
 {
+    float n = syns.size() * SUBSAMPLE_THRESHOLD;
+
+    return (GetNumWasLearningSynapses() >= n);
 }
 
 unsigned int DistalDendrite::GetNumIsActiveSynapses()
 {
+    return GetIsActiveSynapses().size();
 }
 
 std::vector<Synapse*> DistalDendrite::GetIsActiveSynapses()
 {
+    std::vector <Synapse *> activeSyns;
+
+    for (unsigned int i=0; i<syns.size(); i++)
+        if (syns[i]->IsFiring())
+            activeSyns.push_back(syns[i]);
+
+    return activeSyns;
+}
+
+unsigned int DistalDendrite::GetNumWasActiveSynapses()
+{
+    return GetWasActiveSynapses().size();
+}
+
+std::vector<Synapse*> DistalDendrite::GetWasActiveSynapses()
+{
+    std::vector <Synapse *> activeSyns;
+
+    for (unsigned int i=0; i<syns.size(); i++)
+        if (syns[i]->WasFiring())
+            activeSyns.push_back(syns[i]);
+
+    return activeSyns;
+}
+
+unsigned int DistalDendrite::GetNumIsLearningSynapses()
+{
+    return GetIsLearningSynapses().size();
+}
+
+std::vector<Synapse*> DistalDendrite::GetIsLearningSynapses()
+{
+    std::vector <Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<syns.size(); i++)
+        if (syns[i]->IsFiring() && syns[i]->IsLearning())
+            learnSyns.push_back(syns[i]);
+
+    return learnSyns;
+}
+
+unsigned int DistalDendrite::GetNumWasLearningSynapses()
+{
+    return GetWasLearningSynapses().size();
+}
+
+std::vector<Synapse*> DistalDendrite::GetWasLearningSynapses()
+{
+    std::vector <Synapse *> learnSyns;
+
+    for (unsigned int i=0; i<syns.size(); i++)
+        if (syns[i]->WasFiring() && syns[i]->WasLearning())
+            learnSyns.push_back(syns[i]);
+
+    return learnSyns;
+}
+
+std::vector<Synapse*> DistalDendrite::GetWasNearActiveSynapses()
+{
+    std::vector<Synapse*> nearActiveSyns;
+
+    for (unsigned int i=0; i<syns.size(); i++)
+        if (syns[i]->IsNearConnected() && syns[i]->GetSource()->WasActive())
+            nearActiveSyns.push_back(syns[i]);
+
+    return nearActiveSyns;
+}
+
+int DistalDendrite::GetNumIsNearActiveSynapses()
+{
+    int nearActiveSyns=0;
+
+    for (unsigned int i=0; i<syns.size(); i++)
+        if (syns[i]->IsNearConnected() && syns[i]->GetSource()->IsActive())
+            nearActiveSyns++;
+
+    return nearActiveSyns;
 }
 
 void DistalDendrite::RefreshSynapses(GenericSublayer *NewPattern)
 {
+    for (unsigned int i=0; i<syns.size(); i++)
+        syns[i]->RefreshSynapse(NewPattern);
 }
 
 std::vector<Synapse *> DistalDendrite::GetSynapses()
 {
+    return syns;
 }
 

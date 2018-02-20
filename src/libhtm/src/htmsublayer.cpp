@@ -122,7 +122,7 @@ void HtmSublayer::ComputeLayerStateFromInput(
      * 2. Form a prediction given the lateral, intrinsic connections of the
      *    region by depolarizing cells with active distal dendrite segments.
      */
-//    TemporalMemory(Learning, htmPtr->FirstPattern());
+    TemporalMemory(Learning, htmPtr->FirstPattern());
 
     // Update the internal timestep counter for every column.
     NewTimestep();
@@ -130,6 +130,7 @@ void HtmSublayer::ComputeLayerStateFromInput(
 
 void HtmSublayer::SpatialPooler(bool Learning, bool allowBoosting)
 {
+    printf("[htmsublayer] spatial pooler\n");
     Column ***columns = (Column ***)input;
 
     /*
@@ -180,7 +181,7 @@ void HtmSublayer::SpatialPooler(bool Learning, bool allowBoosting)
         for (unsigned int j=0; j<width; j++) {
             if (columns[i][j]->GetOverlap()) {
                 if (_EligibleToFire(columns[i][j])) {
-                    printf("\tcol (%u, %u) active\n", i, j);
+                    //printf("\tcol (%u, %u) active\n", i, j);
                     columns[i][j]->SetActive(true, allowBoosting);
                     numActiveColumns[0]++;
                     /*
@@ -262,7 +263,8 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
      *    not generate extra predictions from non-learning active cells.
      *
      * I'm not decided on which version is more useful.
-     */
+     i*/
+    printf("[htmsublayer] Temporal Memory: %d\n", !htmPtr->ResetNewObject());
     if (!htmPtr->ResetNewObject()) {
         printf("Computing predictions\n");
         for (unsigned int i=0; i<height; i++) {
@@ -280,7 +282,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                      * participating in the context of many temporal
                      * sequences.
                      */
-                    std::vector<DendriteSegment *> segments =
+                    std::vector<DistalDendrite *> segments =
                         cells[k]->GetSegments();
                     unsigned int numSegs = cells[k]->GetNumSegments();
                     bool predflag = false;
@@ -377,7 +379,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                          * previous timestep.
                          */
                         //printf("\twhat dendrite segment caused this prediction?\n");
-                        DendriteSegment *ActiveSegment =
+                        DistalDendrite *ActiveSegment =
                             cells[k]->GetMostActiveSegment();
                         //printf("\tmost active segment @ 0x%08x\n", ActiveSegment);
                         /*
@@ -425,7 +427,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                  */
                 if (!learnCellChosen) {
                     //printf("\tchoosing unpredicted/bursted learning cell\n");
-                    DendriteSegment *segment = NULL;
+                    DistalDendrite *segment = NULL;
                     int segidx;
                     Cell *BestCell = columns[i][j]->GetBestMatchingCell(
                         &segment,
@@ -614,7 +616,7 @@ void HtmSublayer::_DequeueSegmentUpdate(
          * order to learn a transition in the active sequence.
          */
         //printf("[htmsublayer] smi %d\n", this->IsSensorimotor());
-        DendriteSegment *newSeg = cell->NewSegment(this, htmPtr->FirstPattern());
+        DistalDendrite *newSeg = cell->NewSegment(this, htmPtr->FirstPattern());
         segment = newSeg;
     }
 
@@ -767,7 +769,7 @@ void HtmSublayer::_ComputeInhibitionRadius(Column ***columns)
 
     for (unsigned int i=0; i<height; i++) {
         for (unsigned int j=0; j<width; j++) {
-            DendriteSegment *segment = columns[i][j]->GetProximalDendriteSegment();
+            ProximalDendrite *segment = columns[i][j]->GetProximalDendriteSegment();
             std::vector<Synapse *> syns = segment->GetSynapses();
             int rfs = columns[i][j]->GetRecFieldSz();
             int s = 0;

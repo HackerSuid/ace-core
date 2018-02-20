@@ -427,7 +427,7 @@ int Column::GetLocalActivity()
  * If none of them have any segments, then return the first one.
  */
 Cell* Column::GetBestMatchingCell(
-    DendriteSegment **segment,
+    DistalDendrite **segment,
     int *segidx,
     HtmSublayer *sublayer,
     bool FirstPattern)
@@ -444,7 +444,7 @@ Cell* Column::GetBestMatchingCell(
 
     Cell *BestCell = NULL;
     int bestCellIdx = -1;
-    DendriteSegment *bestSeg = NULL;
+    DistalDendrite *bestSeg = NULL;
     int bestSegIdx = -1;
     int highestNumSyns = -1;
 

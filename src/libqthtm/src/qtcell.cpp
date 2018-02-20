@@ -88,7 +88,7 @@ void QtCell::_ToggleDistalConnections(bool flag)
     toggled = flag;
 
     printf("Toggling distal synapses\n");
-    std::vector<DendriteSegment *> segments = cell->GetSegments();
+    std::vector<DistalDendrite *> segments = cell->GetSegments();
     printf("Cell has %u segments.\n", segments.size());
 
     for (unsigned int seg=0; seg<segments.size(); seg++) {

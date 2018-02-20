@@ -398,8 +398,8 @@ void QtFront::UpdateHtmDisplay()
     QColor rgb[d+1];
     int r[d+1], g[d+1], b[d+1];
 
-    for (int i=0; i<h; i++) {
-        for (int j=0; j<w; j++) {
+    for (unsigned int i=0; i<h; i++) {
+        for (unsigned int j=0; j<w; j++) {
             colUnit = (QtUnit *)newHtmGrid->itemAtPosition(i, j)->widget();
             //cellGrid = colUnit->GetCellGrid();
             rgb[0] = colUnit->getBrushColor();

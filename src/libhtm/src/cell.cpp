@@ -52,7 +52,7 @@ bool Cell::WasPredicted()
  * 2. For L4 sublayers, distal dendrite segments synapse with
  *    motor patterns (er, or allocentric signal?).
  */
-DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
+DistalDendrite* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
 {
     if (FirstPattern && !sublayer->IsSensorimotor()) {
         printf("\t\t[cell] first patt & not smi, so not adding "
@@ -60,8 +60,7 @@ DendriteSegment* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
         return NULL;
     }
 
-    DendriteSegment *newSeg =
-        new DendriteSegment(sublayer->IsSensorimotor());
+    DistalDendrite *newSeg = new DistalDendrite();
     bool synsFound = false;
 
     if (sublayer->IsSensorimotor()) {
@@ -122,7 +121,7 @@ bool Cell::AddSynapsesFromSublayer(
     HtmSublayer *thisSublayer,
     GenericSublayer *src,
     input_t inType,
-    DendriteSegment *seg)
+    DistalDendrite *seg)
 {
     GenericInput ***inputBits = src->GetInput();
 
@@ -273,10 +272,10 @@ void Cell::RemoveSegment(int segidx)
  * return the segment with the most active synapses in the current timestep.
  * returns NULL if there were no segments on this cell yet.
  */
-DendriteSegment* Cell::GetMostActiveSegment()
+DistalDendrite* Cell::GetMostActiveSegment()
 {
     int mostSynapseCount = -1;
-    DendriteSegment *mostActiveSeg = NULL;
+    DistalDendrite *mostActiveSeg = NULL;
     // if no segments yet exist, then return NULL.
     unsigned int numSegs = GetNumSegments();
     printf("\t\tcell has %d segments\n", numSegs);
@@ -294,12 +293,12 @@ DendriteSegment* Cell::GetMostActiveSegment()
  * Return the segment with the highest number of synapses that are near or
  * above the activation threshold, or NULL if none exist.
  */
-DendriteSegment* Cell::GetBestMatchingSegment(
+DistalDendrite* Cell::GetBestMatchingSegment(
     int *bestSegIdx,
     HtmSublayer *sublayer)
 {
     int synCount = 0, mostSynCount = -1;
-    DendriteSegment *bestSeg = NULL;
+    DistalDendrite *bestSeg = NULL;
 
     /*
      * To be considered as the best match, a segment must have a minimum number
@@ -319,10 +318,10 @@ DendriteSegment* Cell::GetBestMatchingSegment(
             DendriteSegment::GetSubsamplePercent();
     }
 
-    std::vector<DendriteSegment *>::iterator beg = DistalDendriteSegments.begin();
-    std::vector<DendriteSegment *>::iterator end = DistalDendriteSegments.end();
+    std::vector<DistalDendrite *>::iterator beg = DistalDendriteSegments.begin();
+    std::vector<DistalDendrite *>::iterator end = DistalDendriteSegments.end();
     int x=0;
-    for (std::vector<DendriteSegment *>::iterator i = beg; i != end; i++, x++) {
+    for (std::vector<DistalDendrite *>::iterator i = beg; i != end; i++, x++) {
         synCount = (*i)->GetNumIsNearActiveSynapses();
         //printf("\t\t\tsegment has %d near active, %d sensory syns\n",
             //synCount, (*i)->GetNumSensorySyns());

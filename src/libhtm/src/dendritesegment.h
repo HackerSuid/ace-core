@@ -137,9 +137,17 @@ public:
     bool IsActive();
     bool IsActiveFromLearning();
     bool WasActiveFromLearning();
-
     unsigned int GetNumIsActiveSynapses();
     std::vector<Synapse*> GetIsActiveSynapses();
+    unsigned int GetNumWasActiveSynapses();
+    std::vector<Synapse*> GetWasActiveSynapses();
+    unsigned int GetNumIsLearningSynapses();
+    std::vector<Synapse*> GetIsLearningSynapses();
+    unsigned int GetNumWasLearningSynapses();
+    std::vector<Synapse*> GetWasLearningSynapses();
+    std::vector<Synapse*> GetWasNearActiveSynapses();
+    int GetNumIsNearActiveSynapses();
+
     void RefreshSynapses(GenericSublayer *NewPattern);
     std::vector<Synapse *> GetSynapses();
 private:

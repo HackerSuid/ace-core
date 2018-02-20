@@ -188,7 +188,6 @@ void Htm::ConnectSubcorticalInput(bool refresh)
 
     sublayers[0]->setlower(NewPattern);
     if (refresh) {
-        printf("[htm] refreshing sublayer 0\n");
         sublayers[0]->RefreshLowerSynapses();
     }
 }
