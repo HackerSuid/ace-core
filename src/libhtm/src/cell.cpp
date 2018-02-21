@@ -87,7 +87,6 @@ DistalDendrite* Cell::NewSegment(HtmSublayer *sublayer, bool FirstPattern)
             "\n");*/
         } else {
             printf("\tNo motor pattern found.\n");
-            newSeg->SetNoTemporalContext();
             DistalDendriteSegments.push_back(newSeg);
             return NULL;
         }
@@ -278,7 +277,7 @@ DistalDendrite* Cell::GetMostActiveSegment()
     DistalDendrite *mostActiveSeg = NULL;
     // if no segments yet exist, then return NULL.
     unsigned int numSegs = GetNumSegments();
-    printf("\t\tcell has %d segments\n", numSegs);
+    //printf("\t\tcell has %d segments\n", numSegs);
     for (unsigned int i=0; i<numSegs; i++) {
         int synCount = DistalDendriteSegments[i]->GetNumIsActiveSynapses();
         if (synCount > mostSynapseCount) {

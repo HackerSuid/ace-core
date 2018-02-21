@@ -130,7 +130,6 @@ void HtmSublayer::ComputeLayerStateFromInput(
 
 void HtmSublayer::SpatialPooler(bool Learning, bool allowBoosting)
 {
-    printf("[htmsublayer] spatial pooler\n");
     Column ***columns = (Column ***)input;
 
     /*
@@ -264,7 +263,6 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
      *
      * I'm not decided on which version is more useful.
      i*/
-    printf("[htmsublayer] Temporal Memory: %d\n", !htmPtr->ResetNewObject());
     if (!htmPtr->ResetNewObject()) {
         printf("Computing predictions\n");
         for (unsigned int i=0; i<height; i++) {
@@ -287,17 +285,18 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                     unsigned int numSegs = cells[k]->GetNumSegments();
                     bool predflag = false;
                     for (unsigned int s=0; s<numSegs; s++) {
-                        printf("\tchecking is segment %u active\n", s);
+                        //printf("\tchecking is segment %u active\n", s);
                         bool segactive =
                             Learning ? segments[s]->IsActiveFromLearning() :
                                        segments[s]->IsActive();
-                        printf("\tsegactive=%u\n", segactive);
+                        //printf("\tsegactive=%u\n", segactive);
                         if (segactive) {
                             /*
                              * Only SetPredicted() once if there are multiple active
                              * segments to avoid corrupting the state machine.
                              */
                             if (!predflag) {
+                                /*
                                 printf("\t\tpredicting col (%d, %d) cell %d"
                                     " [0x%08x] segment 0x%08x\n",
                                     cells[k]->GetParentColumn()->GetX(),
@@ -305,6 +304,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
                                     cells[k]->GetColIdx(), cells[k],
                                     (unsigned int)segments[s]
                                 );
+                                 */
                                 cells[k]->SetPredicted(true);
                                 predflag = true;
                             }
@@ -533,7 +533,7 @@ void HtmSublayer::TemporalMemory(bool Learning, bool firstPattern)
      */
     unsigned int segmentUpdateListSize = segmentUpdateList.size();
     int skipSegments = 0;
-    printf("Running segment updates: total %u\n", segmentUpdateListSize);
+    //printf("Running segment updates: total %u\n", segmentUpdateListSize);
     for (unsigned int i=0; i<segmentUpdateListSize; i++) {
         /*
          * Start at the front and skip the ones that are staying in the queue.

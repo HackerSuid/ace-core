@@ -107,7 +107,7 @@ void PoolingLayer::PoolInputColumns()
                 columns[i][j]->GetProximalDendriteSegment();
             unsigned int numSynsActive = 0;
             if (p) {
-                numSynsActive = p->GetNumIsActiveSensorySynapses();
+                numSynsActive = p->GetNumIsActiveSynapses();
             }
             unsigned int currActInputs =
                 (unsigned int)inputLayer->CurrentActiveColumns();

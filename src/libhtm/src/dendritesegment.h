@@ -30,7 +30,7 @@ class GenericSublayer;
 class DendriteSegment
 {
 public:
-    DendriteSegment(bool sensorimotorFlag);
+    DendriteSegment();
     virtual ~DendriteSegment();
 
     virtual void NewSynapse(Synapse *newSyn);
@@ -45,6 +45,7 @@ public:
     virtual std::vector<Synapse*> GetWasNearActiveSynapses();
     virtual int GetNumIsNearActiveSynapses();
 
+    /*
     unsigned int GetNumIsActiveSensorySynapses();
     unsigned int GetNumIsActiveMotorSynapses();
     unsigned int GetNumIsActiveLocationSynapses();
@@ -80,22 +81,32 @@ public:
     std::vector<Synapse*> GetWasLearningMotorSynapses();
     std::vector<Synapse*> GetWasLearningLocationSynapses();
     std::vector<Synapse*> GetWasLearningLateralSynapses();
+    */
 
+    /*
     bool IsSensorimotor() { return sensorimotorSegment; }
     int GetNumSensorySyns() { return numSensorySyns; }
     int GetNumMotorSyns() { return numMotorSyns; }
+    */
     static float GetSubsamplePercent() { return SUBSAMPLE_PERCENT; }
     virtual void RefreshSynapses(GenericSublayer *NewPattern);
-    virtual std::vector<Synapse *> GetSynapses();
-    void SetNoTemporalContext();
-    bool GetNoTemporalContext();
+    virtual std::vector<Synapse *> GetSynapses()
+    {
+        return syns;
+    }
+    /*
+    void SetNoTemporalContext() { noTemporalContext = true; }
+    bool GetNoTemporalContext() { return noTemporalContext; }
+    */
 private:
+    /*
     bool sensorimotorSegment;
     unsigned int numSensorySyns, numMotorSyns;
     unsigned int numLateralSyns, numLocationSyns;
     std::vector<Synapse *> sensorySyns, motorSyns;
     std::vector<Synapse *> lateralSyns, locationSyns;
     bool noTemporalContext;
+    */
 protected:
     std::vector<Synapse *> syns;
 };

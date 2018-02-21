@@ -215,7 +215,7 @@ int explore_world(char *dir_of_objs, unsigned int niter)
 int main(int argc, char **argv)
 {
     char *root=(char *)"/root/ace-core/examples/smi_world/";
-    unsigned int num_iters=3;
+    unsigned int num_iters=2;
     srand(time(NULL)+getpid());
     signal(SIGUSR1, reset_signal_callback);
 
