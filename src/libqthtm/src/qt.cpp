@@ -214,17 +214,17 @@ void QtFront::CreateTrainingWidget()
     //HtmDisplay->SetQtSynapses(inputGrid);
     smiLayerGroup->setLayout(smiGrid);
 
-//    poolGroup = new QGroupBox("pooling layer");
-//    poolGroup->setObjectName("RegionId");
-//    QGridLayout *poolGrid = HtmDisplay->PoolUnitGrid(objHtm);
-//    poolGroup->setLayout(poolGrid);
+    poolGroup = new QGroupBox("pooling layer");
+    poolGroup->setObjectName("RegionId");
+    QGridLayout *poolGrid = HtmDisplay->PoolUnitGrid(objHtm);
+    poolGroup->setLayout(poolGrid);
 
     TrainingLayout->addWidget(sensoryGroup, 0, 0, 1, 1);
     TrainingLayout->addWidget(locGroup, 1, 0, 1, 1);
     //TrainingLayout->addWidget(objHtm, 1, 0, 1, 1);
     TrainingLayout->addWidget(controls, 2, 0, 1, 1);
     TrainingLayout->addWidget(smiLayerGroup, 0, 1, 3, 1);
-//    TrainingLayout->addWidget(poolGroup, 0, 2, 3, 1);
+    TrainingLayout->addWidget(poolGroup, 0, 2, 3, 1);
 
     TrainingLayout->setColumnStretch(0, 30);
     TrainingLayout->setColumnStretch(1, 100);
@@ -419,7 +419,7 @@ void QtFront::UpdateHtmDisplay()
                 );
         }
     }
-/*
+
     QGridLayout *currPoolingGrid = (QGridLayout *)poolGroup->layout();
     QGridLayout *newPoolingGrid = HtmDisplay->PoolUnitGrid(objHtm);
     PoolingLayer *p = htm->GetPoolingLayer();
@@ -440,7 +440,6 @@ void QtFront::UpdateHtmDisplay()
                 QColor(rP, gP, bP));
         }
     }
-*/
 }
 
 void QtFront::CreateActions()
